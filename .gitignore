@@ -1,0 +1,11 @@
+dannce/__pycache__
+dannce/engine/data/__pycache__
+dannce/engine/data/skeletons/__pycache__
+dannce/engine/logging/__pycache__
+dannce/engine/models/__pycache__
+dannce/engine/trainer/__pycache__
+sdannce.egg-info
+demo/2021_07_05_M4_M7
+demo/2021_07_06_M3_M6
+demo/2021_07_07_M5_M1
+demo/weights

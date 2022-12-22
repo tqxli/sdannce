@@ -1,0 +1,34 @@
+### basic ###
+io_config: io.yaml
+random_seed: 1024
+
+### data ###
+camnames: ['Camera1', 'Camera2', 'Camera3', 'Camera4', 'Camera5', 'Camera6']
+n_instances: 2
+n_channels_out: 2
+crop_height: [0, 1152]
+crop_width: [0, 1920]
+downfac: 8
+
+### training options ###
+train_mode: new
+com_finetune_weights: #./COM/weights/
+num_validation_per_exp: 2
+# NOTICE: actual batch size = batch_size*{num_cameras} 
+batch_size: 4
+epochs: 20
+lr: 5e-5
+loss:
+    MSELoss:
+      loss_weight: 1.0
+metric: []
+save_period: 5
+
+# If true, saves plots of the training labels overlaid on images
+#debug: True
+
+# If present, write the confidence map output and image/COM overlays to disk during prediction
+#com_debug: Camera5
+
+### prediction ###
+max_num_samples: max
