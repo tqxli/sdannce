@@ -18,9 +18,10 @@ import imageio
 from tqdm import tqdm
 
 
-def print_checkpoint(
-    n_frame: int, start_ind: int, end_time: float, sample_save: int = 100
-) -> float:
+def print_checkpoint(n_frame: int,
+                     start_ind: int,
+                     end_time: float,
+                     sample_save: int = 100) -> float:
     """Print checkpoint messages indicating frame and fps for inference.
 
     Args:
@@ -35,14 +36,14 @@ def print_checkpoint(
     print("Predicting on sample %d" % (n_frame), flush=True)
     if (n_frame - start_ind) % sample_save == 0 and n_frame != start_ind:
         print(n_frame)
-        print("{} samples took {} seconds".format(sample_save, time.time() - end_time))
+        print("{} samples took {} seconds".format(sample_save,
+                                                  time.time() - end_time))
         end_time = time.time()
     return end_time
 
 
-def predict_batch(
-    model, generator, n_frame: int, params: Dict, device
-) -> np.ndarray:
+def predict_batch(model, generator, n_frame: int, params: Dict,
+                  device) -> np.ndarray:
     """Predict for a single batch and reformat output.
 
     Args:
@@ -54,7 +55,8 @@ def predict_batch(
     No Longer Returned:
         np.ndarray: n_batch x n_cam x h x w x c predictions
     """
-    im = torch.from_numpy(generator.__getitem__(n_frame)[0]).permute(0, 3, 1, 2).to(device)
+    im = torch.from_numpy(generator.__getitem__(n_frame)[0]).permute(
+        0, 3, 1, 2).to(device)
     pred = model(im)
     if params["mirror"]:
         n_cams = 1
@@ -96,7 +98,8 @@ def debug_com(
     if not os.path.exists(overlaydir):
         os.makedirs(overlaydir)
     print("Writing " + params["com_debug"] + " confidence maps to " + cmapdir)
-    print("Writing " + params["com_debug"] + "COM-image overlays to " + overlaydir)
+    print("Writing " + params["com_debug"] + "COM-image overlays to " +
+          overlaydir)
 
     batch_size = pred_batch.shape[0]
     # Write preds
@@ -107,8 +110,7 @@ def debug_com(
         os.path.join(
             cmapdir,
             params["com_debug"] + str(n_frame * batch_size + n_batch) + ".png",
-        )
-    )
+        ))
 
     plt.figure(1)
     plt.cla()
@@ -123,8 +125,7 @@ def debug_com(
         os.path.join(
             overlaydir,
             params["com_debug"] + str(n_frame * batch_size + n_batch) + ".png",
-        )
-    )
+        ))
 
 
 def extract_multi_instance_single_channel(
@@ -157,16 +158,12 @@ def extract_multi_instance_single_channel(
         (Dict): Updated saved data dictionary.
     """
     pred_max = np.max(np.squeeze(pred[n_cam]))
-    ind = (
-        np.array(
-            processing.get_peak_inds_multi_instance(
-                np.squeeze(pred[n_cam]),
-                params["n_instances"],
-                window_size=3,
-            )
-        )
-        * params["downfac"]
-    )
+    ind = (np.array(
+        processing.get_peak_inds_multi_instance(
+            np.squeeze(pred[n_cam]),
+            params["n_instances"],
+            window_size=3,
+        )) * params["downfac"])
     for instance in range(params["n_instances"]):
         ind[instance, 0] += params["crop_height"][0]
         ind[instance, 1] += params["crop_width"][0]
@@ -196,9 +193,8 @@ def extract_multi_instance_single_channel(
 
     # Undistort this COM here.
     for instance in range(params["n_instances"]):
-        pts1 = np.squeeze(
-            save_data[sample_id][params["camnames"][n_cam]]["COM"][instance, :]
-        )
+        pts1 = np.squeeze(save_data[sample_id][params["camnames"][n_cam]]
+                          ["COM"][instance, :])
         pts1 = pts1[np.newaxis, :]
         pts1 = ops.unDistortPoints(
             pts1,
@@ -209,8 +205,7 @@ def extract_multi_instance_single_channel(
             cameras[params["camnames"][n_cam]]["t"],
         )
         save_data[sample_id][params["camnames"][n_cam]]["COM"][
-            instance, :
-        ] = np.squeeze(pts1)
+            instance, :] = np.squeeze(pts1)
 
     return save_data
 
@@ -249,10 +244,9 @@ def extract_multi_instance_multi_channel(
     }
     for instance in range(params["n_instances"]):
         pred_max = np.max(np.squeeze(pred[n_cam, :, :, instance]))
-        ind = (
-            np.array(processing.get_peak_inds(np.squeeze(pred[n_cam, :, :, instance])))
-            * params["downfac"]
-        )
+        ind = (np.array(
+            processing.get_peak_inds(np.squeeze(pred[n_cam, :, :, instance])))
+               * params["downfac"])
         ind[0] += params["crop_height"][0]
         ind[1] += params["crop_width"][0]
         ind = ind[::-1]
@@ -285,8 +279,7 @@ def extract_multi_instance_multi_channel(
             cameras[params["camnames"][n_cam]]["t"],
         )
         save_data[sample_id][params["camnames"][n_cam]]["COM"][
-            instance, :
-        ] = np.squeeze(pts)
+            instance, :] = np.squeeze(pts)
 
         # TODO(pred_max): Currently only saves for one instance.
         save_data[sample_id][params["camnames"][n_cam]]["pred_max"] = pred_max
@@ -323,9 +316,8 @@ def extract_single_instance(
         (Dict): Updated saved data dictionary.
     """
     pred_max = np.max(np.squeeze(pred[n_cam]))
-    ind = (
-        np.array(processing.get_peak_inds(np.squeeze(pred[n_cam]))) * params["downfac"]
-    )
+    ind = (np.array(processing.get_peak_inds(np.squeeze(pred[n_cam]))) *
+           params["downfac"])
     ind[0] += params["crop_height"][0]
     ind[1] += params["crop_width"][0]
     ind = ind[::-1]
@@ -371,9 +363,8 @@ def extract_single_instance(
     return save_data
 
 
-def triangulate_single_instance(
-    n_cams: int, sample_id: Text, params: Dict, camera_mats: Dict, save_data: Dict
-) -> Dict:
+def triangulate_single_instance(n_cams: int, sample_id: Text, params: Dict,
+                                camera_mats: Dict, save_data: Dict) -> Dict:
     """Triangulate for a single instance.
 
     Args:
@@ -401,15 +392,15 @@ def triangulate_single_instance(
                 camera_mats[params["camnames"][n_cam2]],
             ).squeeze()
 
-            save_data[sample_id]["triangulation"][
-                "{}_{}".format(params["camnames"][n_cam1], params["camnames"][n_cam2])
-            ] = test3d
+            save_data[sample_id]["triangulation"]["{}_{}".format(
+                params["camnames"][n_cam1],
+                params["camnames"][n_cam2])] = test3d
     return save_data
 
 
-def triangulate_multi_instance_multi_channel(
-    n_cams: int, sample_id: Text, params: Dict, camera_mats: Dict, save_data: Dict
-) -> Dict:
+def triangulate_multi_instance_multi_channel(n_cams: int, sample_id: Text,
+                                             params: Dict, camera_mats: Dict,
+                                             save_data: Dict) -> Dict:
     """Triangulate for multi-instance multi-channel.
 
     Args:
@@ -428,11 +419,9 @@ def triangulate_multi_instance_multi_channel(
         for n_cam1 in range(n_cams):
             for n_cam2 in range(n_cam1 + 1, n_cams):
                 pts1 = save_data[sample_id][params["camnames"][n_cam1]]["COM"][
-                    instance, :
-                ]
+                    instance, :]
                 pts2 = save_data[sample_id][params["camnames"][n_cam2]]["COM"][
-                    instance, :
-                ]
+                    instance, :]
                 pts1 = pts1[np.newaxis, :]
                 pts2 = pts2[np.newaxis, :]
 
@@ -443,20 +432,20 @@ def triangulate_multi_instance_multi_channel(
                     camera_mats[params["camnames"][n_cam2]],
                 ).squeeze()
 
-                save_data[sample_id]["triangulation"][
-                    "{}_{}".format(
-                        params["camnames"][n_cam1], params["camnames"][n_cam2]
-                    )
-                ] = test3d
+                save_data[sample_id]["triangulation"]["{}_{}".format(
+                    params["camnames"][n_cam1],
+                    params["camnames"][n_cam2])] = test3d
 
         pairs = [
-            v for v in save_data[sample_id]["triangulation"].values() if len(v) == 3
+            v for v in save_data[sample_id]["triangulation"].values()
+            if len(v) == 3
         ]
         # import pdb
         # pdb.set_trace()
         pairs = np.stack(pairs, axis=1)
         final = np.nanmedian(pairs, axis=1).squeeze()
-        save_data[sample_id]["triangulation"]["instances"].append(final[:, np.newaxis])
+        save_data[sample_id]["triangulation"]["instances"].append(
+            final[:, np.newaxis])
     return save_data
 
 
@@ -492,7 +481,8 @@ def triangulate_multi_instance_single_channel(
 
         # Build the initial list of points
         for n_cam in range(n_cams):
-            pt = save_data[sample_id][params["camnames"][n_cam]]["COM"][instance, :]
+            pt = save_data[sample_id][params["camnames"][n_cam]]["COM"][
+                instance, :]
             pt = pt[np.newaxis, :]
             pts.append(pt)
             pts_inds.append(instance)
@@ -507,7 +497,8 @@ def triangulate_multi_instance_single_channel(
                         candidate_errors.append(np.Inf)
                         continue
 
-                pt = save_data[sample_id][params["camnames"][n_cam]]["COM"][n_point, :]
+                pt = save_data[sample_id][params["camnames"][n_cam]]["COM"][
+                    n_point, :]
                 pt = pt[np.newaxis, :]
                 pts[n_cam] = pt
                 pts_inds[n_cam] = n_point
@@ -522,17 +513,15 @@ def triangulate_multi_instance_single_channel(
                     t = cameras[params["camnames"][n_proj]]["t"]
                     proj = ops.project_to2d(pts3d.T, K, R, t)
                     proj = proj[:, :2]
-                    ref = save_data[sample_id][params["camnames"][n_proj]]["COM"][
-                        pts_inds[n_proj], :
-                    ]
-                    error += np.sqrt(np.sum((proj - ref) ** 2))
+                    ref = save_data[sample_id][
+                        params["camnames"][n_proj]]["COM"][pts_inds[n_proj], :]
+                    error += np.sqrt(np.sum((proj - ref)**2))
                 candidate_errors.append(error)
 
             # Keep the best instance combinations across cameras
             best_candidate = np.argmin(candidate_errors)
             pt = save_data[sample_id][params["camnames"][n_cam]]["COM"][
-                best_candidate, :
-            ]
+                best_candidate, :]
             pt = pt[np.newaxis, :]
             pts[n_cam] = pt
             pts_inds[n_cam] = best_candidate
@@ -547,6 +536,7 @@ def triangulate_multi_instance_single_channel(
     ]
     save_data[sample_id]["triangulation"]["instances"] = final3d
     return save_data
+
 
 def infer_com(
     start_ind: int,
@@ -593,12 +583,15 @@ def infer_com(
                 pred = pred_batch[n_batch, 0]
                 pred = np.transpose(pred, (2, 0, 1))
             elif params["mirror"]:
-                raise Exception("mirror mode with multiple animal instances not currently supported.")
+                raise Exception(
+                    "mirror mode with multiple animal instances not currently supported."
+                )
             elif params["n_instances"] > 1 and params["n_channels_out"] > 1:
                 pred = pred_batch[n_batch, ...]
             else:
                 pred = pred_batch[n_batch, :, :, :, -1]
-            sample_id = partition["valid_sampleIDs"][n_frame * n_batches + n_batch]
+            sample_id = partition["valid_sampleIDs"][n_frame * n_batches +
+                                                     n_batch]
             save_data[sample_id] = {}
             save_data[sample_id]["triangulation"] = {}
             n_cams = pred.shape[0]
@@ -626,28 +619,24 @@ def infer_com(
             # Handle triangulation for single or multi instance
             if params["n_instances"] == 1:
                 save_data = triangulate_single_instance(
-                    n_cams, sample_id, params, camera_mats, save_data
-                )
+                    n_cams, sample_id, params, camera_mats, save_data)
             elif params["n_channels_out"] == 1:
                 save_data = triangulate_multi_instance_single_channel(
-                    n_cams, sample_id, params, camera_mats, cameras, save_data
-                )
+                    n_cams, sample_id, params, camera_mats, cameras, save_data)
             elif params["n_channels_out"] > 1:
                 save_data = triangulate_multi_instance_multi_channel(
-                    n_cams, sample_id, params, camera_mats, save_data
-                )
+                    n_cams, sample_id, params, camera_mats, save_data)
     return save_data
 
-def infer_dannce(
-    generator,
-    params: Dict,
-    model,
-    partition: Dict,
-    device: Text,
-    n_chn: int,
-    sil_generator=None,
-    save_heatmaps=False
-):
+
+def infer_dannce(generator,
+                 params: Dict,
+                 model,
+                 partition: Dict,
+                 device: Text,
+                 n_chn: int,
+                 sil_generator=None,
+                 save_heatmaps=False):
     """Perform dannce detection over a set of frames.
 
     Args:
@@ -661,7 +650,9 @@ def infer_dannce(
         n_chn (int): Number of output channels
     """
     if params["maxbatch"] != "max" and params["maxbatch"] > len(generator):
-        print("Maxbatch was set to a larger number of matches than exist in the video. Truncating")
+        print(
+            "Maxbatch was set to a larger number of matches than exist in the video. Truncating"
+        )
         print_and_set(params, "maxbatch", len(generator))
 
     if params["maxbatch"] == "max":
@@ -681,9 +672,9 @@ def infer_dannce(
     for idx, i in enumerate(pbar):
         # print("Predicting on batch {}".format(i), flush=True)
         # if (i - start_ind) % 10 == 0 and i != start_ind:
-            # print(i)
-            # print("10 batches took {} seconds".format(time.time() - end_time))
-            # end_time = time.time()
+        # print(i)
+        # print("10 batches took {} seconds".format(time.time() - end_time))
+        # end_time = time.time()
 
         if (i - start_ind) % 1000 == 0 and i != start_ind:
             print("Saving checkpoint at {}th batch".format(i))
@@ -714,15 +705,19 @@ def infer_dannce(
         if sil_generator is not None:
             sil_ims = sil_generator.__getitem__(i)
             sil_ims = processing.extract_3d_sil(sil_ims[0][0], 18)
-            ims[0][0] = [np.concatenate((ims[0][0], sil_ims, sil_ims, sil_ims), axis=-1)]
-        
-        vols = torch.from_numpy(ims[0][0]).permute(0, 4, 1, 2, 3) # [B, C, H, W, D]
+            ims[0][0] = [
+                np.concatenate((ims[0][0], sil_ims, sil_ims, sil_ims), axis=-1)
+            ]
+
+        vols = torch.from_numpy(ims[0][0]).permute(0, 4, 1, 2,
+                                                   3)  # [B, C, H, W, D]
         # replace occluded view
         if params["downscale_occluded_view"]:
             occlusion_scores = ims[0][2]
             occluded_views = (occlusion_scores > 0.5)
 
-            vols = vols.reshape(vols.shape[0], -1, 3, *vols.shape[2:]) #[B, 6, 3, H, W, D]
+            vols = vols.reshape(vols.shape[0], -1, 3,
+                                *vols.shape[2:])  #[B, 6, 3, H, W, D]
 
             for instance in range(occluded_views.shape[0]):
                 occluded = np.where(occluded_views[instance])[0]
@@ -731,20 +726,22 @@ def infer_dannce(
                     alternative = np.random.choice(unoccluded)
                     vols[instance][view] = vols[instance][alternative]
                     print(f"Replace view {view} with {alternative}")
-            
+
             vols = vols.reshape(vols.shape[0], -1, *vols.shape[3:])
 
         model_inputs = [vols.to(device)]
         if params["expval"]:
-            model_inputs.append(torch.from_numpy(ims[0][1]).to(device)) 
+            model_inputs.append(torch.from_numpy(ims[0][1]).to(device))
         else:
             model_inputs.append(None)
-        
+
         with torch.no_grad():
             pred = model(*model_inputs)
 
         if params["expval"]:
-            probmap = torch.amax(pred[1], dim=(2, 3, 4)).squeeze(0).detach().cpu().numpy()
+            probmap = torch.amax(pred[1],
+                                 dim=(2, 3,
+                                      4)).squeeze(0).detach().cpu().numpy()
             heatmaps = pred[1].squeeze().detach().cpu().numpy()
             pred = pred[0].detach().cpu().numpy()
             for j in range(pred.shape[0]):
@@ -794,12 +791,7 @@ def infer_dannce(
     return save_data
 
 
-def save_inference_checkpoint(
-    params,
-    save_data,
-    num_markers,
-    savename
-):
+def save_inference_checkpoint(params, save_data, num_markers, savename):
     p_n = savedata_expval(
         params["dannce_predict_dir"] + "/{}".format(savename),
         params,
@@ -828,7 +820,7 @@ def infer_sdannce(
 
     if params["maxbatch"] == "max":
         print_and_set(params, "maxbatch", len(generator))
-    
+
     save_data, save_data_init = {}, {}
     start_ind = params["start_batch"]
     end_ind = params["maxbatch"]
@@ -838,8 +830,10 @@ def infer_sdannce(
 
         if (i - start_ind) % 1000 == 0 and i != start_ind:
             print("Saving checkpoint at {}th batch".format(i))
-            save_inference_checkpoint(params, save_data, final_poses.shape[-1], "/save_data_AVG.mat")
-            save_inference_checkpoint(params, save_data, init_poses.shape[-1], "/init_save_data_AVG.mat")
+            save_inference_checkpoint(params, save_data, final_poses.shape[-1],
+                                      "/save_data_AVG.mat")
+            save_inference_checkpoint(params, save_data, init_poses.shape[-1],
+                                      "/init_save_data_AVG.mat")
 
         ims = generator.__getitem__(i)
         vols = torch.from_numpy(ims[0][0]).permute(0, 4, 1, 2, 3)
@@ -847,8 +841,9 @@ def infer_sdannce(
         if params["downscale_occluded_view"]:
             occlusion_scores = ims[0][2]
             occluded_views = (occlusion_scores > 0.5)
-            
-            vols = vols.reshape(vols.shape[0], -1, 3, *vols.shape[2:]) #[B, 6, 3, H, W, D]
+
+            vols = vols.reshape(vols.shape[0], -1, 3,
+                                *vols.shape[2:])  #[B, 6, 3, H, W, D]
 
             for instance in range(occluded_views.shape[0]):
                 occluded = np.where(occluded_views[instance])[0]
@@ -859,29 +854,36 @@ def infer_sdannce(
                     print(f"Replace view {view} with {alternative}")
 
             vols = vols.reshape(vols.shape[0], -1, *vols.shape[3:])
-        
-        if isinstance(params["replace_view"], int) and params["replace_view"] <= params["n_views"]:
-            vols = vols.reshape(vols.shape[0], -1, 3, *vols.shape[2:]) #[B, 6, 3, H, W, D]
+
+        if isinstance(params["replace_view"],
+                      int) and params["replace_view"] <= params["n_views"]:
+            vols = vols.reshape(vols.shape[0], -1, 3,
+                                *vols.shape[2:])  #[B, 6, 3, H, W, D]
             for batch in range(vols.shape[0]):
                 alternative_view = np.random.choice(
-                    np.delete(np.arange(params["n_views"]), params["replace_view"]-1)
-                )
-                assert alternative_view != params["replace_view"]-1
-                vols[batch, params["replace_view"]-1] = vols[batch, alternative_view]
+                    np.delete(np.arange(params["n_views"]),
+                              params["replace_view"] - 1))
+                assert alternative_view != params["replace_view"] - 1
+                vols[batch,
+                     params["replace_view"] - 1] = vols[batch,
+                                                        alternative_view]
             vols = vols.reshape(vols.shape[0], -1, *vols.shape[3:])
 
         model_inputs = [vols.to(device)]
         grid_centers = torch.from_numpy(ims[0][1]).to(device)
         model_inputs.append(grid_centers)
 
-        init_poses, heatmaps, inter_features = model.pose_generator(*model_inputs)
+        init_poses, heatmaps, inter_features = model.pose_generator(
+            *model_inputs)
 
-        final_poses = model.inference(init_poses, grid_centers, heatmaps, inter_features)
+        final_poses = model.inference(init_poses, grid_centers, heatmaps,
+                                      inter_features)
 
         if custom_model_params.get("relpose", True):
-            com3d = torch.mean(grid_centers, dim=1).unsqueeze(-1) #[N, 3, 1]
-            nvox = round(grid_centers.shape[1]**(1/3))
-            vsize = (grid_centers[0, :, 0].max() - grid_centers[0, :, 0].min()) / nvox
+            com3d = torch.mean(grid_centers, dim=1).unsqueeze(-1)  #[N, 3, 1]
+            nvox = round(grid_centers.shape[1]**(1 / 3))
+            vsize = (grid_centers[0, :, 0].max() -
+                     grid_centers[0, :, 0].min()) / nvox
             final_poses = final_poses * vsize
             if not custom_model_params.get("predict_diff", True):
                 final_poses += com3d
@@ -890,16 +892,14 @@ def infer_sdannce(
             final_poses += init_poses[..., :final_poses.shape[-1]]
 
         probmap = torch.amax(heatmaps, dim=(2, 3, 4)).squeeze(0).detach().cpu()
-        probmap = probmap.reshape(-1, params["n_instances"], *probmap.shape[1:]).numpy()
+        probmap = probmap.reshape(-1, params["n_instances"],
+                                  *probmap.shape[1:]).numpy()
         heatmaps = heatmaps.squeeze().detach().cpu().reshape(
-            -1, params["n_instances"], *heatmaps.shape[1:]
-        ).numpy()
+            -1, params["n_instances"], *heatmaps.shape[1:]).numpy()
         pred = final_poses.detach().cpu().reshape(
-            -1, params["n_instances"], *final_poses.shape[1:]
-        ).numpy()
+            -1, params["n_instances"], *final_poses.shape[1:]).numpy()
         pred_init = init_poses.detach().cpu().reshape(
-            -1, params["n_instances"], *init_poses.shape[1:]
-        ).numpy()
+            -1, params["n_instances"], *init_poses.shape[1:]).numpy()
 
         for j in range(pred.shape[0]):
             pred_max = probmap[j]
@@ -915,13 +915,14 @@ def infer_sdannce(
                 "sampleID": sampleID,
             }
 
-
     if params["save_tag"] is not None:
         savename = "save_data_AVG%d.mat" % (params["save_tag"])
     else:
         savename = "save_data_AVG.mat"
-    save_inference_checkpoint(params, save_data, final_poses.shape[-1], savename)
-    save_inference_checkpoint(params, save_data_init, init_poses.shape[-1], "init_save_data_AVG.mat")
+    save_inference_checkpoint(params, save_data, final_poses.shape[-1],
+                              savename)
+    save_inference_checkpoint(params, save_data_init, init_poses.shape[-1],
+                              "init_save_data_AVG.mat")
 
 
 def save_results(params, save_data):
@@ -932,7 +933,8 @@ def save_results(params, save_data):
                 "save_data_AVG%d.mat" % (params["save_tag"]),
             )
         else:
-            path = os.path.join(params["dannce_predict_dir"], "save_data_AVG.mat")
+            path = os.path.join(params["dannce_predict_dir"],
+                                "save_data_AVG.mat")
         p_n = savedata_expval(
             path,
             params,
@@ -949,7 +951,8 @@ def save_results(params, save_data):
                 "save_data_MAX%d.mat" % (params["save_tag"]),
             )
         else:
-            path = os.path.join(params["dannce_predict_dir"], "save_data_MAX.mat")
+            path = os.path.join(params["dannce_predict_dir"],
+                                "save_data_MAX.mat")
         p_n = savedata_tomat(
             path,
             params,
@@ -962,10 +965,11 @@ def save_results(params, save_data):
             tcoord=False,
         )
 
+
 def inference_ttt(
     generator,
     params,
-    model, 
+    model,
     optimizer,
     device,
     partition,
@@ -981,7 +985,7 @@ def inference_ttt(
     if online:
         model.load_state_dict(ckpt["state_dict"])
 
-    # freeze stages 
+    # freeze stages
     if gcn:
         for name, param in model.named_parameters():
             if ('pose_generator' in name) and ('output' not in name):
@@ -994,7 +998,9 @@ def inference_ttt(
     criterion = LossHelper(params)
 
     if params["maxbatch"] != "max" and params["maxbatch"] > len(generator):
-        print("Maxbatch was set to a larger number of matches than exist in the video. Truncating")
+        print(
+            "Maxbatch was set to a larger number of matches than exist in the video. Truncating"
+        )
         print_and_set(params, "maxbatch", len(generator))
 
     if params["maxbatch"] == "max":
@@ -1003,15 +1009,16 @@ def inference_ttt(
     save_data = {}
     start_ind = params["start_batch"]
     end_ind = params["maxbatch"]
-    
+
     pbar = tqdm(range(start_ind, end_ind, downsample))
     for idx, i in enumerate(pbar):
         if not online:
             model.load_state_dict(ckpt["state_dict"])
-        
+
         batch = generator.__getitem__(i)
         batch = [*batch[0], *batch[1]]
-        volumes = torch.from_numpy(batch[0]).float().permute(0, 4, 1, 2, 3).to(device)
+        volumes = torch.from_numpy(batch[0]).float().permute(0, 4, 1, 2,
+                                                             3).to(device)
         grid_centers = torch.from_numpy(batch[1]).float().to(device)
         keypoints_3d_gt = torch.from_numpy(batch[2]).float().to(device)
         aux = None
@@ -1019,7 +1026,8 @@ def inference_ttt(
 
         # form each batch with transformed versions of a single test data
         if transform:
-            volumes_train, grid_centers_train = form_batch(volumes.permute(0, 2, 3, 4, 1), grid_centers)
+            volumes_train, grid_centers_train = form_batch(
+                volumes.permute(0, 2, 3, 4, 1), grid_centers)
             volumes_train = volumes_train.permute(0, 4, 1, 2, 3)
             inputs = [volumes_train, grid_centers_train]
 
@@ -1028,50 +1036,57 @@ def inference_ttt(
             optimizer.zero_grad()
 
             if gcn:
-                init_poses, heatmaps, inter_features = model.pose_generator(*inputs)
-                final_poses = model.inference(init_poses, grid_centers, heatmaps, inter_features)
-                nvox = round(grid_centers.shape[1]**(1/3))
-                vsize = (grid_centers[0, :, 0].max() - grid_centers[0, :, 0].min()) / nvox
+                init_poses, heatmaps, inter_features = model.pose_generator(
+                    *inputs)
+                final_poses = model.inference(init_poses, grid_centers,
+                                              heatmaps, inter_features)
+                nvox = round(grid_centers.shape[1]**(1 / 3))
+                vsize = (grid_centers[0, :, 0].max() -
+                         grid_centers[0, :, 0].min()) / nvox
                 final_poses = final_poses * vsize
                 final_poses += init_poses
                 keypoints_3d_pred = final_poses
             else:
                 keypoints_3d_pred, heatmaps, _ = model(*inputs)
 
-            bone_loss = criterion.compute_loss(
-                keypoints_3d_gt,
-                keypoints_3d_pred,
-                heatmaps, 
-                grid_centers,
-                aux
-            )[0]
+            bone_loss = criterion.compute_loss(keypoints_3d_gt,
+                                               keypoints_3d_pred, heatmaps,
+                                               grid_centers, aux)[0]
 
             if transform:
-                consist_loss = torch.abs(torch.diff(keypoints_3d_pred, dim=0)).mean()
+                consist_loss = torch.abs(torch.diff(keypoints_3d_pred,
+                                                    dim=0)).mean()
             else:
                 consist_loss = bone_loss.new_zeros(())
-            
+
             total_loss = bone_loss + consist_loss
 
-            pbar.set_description("Consistency Loss {:.4f} Bone Loss {:.4f}".format(consist_loss.item(), bone_loss.item()))
+            pbar.set_description(
+                "Consistency Loss {:.4f} Bone Loss {:.4f}".format(
+                    consist_loss.item(), bone_loss.item()))
 
             total_loss.backward()
             optimizer.step()
-        
+
         model.eval()
         with torch.no_grad():
             if gcn:
-                init_poses, heatmaps, inter_features = model.pose_generator(volumes, grid_centers)
-                final_poses = model.inference(init_poses, grid_centers, heatmaps, inter_features)
-                nvox = round(grid_centers.shape[1]**(1/3))
-                vsize = (grid_centers[0, :, 0].max() - grid_centers[0, :, 0].min()) / nvox
+                init_poses, heatmaps, inter_features = model.pose_generator(
+                    volumes, grid_centers)
+                final_poses = model.inference(init_poses, grid_centers,
+                                              heatmaps, inter_features)
+                nvox = round(grid_centers.shape[1]**(1 / 3))
+                vsize = (grid_centers[0, :, 0].max() -
+                         grid_centers[0, :, 0].min()) / nvox
                 final_poses = final_poses * vsize
                 final_poses += init_poses
                 pred = [final_poses, heatmaps]
             else:
                 pred = model(volumes, grid_centers)
 
-            probmap = torch.amax(pred[1], dim=(2, 3, 4)).squeeze(0).detach().cpu().numpy()
+            probmap = torch.amax(pred[1],
+                                 dim=(2, 3,
+                                      4)).squeeze(0).detach().cpu().numpy()
             heatmaps = pred[1].squeeze().detach().cpu().numpy()
             pred = pred[0].detach().cpu().numpy()
             for j in range(pred.shape[0]):
@@ -1090,15 +1105,22 @@ def inference_ttt(
             'optimizer': ckpt["optimizer"],
             'epoch': ckpt['epoch'],
         }
-        torch.save(state, os.path.join(params["dannce_predict_dir"], "checkpoint-online-iter{}.pth".format(((end_ind-start_ind) // downsample)*niter)))
+        torch.save(
+            state,
+            os.path.join(
+                params["dannce_predict_dir"],
+                "checkpoint-online-iter{}.pth".format(
+                    ((end_ind - start_ind) // downsample) * niter)))
 
     return save_data
 
+
 def random_rotate(X, y_3d, aux=None):
+
     def rot90(X):
         X = X.permute(1, 0, 2, 3)
         return X.flip(1)
-    
+
     def rot180(X):
         return X.flip(0).flip(1)
 
@@ -1111,7 +1133,7 @@ def random_rotate(X, y_3d, aux=None):
             X[j], y_3d[j] = rot180(X[j]), rot180(y_3d[j])
             if aux is not None:
                 aux[j] = rot180(aux[j])
-        elif rot  == 2:
+        elif rot == 2:
             # Rotate90
             X[j], y_3d[j] = rot90(X[j]), rot90(y_3d[j])
             if aux is not None:
@@ -1123,6 +1145,7 @@ def random_rotate(X, y_3d, aux=None):
                 aux[j] = rot180(rot90(aux[j]))
     return X, y_3d, aux
 
+
 def apply_random_transforms(volumes, grids, aux=None):
     grids = grids.reshape(grids.shape[0], 80, 80, 80, 3)
 
@@ -1130,18 +1153,21 @@ def apply_random_transforms(volumes, grids, aux=None):
     grids = grids.reshape(grids.shape[0], -1, 3)
     return volumes, grids, aux
 
+
 def form_batch(volumes, grids, aux=None, copies_per_sample=1):
     copies = []
     n_samples = volumes.shape[0]
     for i in range(n_samples):
-        copies += [apply_random_transforms(
-            volumes[i].clone().unsqueeze(0), 
-            grids[i].clone().unsqueeze(0), 
-            aux[i].clone().unsqueeze(0) if aux is not None else aux
-        ) for _ in range(copies_per_sample)]
-    
+        copies += [
+            apply_random_transforms(
+                volumes[i].clone().unsqueeze(0), grids[i].clone().unsqueeze(0),
+                aux[i].clone().unsqueeze(0) if aux is not None else aux)
+            for _ in range(copies_per_sample)
+        ]
+
     volumes = torch.cat([copy[0] for copy in copies], dim=0)
     grids = torch.cat([copy[1] for copy in copies], dim=0)
-    aux = torch.cat([copy[2] for copy in copies], dim=0) if aux is not None else aux
+    aux = torch.cat([copy[2]
+                     for copy in copies], dim=0) if aux is not None else aux
 
     return volumes, grids, aux
