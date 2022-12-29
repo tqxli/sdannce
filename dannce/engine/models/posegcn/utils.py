@@ -10,7 +10,9 @@ EDGE = load_body_profile("rat23")["limbs"]
 TEMPORAL_FLOW = np.arange(NUM_JOINTS) #np.array([0, 4, 9, 13, 17, 21]) # restrict the flows along temporal dimension 
 
 # using to build edge using GCN
-def build_adj_mx_from_edges(num_joints=NUM_JOINTS, edge=EDGE, social=False, t_dim=1, t_flow=TEMPORAL_FLOW):
+def build_adj_mx_from_edges(
+    num_joints=NUM_JOINTS, edge=EDGE, social=False, t_dim=1, t_flow=TEMPORAL_FLOW
+):
     t_flow = np.arange(num_joints)
     if num_joints == 23:
         edge = load_body_profile("rat23")["limbs"] 

@@ -22,7 +22,6 @@ class GCNTrainer(DannceTrainer):
             else:
                 self.loss_sup = custom_losses.L1Loss()
 
-        if predict_diff: 
             self._add_loss_attr(["L1DiffLoss"])
             self._del_loss_attr(["L1Loss"])
             self.loss.loss_fcns.pop("L1Loss")
@@ -60,7 +59,9 @@ class GCNTrainer(DannceTrainer):
 
         return init_poses, keypoints_3d_gt, keypoints_3d_pred, heatmaps, grid_centers, aux     
 
-    def _forward_loss(self, init_poses, keypoints_3d_gt, keypoints_3d_pred, heatmaps, grid_centers, aux):
+    def _forward_loss(
+        self, init_poses, keypoints_3d_gt, keypoints_3d_pred, heatmaps, grid_centers, aux
+    ):
         if self.predict_diff and (not self.relpose):
             # estimate absolute offsets
             diff_gt = keypoints_3d_gt - init_poses

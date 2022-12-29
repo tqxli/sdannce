@@ -1,7 +1,7 @@
 import dannce.engine.models.loss as custom_losses
 import dannce.engine.models.metrics as custom_metrics
 import numpy as np
-# import pandas as pd
+
 
 def prepare_batch(batch, device):
     volumes = batch[0].float().to(device)
@@ -19,14 +19,7 @@ class LossHelper:
     def _get_losses(self):
         self.loss_fcns = {}
         for name, args in self.loss_params["loss"].items():
-            if name == "ConsistencyLoss":
-                # params that need to be directly computed from known
-                extra_params = {
-                    "copies_per_sample": self.loss_params["form_bs"] // self.loss_params["batch_size"],
-                }
-                self.loss_fcns[name] = getattr(custom_losses, name)(**args, **extra_params)
-            else:
-                self.loss_fcns[name] = getattr(custom_losses, name)(**args)
+            self.loss_fcns[name] = getattr(custom_losses, name)(**args)
         
     def compute_loss(self, kpts_gt, kpts_pred, heatmaps, grid_centers=None, aux=None, heatmaps_gt=None):
         """

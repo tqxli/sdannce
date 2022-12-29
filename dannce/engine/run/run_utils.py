@@ -17,6 +17,9 @@ from tqdm import tqdm
 
 
 def set_random_seed(seed: int):
+    """
+    Fix numpy and torch random seed generation.
+    """
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
@@ -26,6 +29,9 @@ def set_random_seed(seed: int):
 
 
 def set_device(params, logger):
+    """
+    Set GPU for torch
+    """
     # set GPU ID
     # Temporarily commented out to test on dsplus gpu
     # if not params["multi_gpu_train"]:

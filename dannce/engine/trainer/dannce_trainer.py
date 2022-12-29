@@ -9,7 +9,11 @@ from dannce.engine.trainer.train_utils import prepare_batch, LossHelper, MetricH
 import dannce.engine.data.processing as processing
 from dannce.engine.run.inference import form_batch
 
+
 class DannceTrainer(BaseTrainer):
+    """
+    Trainer class for DANNCE base networks.
+    """
     def __init__(self, device, train_dataloader, valid_dataloader, lr_scheduler=None, visualize_batch=False, **kwargs):
         super().__init__(**kwargs)
 
@@ -72,7 +76,6 @@ class DannceTrainer(BaseTrainer):
                 self.writer.add_scalar(k, v, epoch)
 
             # save checkpoints after each save period or at the end of training
-            # if epoch % self.save_period == 0 or epoch == self.epochs:
             self._save_checkpoint(epoch)
 
     def _forward(self, epoch, batch, train=True):
@@ -223,59 +226,3 @@ class DannceTrainer(BaseTrainer):
                 )
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))
 
-
-class AutoEncoderTrainer(DannceTrainer):
-    def __init__(self, device, train_dataloader, valid_dataloader, lr_scheduler=None, visualize_batch=False, **kwargs):
-        super().__init__(device, train_dataloader, valid_dataloader, lr_scheduler, visualize_batch, **kwargs)
-
-    def _train_epoch(self, epoch):
-        self.model.train()
-
-        # with torch.autograd.set_detect_anomaly(False):
-        epoch_loss_dict, epoch_metric_dict = {}, {}
-        for batch in self.train_dataloader: 
-            volumes, grid_centers, keypoints_3d_gt, aux = prepare_batch(batch, self.device)
-
-            inputs, outputs = volumes[:, :-3, :, :, :], volumes[:, -3:, :, :, :]
-
-            self.optimizer.zero_grad()
-            keypoints_3d_pred, heatmaps = self.model(inputs, grid_centers)
-            total_loss, loss_dict = self.loss.compute_loss(keypoints_3d_gt, keypoints_3d_pred, heatmaps, grid_centers, outputs)
-            result = f"Epoch[{epoch}/{self.epochs}] " + "".join(f"train_{loss}: {val:.4f} " for loss, val in loss_dict.items())
-            print(result, end='\r')
-
-            total_loss.backward()
-            self.optimizer.step()
-
-            epoch_loss_dict = self._update_step(epoch_loss_dict, loss_dict)
-
-            # metric_dict = self.metrics.evaluate(keypoints_3d_pred.detach().cpu().numpy(), keypoints_3d_gt.cpu().numpy())
-            # epoch_metric_dict = self._update_step(epoch_metric_dict, metric_dict)
-
-        if self.lr_scheduler is not None:
-            self.lr_scheduler.step()
-
-        epoch_loss_dict = self._average(epoch_loss_dict)
-        return {**epoch_loss_dict}
-
-    def _valid_epoch(self, epoch):
-        self.model.eval()
-
-        epoch_loss_dict = {}
-        epoch_metric_dict = {}
-        with torch.no_grad():
-            for batch in self.valid_dataloader:
-                volumes, grid_centers, keypoints_3d_gt, aux = prepare_batch(batch, self.device)
-
-                inputs, outputs = volumes[:, :-3, :, :, :], volumes[:, -3:, :, :, :]
-
-                keypoints_3d_pred, heatmaps = self.model(inputs, grid_centers)
-
-                _, loss_dict = self.loss.compute_loss(keypoints_3d_gt, keypoints_3d_pred, heatmaps, grid_centers, outputs)
-                epoch_loss_dict = self._update_step(epoch_loss_dict, loss_dict)
-
-                # metric_dict = self.metrics.evaluate(keypoints_3d_pred.detach().cpu().numpy(), keypoints_3d_gt.cpu().numpy())
-                # epoch_metric_dict = self._update_step(epoch_metric_dict, metric_dict)
-        
-        epoch_loss_dict = self._average(epoch_loss_dict)
-        return {**epoch_loss_dict}
