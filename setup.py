@@ -23,7 +23,7 @@ setup(
         "tqdm",
         "pandas"
     ],
-    # scripts=[],
+
     entry_points={
         "console_scripts": [
             "dannce-predict-sbatch = dannce.cli:sbatch_dannce_predict_cli",
