@@ -462,7 +462,7 @@ def max_coord_3d(heatmaps):
     x = x / float(h) - 0.5
     y = y / float(w) - 0.5
     z = z / float(d) - 0.5
-    preds = torch.cat((x, y, z), dim=2)
+    preds = torch.cat((z, y, x), dim=2)
     preds *= 2
 
     return preds
