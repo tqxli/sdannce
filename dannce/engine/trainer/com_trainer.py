@@ -4,7 +4,11 @@ from tqdm import tqdm
 
 from dannce.engine.trainer.dannce_trainer import DannceTrainer
 
+
 class COMTrainer(DannceTrainer):
+    """
+    Trainer class for COM localization networks.
+    """
     def __init__(self, **kwargs):
         super().__init__(dannce=False, **kwargs)
 

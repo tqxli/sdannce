@@ -1,5 +1,5 @@
 # Running Demo
-## Download Demo Data
+## Download Data
 1. Follow [this Box link](https://duke.box.com/s/2aw5r4hb3u57p1abt99n15f6hkl36x5k) and download to the directory `demo` as `demo_data.zip`.
 
 2. Run `sh prepare_demo.sh`. The final directory should appear as:

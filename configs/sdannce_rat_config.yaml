@@ -53,6 +53,16 @@ metric: ['euclidean_distance_3D']
 loss:
     L1Loss: 
       loss_weight: 1.0
+    BoneLengthLoss:
+      loss_weight: 0.5
+      priors: ../priors/rat23_limb_length_priors.npy
+      body_profile: rat23
+      mask: [2]
+      relative_scale: True
+      ref_loss_weight: 0.0
+    ConsistencyLoss:
+      copies_per_sample: 4
+      loss_weight: 0.1
 
 ### data augmentation ###      
 medfilt_window: 30

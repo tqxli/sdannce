@@ -292,12 +292,6 @@ def add_shared_args(
         type=float,
     )
 
-    # parser.add_argument(
-    #     "--custom-model-type",
-    #     dest="custom_model_type",
-    #     type=str,
-    # )
-
     parser.add_argument(
         "--custom-model",
         dest="custom_model",

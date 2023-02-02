@@ -128,5 +128,5 @@ def load_camnames(path: Text) -> Union[List, None]:
     except:
         label_3d_file = mat73.loadmat(path)
         if "camnames" in label_3d_file:
-            camnames = [name[0] for name in label_3d_file["camnames"]] 
+            camnames = [name[0] for name in label_3d_file["camnames"]]
     return camnames

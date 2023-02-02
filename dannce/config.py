@@ -392,7 +392,13 @@ def build_params(base_config: Text, dannce_net: bool):
 
 def adjust_loss_params(params):
     """
-    Adjust corresponding params for certain losses.
+    Adjust parameters dictionary according to specific losses.
+
+    Args:
+        params (Dict): Parameters dictionary.
+
+    Returns:
+        Dict: Parameters dictionary.
     """
 
     # turn on flags for losses that require changes in inputs
@@ -400,11 +406,10 @@ def adjust_loss_params(params):
         params["use_silhouette"] = True
         params["n_rand_views"] = None
 
-    if "SilhouetteLoss" in params["loss"].keys(
-    ) or "SilhouetteLoss2D" in params["loss"].keys():
+    if "SilhouetteLoss" in params["loss"] or "SilhouetteLoss2D" in params["loss"]:
         params["use_silhouette"] = True
 
-    if "TemporalLoss" in params["loss"].keys():
+    if "TemporalLoss" in params["loss"]:
         params["use_temporal"] = True
         params["temporal_chunk_size"] = temp_n = params["loss"]["TemporalLoss"][
             "temporal_chunk_size"]
@@ -422,11 +427,24 @@ def adjust_loss_params(params):
         downsample = params["loss"]["TemporalLoss"]["downsample"]
     except:
         downsample = 1
-
     params["downsample"] = downsample
 
-    if "PairRepulsionLoss" in params["loss"].keys():
+    if "PairRepulsionLoss" in params["loss"]:
         params["social_training"] = True
+    
+    if "ConsistencyLoss" in params["loss"]:
+        # number of copies per unique training sample
+        copies_per_sample = params["loss"]["ConsistencyLoss"].get(
+            "copies_per_sample", 1
+        )
+        params["loss"]["ConsistencyLoss"]["copies_per_sample"] = copies_per_sample 
+        # do not exceed the specified batch size to avoid OOM
+        params["form_batch"] = True
+        n_samples_unique = params["batch_size"] // copies_per_sample
+        params["form_bs"] = params["batch_size"]
+        # adjust batch size to the number of unique samples
+        # populate with augmented samples on the fly during training
+        params["batch_size"] = n_samples_unique
 
     return params
 
