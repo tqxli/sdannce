@@ -34,7 +34,7 @@ class DannceTrainer(BaseTrainer):
         self.per_batch_sample = self.params["batch_size"]
 
         # set up csv file for tracking training and validation stats
-        stats_file = open(os.path.join(self.params["dannce_train_dir"], "training.csv"), 'w', newline='')
+        stats_file = open(os.path.join(self.checkpoint_dir, "training.csv"), 'w', newline='')
         stats_writer = csv.writer(stats_file)
         self.stats_keys = [*self.loss.names, *self.metrics.names]
         self.train_stats_keys = ["train_"+k for k in self.stats_keys]
