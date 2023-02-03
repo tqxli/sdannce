@@ -12,14 +12,6 @@ class COMTrainer(DannceTrainer):
     def __init__(self, **kwargs):
         super().__init__(dannce=False, **kwargs)
 
-        stats_file = open(os.path.join(self.params["com_train_dir"], "training.csv"), 'w', newline='')
-        stats_writer = csv.writer(stats_file)
-        self.stats_keys = [*self.loss.names, *self.metrics.names]
-        self.train_stats_keys = ["train_"+k for k in self.stats_keys]
-        self.valid_stats_keys = ["val_"+k for k in self.stats_keys]
-        stats_writer.writerow(["Epoch", *self.train_stats_keys, *self.valid_stats_keys])
-        stats_file.close()
-
     def train(self):
         for epoch in range(self.start_epoch, self.epochs + 1):
             # open csv
