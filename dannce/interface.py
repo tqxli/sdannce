@@ -403,11 +403,19 @@ def com_predict(params):
         save_data,
         camera_mats,
         cameras,
-        device
+        device,
     )
 
-    filename = "com3d" if params["max_num_samples"] != "max" else "com3d%d" % (
-        params["start_sample"])
+    filename = (
+        "com3d"
+        if params["max_num_samples"] == "max"
+        else "com3d%d" % (params["start_sample"])
+    )
     processing.save_COM_checkpoint(
-        save_data, params["com_predict_dir"], datadict, cameras, params, file_name=filename
+        save_data,
+        params["com_predict_dir"],
+        datadict,
+        cameras,
+        params,
+        file_name=filename,
     )
