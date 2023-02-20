@@ -36,9 +36,9 @@ dannce train <mode> [<args>]
 
 The available modes are:
 
-- `com`: Train the DANNCE model in center-of-mass (COM) mode.
-- `dannce`: Train the DANNCE model in DANNCE mode.
-- `sdannce`: Train the DANNCE model in social DANNCE mode.
+- `com`: Train the a center-of-mass network.
+- `dannce`: Train a DANNCE network.
+- `sdannce`: Train the social DANNCE network.
 
 To see the available options for each mode, run:
 
@@ -63,7 +63,7 @@ dannce predict <mode> --help
 
 # Predict-Multi-GPU
 
-Predict using the DANNCE model on multiple GPUs.
+Predict across multiple GPUs using the model.
 
 ```
 dannce predict-multi-gpu <mode> [<args>]
@@ -80,7 +80,7 @@ dannce predict-multi-gpu <mode> --help
 
 # Merge
 
-Merge DANNCE prediction results.
+Merge prediction results.
 
 ```
 dannce merge [<args>]
@@ -98,7 +98,7 @@ dannce merge --help
 
 ## Training in COM Mode
 
-To train the DANNCE model in COM mode with default options, run:
+To train a center-of-mass network, run:
 
 ```dannce train com com_config.yaml```
 
@@ -109,7 +109,7 @@ You can also set hyperparameters from the command-line:
 
 ## Predicting
 
-To predict using the DANNCE model with default options, run:
+To predict using a DANNCE model, run:
 
 ```dannce predict dannce dannce_config.yaml```
 
