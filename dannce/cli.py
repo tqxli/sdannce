@@ -51,7 +51,7 @@ def submit_job(args):
         command,
     )
     print(cmd)
-    # subprocess.run(cmd, shell=True, check=True, universal_newlines=True)
+    subprocess.run(cmd, shell=True, check=True, universal_newlines=True)
 
 
 def build_clarg_params(
