@@ -331,7 +331,7 @@ class MultiGpuHandler:
         # If multi-instance, set the com_file and dannce predict path automatically
         if params["n_instances"] >= 2:
             batch_params = []
-            com_file = os.path.join(params["com_predict_dir"], "com3d.mat")
+            com_file = os.path.join(params["com_predict_dir"], COM_BASE_NAME + ".mat")
             # for n_instance in range(params["n_instances"]):
             dannce_predict_dir = os.path.join(params["dannce_predict_dir"])
             os.makedirs(dannce_predict_dir, exist_ok=True)
@@ -824,7 +824,7 @@ def sdannce_inference():
     dannce_params = load_params(args["dannce_config"])
     params = load_params("io.yaml")
     for i in range(dannce_params["n_instances"]):
-        com_file = os.path.join(params["com_predict_dir"], "com3d.mat")
+        com_file = os.path.join(params["com_predict_dir"], COM_BASE_NAME + ".mat")
         handler = MultiGpuHandler(
             args["dannce_config"],
             only_unfinished=True,
