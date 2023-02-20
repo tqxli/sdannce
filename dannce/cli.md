@@ -51,14 +51,14 @@ dannce train <mode> --help
 Predict using the DANNCE model.
 
 ```
-dannce predict [<args>]
+dannce predict <mode> [<args>]
 ```
 
 
 To see the available options, run:
 
 ```
-dannce predict --help
+dannce predict <mode> --help
 ```
 
 # Predict-Multi-GPU
@@ -66,7 +66,7 @@ dannce predict --help
 Predict using the DANNCE model on multiple GPUs.
 
 ```
-dannce predict-multi-gpu [<args>]
+dannce predict-multi-gpu <mode> [<args>]
 ```
 
 
@@ -74,7 +74,7 @@ dannce predict-multi-gpu [<args>]
 To see the available options, run:
 
 ```
-dannce predict-multi-gpu --help
+dannce predict-multi-gpu <mode> --help
 ```
 
 
