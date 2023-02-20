@@ -874,34 +874,60 @@ def get_parser():
 
     # Create subparsers for train and predict
     subparsers = parser.add_subparsers(dest="command")
-    train_parser = subparsers.add_parser("train")
-    predict_parser = subparsers.add_parser("predict")
-    predict_multi_parser = subparsers.add_parser("predict-multi-gpu")
-    merge_parser = subparsers.add_parser("merge")
+    train_parser = subparsers.add_parser("train", help="Train a network.")
+    predict_parser = subparsers.add_parser("predict", help="Predict using a network.")
+    predict_multi_parser = subparsers.add_parser(
+        "predict-multi-gpu", help="Predict across multiple gpus using a network."
+    )
+    merge_parser = subparsers.add_parser(
+        "merge", help="Merge predictions from multiple gpus."
+    )
 
     # Create subparsers for COM and DANNCE modes for train
     train_subparsers = train_parser.add_subparsers(dest="mode")
-    train_com_parser = train_subparsers.add_parser("com")
-    train_dannce_parser = train_subparsers.add_parser("dannce")
-    train_sdannce_parser = train_subparsers.add_parser("sdannce")
+    train_com_parser = train_subparsers.add_parser(
+        "com", help="Train a center of mass network."
+    )
+    train_dannce_parser = train_subparsers.add_parser(
+        "dannce", help="Train a DANNCE network."
+    )
+    train_sdannce_parser = train_subparsers.add_parser(
+        "sdannce", help="Train a SDANNCE network."
+    )
 
     # Create subparsers for COM and DANNCE modes for predict
     predict_subparsers = predict_parser.add_subparsers(dest="mode")
-    predict_com_parser = predict_subparsers.add_parser("com")
-    predict_dannce_parser = predict_subparsers.add_parser("dannce")
-    predict_sdannce_parser = predict_subparsers.add_parser("sdannce")
+    predict_com_parser = predict_subparsers.add_parser(
+        "com", help="Predict with a center of mass network."
+    )
+    predict_dannce_parser = predict_subparsers.add_parser(
+        "dannce", help="Predict with a DANNCE network."
+    )
+    predict_sdannce_parser = predict_subparsers.add_parser(
+        "sdannce", help="Predict with a SDANNCE network."
+    )
 
     # Create subparsers for COM and DANNCE modes for predict-multi-gpu
     predict_multi_subparsers = predict_multi_parser.add_subparsers(dest="mode")
-    predict_multi_com_parser = predict_multi_subparsers.add_parser("com")
-    predict_multi_dannce_parser = predict_multi_subparsers.add_parser("dannce")
-    predict_multi_sdannce_parser = predict_multi_subparsers.add_parser("sdannce")
+    predict_multi_com_parser = predict_multi_subparsers.add_parser(
+        "com", help="Predict with a center of mass network across multiple gpus."
+    )
+    predict_multi_dannce_parser = predict_multi_subparsers.add_parser(
+        "dannce", help="Predict with a DANNCE network across multiple gpus."
+    )
+    predict_multi_sdannce_parser = predict_multi_subparsers.add_parser(
+        "sdannce", help="Predict with a SDANNCE network across multiple gpus."
+    )
 
     # Create subparsers for COM and DANNCE modes for merge
     merge_subparsers = merge_parser.add_subparsers(dest="mode")
-    merge_com_parser = merge_subparsers.add_parser("com")
-    merge_dannce_parser = merge_subparsers.add_parser("dannce")
-    merge_sdannce_parser = merge_subparsers.add_parser("sdannce")
+    merge_com_parser = merge_subparsers.add_parser("com", help="Merge COM predictions.")
+    merge_dannce_parser = merge_subparsers.add_parser(
+        "dannce", help="Merge DANNCE predictions."
+    )
+    merge_sdannce_parser = merge_subparsers.add_parser(
+        "sdannce", help="Merge SDANNCE predictions."
+    )
 
     com_defaults = {**_param_defaults_shared, **_param_defaults_com}
     dannce_defaults = {**_param_defaults_shared, **_param_defaults_dannce}
