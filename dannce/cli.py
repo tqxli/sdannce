@@ -877,6 +877,7 @@ def get_parser():
     train_parser = subparsers.add_parser("train")
     predict_parser = subparsers.add_parser("predict")
     predict_multi_parser = subparsers.add_parser("predict-multi-gpu")
+    merge_parser = subparsers.add_parser("merge")
 
     # Create subparsers for COM and DANNCE modes for train
     train_subparsers = train_parser.add_subparsers(dest="mode")
@@ -896,6 +897,12 @@ def get_parser():
     predict_multi_dannce_parser = predict_multi_subparsers.add_parser("dannce")
     predict_multi_sdannce_parser = predict_multi_subparsers.add_parser("sdannce")
 
+    # Create subparsers for COM and DANNCE modes for merge
+    merge_subparsers = merge_parser.add_subparsers(dest="mode")
+    merge_com_parser = merge_subparsers.add_parser("com")
+    merge_dannce_parser = merge_subparsers.add_parser("dannce")
+    merge_sdannce_parser = merge_subparsers.add_parser("sdannce")
+
     com_defaults = {**_param_defaults_shared, **_param_defaults_com}
     dannce_defaults = {**_param_defaults_shared, **_param_defaults_dannce}
     sdannce_defaults = {**_param_defaults_shared, **_param_defaults_dannce}
@@ -906,9 +913,6 @@ def get_parser():
     predict_com_parser.set_defaults(**com_defaults)
     predict_dannce_parser.set_defaults(**dannce_defaults)
     predict_sdannce_parser.set_defaults(**sdannce_defaults)
-    predict_multi_com_parser.set_defaults(**com_defaults)
-    predict_multi_dannce_parser.set_defaults(**dannce_defaults)
-    predict_multi_sdannce_parser.set_defaults(**sdannce_defaults)
 
     # Add arguments for each subparser
     train_com_parser = add_shared_args(train_com_parser)
@@ -942,10 +946,11 @@ def get_parser():
     predict_sdannce_parser = add_dannce_predict_args(predict_sdannce_parser)
 
     predict_multi_com_parser = add_multi_gpu_args(predict_multi_com_parser)
-
     predict_multi_dannce_parser = add_multi_gpu_args(predict_multi_dannce_parser)
-
     predict_multi_sdannce_parser = add_multi_gpu_args(predict_multi_sdannce_parser)
+    merge_com_parser = add_multi_gpu_args(merge_com_parser)
+    merge_dannce_parser = add_multi_gpu_args(merge_dannce_parser)
+    merge_sdannce_parser = add_multi_gpu_args(merge_sdannce_parser)
 
     # Parse the arguments
     return parser.parse_args()
@@ -962,15 +967,31 @@ def main():
 
     # Handle slurm submission for multi-gpu prediction
     if args.command == "predict-multi-gpu":
+        mgpu_args = args.__dict__.copy()
+        del mgpu_args["command"]
+        del mgpu_args["mode"]
+        handler = MultiGpuHandler(**mgpu_args)
         if args.mode == "dannce":
-            handler = MultiGpuHandler(**args.__dict__)
             handler.submit_dannce_predict_multi_gpu()
         elif args.mode == "sdannce":
-            handler = MultiGpuHandler(**args.__dict__)
             handler.submit_sdannce_predict_multi_gpu()
         elif args.mode == "com":
-            handler = MultiGpuHandler(**args.__dict__)
             handler.submit_com_predict_multi_gpu()
+        return
+
+    # Handle merging of multi-gpu predictions
+    if args.command == "merge":
+        mgpu_args = args.__dict__.copy()
+        del mgpu_args["command"]
+        del mgpu_args["mode"]
+        handler = MultiGpuHandler(**mgpu_args)
+        if args.mode == "dannce":
+            handler.dannce_merge()
+        elif args.mode == "sdannce":
+            handler.dannce_merge()
+        elif args.mode == "com":
+            handler.com_merge()
+        return
 
     # Handle running on the current process
     params = build_clarg_params(
@@ -983,6 +1004,7 @@ def main():
             sdannce_train(params)
         elif args.mode == "com":
             com_train(params)
+        return
     elif args.command == "predict":
         if args.mode == "dannce":
             dannce_predict(params)
@@ -990,3 +1012,4 @@ def main():
             sdannce_predict(params)
         elif args.mode == "com":
             com_predict(params)
+        return
