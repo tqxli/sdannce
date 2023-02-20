@@ -17,7 +17,7 @@ _DEFAULT_VIDDIR = "videos"
 _DEFAULT_VIDDIR_SIL = "videos_sil"
 _DEFAULT_COMSTRING = "COM"
 _DEFAULT_COMFILENAME = "com3d.mat"
-_DEFAULT_SEG_MODEL = '../weights/maskrcnn.pth'
+_DEFAULT_SEG_MODEL = "../weights/maskrcnn.pth"
 
 
 def grab_predict_label3d_file(defaultdir="", index=0):
@@ -29,14 +29,12 @@ def grab_predict_label3d_file(defaultdir="", index=0):
     label3d_files = [
         os.path.join(def_ep, f) for f in label3d_files if "dannce.mat" in f
     ]
-    #label3d_files.sort()
+    # label3d_files.sort()
     label3d_files = sorted(label3d_files)
     # breakpoint()
     if len(label3d_files) == 0:
-        raise Exception(
-            "Did not find any *dannce.mat file in {}".format(def_ep))
-    print("Using the following *dannce.mat files: {}".format(
-        label3d_files[index]))
+        raise Exception("Did not find any *dannce.mat file in {}".format(def_ep))
+    print("Using the following *dannce.mat files: {}".format(label3d_files[index]))
     return label3d_files[index]
 
 
@@ -60,7 +58,8 @@ def infer_params(params, dannce_net, prediction):
     video_files = os.listdir(viddir)
 
     if any([".mp4" in file for file in video_files]) or any(
-        [".avi" in file for file in video_files]):
+        [".avi" in file for file in video_files]
+    ):
 
         print_and_set(params, "vid_dir_flag", True)
     else:
@@ -68,8 +67,7 @@ def infer_params(params, dannce_net, prediction):
         viddir = os.path.join(viddir, video_files[0])
         video_files = os.listdir(viddir)
 
-    extension = ".mp4" if any([".mp4" in file for file in video_files
-                              ]) else ".avi"
+    extension = ".mp4" if any([".mp4" in file for file in video_files]) else ".avi"
     print_and_set(params, "extension", extension)
     video_files = [file for file in video_files if extension in file]
 
@@ -134,9 +132,9 @@ def infer_params(params, dannce_net, prediction):
                 viddir = os.path.join(params["viddir"], params["camnames"][i])
                 if not params["vid_dir_flag"]:
                     # add intermediate directory to path
-                    viddir = os.path.join(params["viddir"],
-                                          params["camnames"][i],
-                                          os.listdir(viddir)[0])
+                    viddir = os.path.join(
+                        params["viddir"], params["camnames"][i], os.listdir(viddir)[0]
+                    )
                 video_files = sorted(os.listdir(viddir))
                 camf = os.path.join(viddir, video_files[0])
                 v = imageio.get_reader(camf)
@@ -192,8 +190,8 @@ def infer_params(params, dannce_net, prediction):
     if params["mirror"] and params["crop_height"][-1] != params["raw_im_h"]:
         msg = "Note: You are using a mirror acquisition system with image cropping."
         msg = (
-            msg +
-            " All coordinates will be flipped relative to the raw image height, so ensure that your labels are also in that reference frame."
+            msg
+            + " All coordinates will be flipped relative to the raw image height, so ensure that your labels are also in that reference frame."
         )
         warnings.warn(msg)
 
@@ -225,8 +223,10 @@ def check_vmin_vmax(params):
     for v in ["vmin", "vmax", "nvox"]:
         if params[v] is None:
             raise Exception(
-                "{} not in parameters. Please add it, or use vol_size instead of vmin and vmax"
-                .format(v))
+                "{} not in parameters. Please add it, or use vol_size instead of vmin and vmax".format(
+                    v
+                )
+            )
 
 
 def check_camnames(camp):
@@ -246,22 +246,31 @@ def check_net_expval(params):
     if params["net"] is None:
         raise Exception("net is None. You must set either net or net_type.")
     if params["net_type"] is not None:
-        if (params["net_type"] == "AVG" and "AVG" not in params["net"] and
-                "expected" not in params["net"]):
-            raise Exception(
-                "net_type is set to AVG, but you are using a MAX network")
-        if (params["net_type"] == "MAX" and "MAX" not in params["net"] and
-                params["net"] != "unet3d_big"):
-            raise Exception(
-                "net_type is set to MAX, but you are using a AVG network")
+        if (
+            params["net_type"] == "AVG"
+            and "AVG" not in params["net"]
+            and "expected" not in params["net"]
+        ):
+            raise Exception("net_type is set to AVG, but you are using a MAX network")
+        if (
+            params["net_type"] == "MAX"
+            and "MAX" not in params["net"]
+            and params["net"] != "unet3d_big"
+        ):
+            raise Exception("net_type is set to MAX, but you are using a AVG network")
 
-    if (params["expval"] and "AVG" not in params["net"] and
-            "expected" not in params["net"]):
+    if (
+        params["expval"]
+        and "AVG" not in params["net"]
+        and "expected" not in params["net"]
+    ):
         raise Exception("expval is set to True but you are using a MAX network")
-    if (not params["expval"] and "MAX" not in params["net"] and
-            params["net"] != "unet3d_big"):
-        raise Exception(
-            "expval is set to False but you are using an AVG network")
+    if (
+        not params["expval"]
+        and "MAX" not in params["net"]
+        and params["net"] != "unet3d_big"
+    ):
+        raise Exception("expval is set to False but you are using an AVG network")
 
 
 def copy_config(results_dir, main_config, io_config):
@@ -274,10 +283,10 @@ def copy_config(results_dir, main_config, io_config):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    mconfig = os.path.join(results_dir,
-                           "copy_main_config_" + main_config.split(os.sep)[-1])
-    dconfig = os.path.join(results_dir,
-                           "copy_io_config_" + io_config.split(os.sep)[-1])
+    mconfig = os.path.join(
+        results_dir, "copy_main_config_" + main_config.split(os.sep)[-1]
+    )
+    dconfig = os.path.join(results_dir, "copy_io_config_" + io_config.split(os.sep)[-1])
 
     shutil.copyfile(main_config, mconfig)
     shutil.copyfile(io_config, dconfig)
@@ -291,8 +300,9 @@ def inherit_config(child, parent, keys):
     for key in keys:
         if key not in child.keys():
             child[key] = parent[key]
-            print("{} not found in io.yaml file, falling back to main config".
-                  format(key))
+            print(
+                "{} not found in io.yaml file, falling back to main config".format(key)
+            )
 
     return child
 
@@ -338,8 +348,11 @@ def make_none_safe(pdict):
         for key in pdict:
             pdict[key] = make_none_safe(pdict[key])
     else:
-        if (pdict is None or (isinstance(pdict, list) and None in pdict) or
-            (isinstance(pdict, tuple) and None in pdict)):
+        if (
+            pdict is None
+            or (isinstance(pdict, list) and None in pdict)
+            or (isinstance(pdict, tuple) and None in pdict)
+        ):
             return "None"
         else:
             return pdict
@@ -412,15 +425,14 @@ def adjust_loss_params(params):
     if "TemporalLoss" in params["loss"]:
         params["use_temporal"] = True
         params["temporal_chunk_size"] = temp_n = params["loss"]["TemporalLoss"][
-            "temporal_chunk_size"]
+            "temporal_chunk_size"
+        ]
 
         # by default, the maximum batch size should be >= temporal seq len
         if params["batch_size"] < temp_n:
-            print(
-                "Batch size < temporal seq size; reducing temporal chunk size.")
+            print("Batch size < temporal seq size; reducing temporal chunk size.")
             params["temporal_chunk_size"] = params["batch_size"]
-            params["loss"]["TemporalLoss"]["temporal_chunk_size"] = params[
-                "batch_size"]
+            params["loss"]["TemporalLoss"]["temporal_chunk_size"] = params["batch_size"]
 
     # option for using downsampled temporal sequences
     try:
@@ -431,13 +443,13 @@ def adjust_loss_params(params):
 
     if "PairRepulsionLoss" in params["loss"]:
         params["social_training"] = True
-    
+
     if "ConsistencyLoss" in params["loss"]:
         # number of copies per unique training sample
         copies_per_sample = params["loss"]["ConsistencyLoss"].get(
             "copies_per_sample", 1
         )
-        params["loss"]["ConsistencyLoss"]["copies_per_sample"] = copies_per_sample 
+        params["loss"]["ConsistencyLoss"]["copies_per_sample"] = copies_per_sample
         # do not exceed the specified batch size to avoid OOM
         params["form_batch"] = True
         n_samples_unique = params["batch_size"] // copies_per_sample
@@ -487,11 +499,11 @@ def setup_train(params):
 
     if params["n_rand_views"] == 0:
         print(
-            "Using default n_rand_views augmentation with {} views and with replacement"
-            .format(params["n_views"]))
-        print(
-            "To disable n_rand_views augmentation, set it to None in the config."
+            "Using default n_rand_views augmentation with {} views and with replacement".format(
+                params["n_views"]
+            )
         )
+        print("To disable n_rand_views augmentation, set it to None in the config.")
         params["n_rand_views"] = params["n_views"]
         params["rand_view_replace"] = True
 
@@ -531,7 +543,7 @@ def setup_train(params):
         "nvox": params["nvox"],
         "heatmap_reg": params["heatmap_reg"],
         "heatmap_reg_coeff": params["heatmap_reg_coeff"],
-        "occlusion": params["downscale_occluded_view"]
+        "occlusion": params["downscale_occluded_view"],
     }
 
     shared_args_train = {
@@ -551,27 +563,19 @@ def setup_train(params):
     }
 
     shared_args_valid = {
-        "rotation":
-            False,
-        "augment_hue":
-            False,
-        "augment_brightness":
-            False,
-        "augment_continuous_rotation":
-            False,
-        "mirror_augmentation":
-            False,
-        "shuffle":
-            False,
-        "replace":
-            params["allow_valid_replace"],
+        "rotation": False,
+        "augment_hue": False,
+        "augment_brightness": False,
+        "augment_continuous_rotation": False,
+        "mirror_augmentation": False,
+        "shuffle": False,
+        "replace": params["allow_valid_replace"],
         # "replace": False,
-        "n_rand_views":
-            params["n_rand_views"]
-            if params["allow_valid_replace"] or cam3_train else None,
+        "n_rand_views": params["n_rand_views"]
+        if params["allow_valid_replace"] or cam3_train
+        else None,
         # "n_rand_views": params["n_rand_views"] if cam3_train else None,
-        "random":
-            True if cam3_train else False,
+        "random": True if cam3_train else False,
     }
 
     return params, base_params, shared_args, shared_args_train, shared_args_valid
@@ -592,17 +596,20 @@ def setup_predict(params):
     # Grab the input file for prediction
     if params["dataset"] != "rat7m":
         params["label3d_file"] = grab_predict_label3d_file(
-            index=params["label3d_index"])
+            index=params["label3d_index"]
+        )
         params["base_exp_folder"] = os.path.dirname(params["label3d_file"])
     params["multi_mode"] = False
 
     print("Using camnames: {}".format(params["camnames"]))
     # Also add parent params under the 'experiment' key for compatibility
     # with DANNCE's video loading function
-    if (params["use_silhouette_in_volume"]) or (params["write_visual_hull"]
-                                                is not None):
-        params["viddir_sil"] = os.path.join(params["base_exp_folder"],
-                                            _DEFAULT_VIDDIR_SIL)
+    if (params["use_silhouette_in_volume"]) or (
+        params["write_visual_hull"] is not None
+    ):
+        params["viddir_sil"] = os.path.join(
+            params["base_exp_folder"], _DEFAULT_VIDDIR_SIL
+        )
 
     params["experiment"] = {}
     params["experiment"][0] = params
@@ -614,8 +621,8 @@ def setup_predict(params):
         comfile = params["com_file"]
 
         paired_expdict = {
-            "label3d_file": params["label3d_file"],  #.replace('RAT1', 'RAT2'),
-            "com_file": comfile  #new_comfile,
+            "label3d_file": params["label3d_file"],  # .replace('RAT1', 'RAT2'),
+            "com_file": comfile,  # new_comfile,
         }
         paired_exp = deepcopy(params)
         for k, v in paired_expdict.items():
@@ -679,15 +686,13 @@ def setup_predict(params):
 
 
 def setup_com_train(params):
-    #os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
+    # os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
 
     # MULTI_MODE is where the full set of markers is trained on, rather than
     # the COM only. In some cases, this can help improve COMfinder performance.
     params["chan_num"] = 1 if params["mono"] else params["n_channels_in"]
-    params["multi_mode"] = (params["n_channels_out"] >
-                            1) & (params["n_instances"] == 1)
-    params["n_channels_out"] = params["n_channels_out"] + int(
-        params["multi_mode"])
+    params["multi_mode"] = (params["n_channels_out"] > 1) & (params["n_instances"] == 1)
+    params["n_channels_out"] = params["n_channels_out"] + int(params["multi_mode"])
 
     params["lr"] = float(params["lr"])
 
@@ -718,13 +723,13 @@ def setup_com_train(params):
 
 
 def setup_com_predict(params):
-    params["multi_mode"] = MULTI_MODE = params[
-        "n_channels_out"] > 1 & params["n_instances"] == 1
+    params["multi_mode"] = MULTI_MODE = (
+        params["n_channels_out"] > 1 & params["n_instances"] == 1
+    )
     params["n_channels_out"] = params["n_channels_out"] + int(MULTI_MODE)
 
     # Grab the input file for prediction
-    params["label3d_file"] = grab_predict_label3d_file(
-        index=params["label3d_index"])
+    params["label3d_file"] = grab_predict_label3d_file(index=params["label3d_index"])
 
     print("Using camnames: {}".format(params["camnames"]))
 
@@ -733,18 +738,15 @@ def setup_com_predict(params):
 
     # For real mono training
     params["chan_num"] = 1 if params["mono"] else params["n_channels_in"]
-    dh = (params["crop_height"][1] -
-          params["crop_height"][0]) // params["downfac"]
-    dw = (params["crop_width"][1] -
-          params["crop_width"][0]) // params["downfac"]
+    dh = (params["crop_height"][1] - params["crop_height"][0]) // params["downfac"]
+    dw = (params["crop_width"][1] - params["crop_width"][0]) // params["downfac"]
     params["input_shape"] = (dh, dw)
 
     if params["com_predict_weights"] is None:
         wdir = params["com_train_dir"]
         weights = os.listdir(wdir)
-        weights = [f for f in weights if (".pth" in f) and ('epoch' in f)]
-        weights = sorted(weights,
-                         key=lambda x: int(x.split(".")[0].split("epoch")[-1]))
+        weights = [f for f in weights if (".pth" in f) and ("epoch" in f)]
+        weights = sorted(weights, key=lambda x: int(x.split(".")[0].split("epoch")[-1]))
         weights = weights[-1]
         params["com_predict_weights"] = os.path.join(wdir, weights)
 
@@ -759,9 +761,7 @@ def setup_com_predict(params):
         "batch_size": 1,
         "n_channels_out": params["n_channels_out"],
         "out_scale": params["sigma"],
-        "camnames": {
-            0: params["camnames"]
-        },
+        "camnames": {0: params["camnames"]},
         "crop_width": params["crop_width"],
         "crop_height": params["crop_height"],
         "downsample": params["downfac"],
