@@ -5,7 +5,7 @@ from dannce.interface import (
     dannce_predict,
     dannce_train,
     sdannce_predict,
-    sdannce_train
+    sdannce_train,
 )
 from dannce.config import check_config, infer_params, build_params
 from dannce import (
@@ -19,6 +19,8 @@ import ast
 import argparse
 import yaml
 from typing import Dict, Text
+import subprocess
+from cluster.multi_gpu import MultiGpuHandler
 
 
 def load_params(param_path: Text) -> Dict:
@@ -35,140 +37,21 @@ def load_params(param_path: Text) -> Dict:
     return params
 
 
-def parse_sbatch() -> Text:
-    """Parse sbatch call for base config
+def submit_job(args):
+    job_name = f"{args.mode}_{args.command}"
+    base_config = load_params(args.base_config)
+    if "slurm_config" not in base_config:
+        raise ValueError("slurm_config not specified in base_config.")
+    slurm_config = load_params(base_config["slurm_config"])
 
-    Returns:
-        Text: Base config path
-    """
-    parser = argparse.ArgumentParser(
-        description="Com predict CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "base_config", metavar="base_config", help="Path to base config."
-    )
-    return parser.parse_args().base_config
-
-
-def sbatch_dannce_predict_cli():
-    """CLI to submit dannce prediction through sbatch using the slurm config specified in the base config."""
-    base_config = parse_sbatch()
-    slurm_config = load_params(load_params(base_config)["slurm_config"])
-    cmd = 'sbatch %s --wrap="%s dannce-predict %s"' % (
-        slurm_config["dannce_predict"],
+    command = " ".join(sys.argv).replace("--sbatch", "")
+    cmd = 'sbatch %s --wrap="%s %s"' % (
+        slurm_config[job_name],
         slurm_config["setup"],
-        base_config,
+        command,
     )
-    os.system(cmd)
-
-
-def sbatch_dannce_train_cli():
-    """CLI to submit dannce training through sbatch using the slurm config specified in the base config."""
-    base_config = parse_sbatch()
-    slurm_config = load_params(load_params(base_config)["slurm_config"])
-    cmd = 'sbatch %s --wrap="%s dannce-train %s"' % (
-        slurm_config["dannce_train"],
-        slurm_config["setup"],
-        base_config,
-    )
-    os.system(cmd)
-
-
-def sbatch_com_predict_cli():
-    """CLI to submit com predition through sbatch using the slurm config specified in the base config."""
-    base_config = parse_sbatch()
-    slurm_config = load_params(load_params(base_config)["slurm_config"])
-    cmd = 'sbatch %s --wrap="%s com-predict %s"' % (
-        slurm_config["com_predict"],
-        slurm_config["setup"],
-        base_config,
-    )
-    os.system(cmd)
-
-
-def sbatch_com_train_cli():
-    """CLI to submit com training through sbatch using the slurm config specified in the base config."""
-    base_config = parse_sbatch()
-    slurm_config = load_params(load_params(base_config)["slurm_config"])
-    cmd = 'sbatch %s --wrap="%s com-train %s"' % (
-        slurm_config["com_train"],
-        slurm_config["setup"],
-        base_config,
-    )
-    os.system(cmd)
-
-
-def com_predict_cli():
-    """Entrypoint for com prediction."""
-    parser = argparse.ArgumentParser(
-        description="COM predict CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_com})
-    args = parse_clargs(parser, model_type="com", prediction=True)
-    params = build_clarg_params(args, dannce_net=False, prediction=True)
-    com_predict(params)
-
-
-def com_train_cli():
-    """Entrypoint for com training."""
-    parser = argparse.ArgumentParser(
-        description="COM train CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_com})
-    args = parse_clargs(parser, model_type="com", prediction=False)
-    params = build_clarg_params(args, dannce_net=False, prediction=False)
-    com_train(params)
-
-
-def dannce_predict_cli():
-    """Entrypoint for dannce prediction."""
-    parser = argparse.ArgumentParser(
-        description="DANNCE predict CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_dannce})
-    args = parse_clargs(parser, model_type="dannce", prediction=True)
-    params = build_clarg_params(args, dannce_net=True, prediction=True)
-    dannce_predict(params)
-
-
-def dannce_train_cli():
-    """Entrypoint for dannce training."""
-    parser = argparse.ArgumentParser(
-        description="DANNCE train CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_dannce})
-    args = parse_clargs(parser, model_type="dannce", prediction=False)
-    params = build_clarg_params(args, dannce_net=True, prediction=False)
-    dannce_train(params)
-
-
-def sdannce_predict_cli():
-    """Entrypoint for dannce prediction."""
-    parser = argparse.ArgumentParser(
-        description="SDANNCE predict CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_dannce})
-    args = parse_clargs(parser, model_type="dannce", prediction=True)
-    params = build_clarg_params(args, dannce_net=True, prediction=True)
-    sdannce_predict(params)
-
-
-def sdannce_train_cli():
-    """Entrypoint for dannce training."""
-    parser = argparse.ArgumentParser(
-        description="SDANNCE train CLI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.set_defaults(**{**_param_defaults_shared, **_param_defaults_dannce})
-    args = parse_clargs(parser, model_type="dannce", prediction=False)
-    params = build_clarg_params(args, dannce_net=True, prediction=False)
-    sdannce_train(params)
+    print(cmd)
+    # subprocess.run(cmd, shell=True, check=True, universal_newlines=True)
 
 
 def build_clarg_params(
@@ -209,6 +92,7 @@ def add_shared_args(
     parser.add_argument(
         "base_config", metavar="base_config", help="Path to base config."
     )
+    parser.add_argument("--sbatch", action="store_true", help="Run as sbatch job.")
     parser.add_argument("--viddir", dest="viddir", help="Directory containing videos.")
     parser.add_argument(
         "--crop-height",
@@ -281,9 +165,7 @@ def add_shared_args(
     )
 
     parser.add_argument(
-        "--predict-labeled-only",
-        dest="predict_labeled_only",
-        action="store_true"
+        "--predict-labeled-only", dest="predict_labeled_only", action="store_true"
     )
 
     parser.add_argument(
@@ -434,6 +316,8 @@ def add_shared_predict_args(
         type=int,
         help="Starting sample number during dannce prediction.",
     )
+    parser.add_argument("--multigpu", dest="multigpu", action="store_true")
+
     return parser
 
 
@@ -585,11 +469,7 @@ def add_dannce_shared_args(
         type=ast.literal_eval,
         dest="soft_silhouette",
     )
-    parser.add_argument(
-        "--dataset",
-        default="label3d",
-        dest="dataset"
-    )
+    parser.add_argument("--dataset", default="label3d", dest="dataset")
     return parser
 
 
@@ -679,8 +559,9 @@ def add_dannce_train_args(
         "--avg-max",
         dest="avg+max",
         type=float,
-        help="Pass a floating point value here for DANNCE to enter AVG+MAX training mode, where the 3D maps are MAX-like regularized to be Gaussian. The avg+max value is used to weight the contribution of the MAX-like loss.")
-    
+        help="Pass a floating point value here for DANNCE to enter AVG+MAX training mode, where the 3D maps are MAX-like regularized to be Gaussian. The avg+max value is used to weight the contribution of the MAX-like loss.",
+    )
+
     parser.add_argument(
         "--silhouette-loss-weight",
         type=float,
@@ -701,11 +582,7 @@ def add_dannce_train_args(
         type=float,
         dest="unlabeled_temp",
     )
-    parser.add_argument(
-        "--support-exp",
-        type=ast.literal_eval,
-        dest="support_exp"
-    )
+    parser.add_argument("--support-exp", type=ast.literal_eval, dest="support_exp")
     parser.add_argument(
         "--n-support-chunks",
         type=int,
@@ -735,7 +612,7 @@ def add_dannce_train_args(
         type=float,
         dest="symmetry_loss_weight",
     )
-    
+
     return parser
 
 
@@ -910,43 +787,54 @@ def add_com_shared_args(
     return parser
 
 
-def parse_clargs(
-    parser: argparse.ArgumentParser, model_type: Text, prediction: bool
-) -> argparse.Namespace:
-    """Parse command line arguments.
-
-    Args:
-        parser (argparse.ArgumentParser): Command line argument parser
-        model_type (Text): Type of model. E.g. "dannce"
-        prediction (bool): If true, use prediction arg parsers.
-
-    Returns:
-        argparse.Namespace: Namespace object with parsed clargs and defaults.
-    """
-    # Handle shared arguments between all models.
-    parser = add_shared_args(parser)
-
-    # Handle shared arguments between training and prediction for both models
-    if prediction:
-        parser = add_shared_predict_args(parser)
-    else:
-        parser = add_shared_train_args(parser)
-
-    # Handle model specific arguments
-    if model_type == "dannce":
-        parser = add_dannce_shared_args(parser)
-        if prediction:
-            parser = add_dannce_predict_args(parser)
-        else:
-            parser = add_dannce_train_args(parser)
-    else:
-        parser = add_com_shared_args(parser)
-        if prediction:
-            parser = add_com_predict_args(parser)
-        else:
-            parser = add_com_train_args(parser)
-
-    return parser.parse_args()
+def add_multi_gpu_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("config", help="Path to .yaml configuration file")
+    parser.add_argument(
+        "--n-samples-per-gpu",
+        dest="n_samples_per_gpu",
+        type=int,
+        default=5000,
+        help="Number of samples for each GPU job to handle.",
+    )
+    parser.add_argument(
+        "--only-unfinished",
+        dest="only_unfinished",
+        type=ast.literal_eval,
+        default=False,
+        help="If true, only predict chunks that have not been previously predicted.",
+    )
+    parser.add_argument(
+        "--predict-path",
+        dest="predict_path",
+        default=None,
+        help="When using only_unfinished, check predict_path for previously predicted chunks.",
+    )
+    parser.add_argument(
+        "--com-file",
+        dest="com_file",
+        default=None,
+        help="Use com-file to check the number of samples over which to predict rather than a dannce.mat file",
+    )
+    parser.add_argument(
+        "--verbose",
+        dest="verbose",
+        type=ast.literal_eval,
+        default=True,
+        help="If True, print out submission command and info.",
+    )
+    parser.add_argument(
+        "--test",
+        dest="test",
+        type=ast.literal_eval,
+        default=False,
+        help="If True, print out submission command and info, but do not submit jobs.",
+    )
+    parser.add_argument(
+        "--dannce-file",
+        dest="dannce_file",
+        default=None,
+        help="Path to dannce.mat file to use for determining n total samples.",
+    )
 
 
 def combine(base_params: Dict, clargs: argparse.Namespace, dannce_net: bool) -> Dict:
@@ -978,3 +866,127 @@ def combine(base_params: Dict, clargs: argparse.Namespace, dannce_net: bool) -> 
     for k, v in base_params.items():
         print("{} set to: {}".format(k, v))
     return base_params
+
+
+def get_parser():
+    # Create the main parser
+    parser = argparse.ArgumentParser()
+
+    # Create subparsers for train and predict
+    subparsers = parser.add_subparsers(dest="command")
+    train_parser = subparsers.add_parser("train")
+    predict_parser = subparsers.add_parser("predict")
+    predict_multi_parser = subparsers.add_parser("predict-multi-gpu")
+
+    # Create subparsers for COM and DANNCE modes for train
+    train_subparsers = train_parser.add_subparsers(dest="mode")
+    train_com_parser = train_subparsers.add_parser("com")
+    train_dannce_parser = train_subparsers.add_parser("dannce")
+    train_sdannce_parser = train_subparsers.add_parser("sdannce")
+
+    # Create subparsers for COM and DANNCE modes for predict
+    predict_subparsers = predict_parser.add_subparsers(dest="mode")
+    predict_com_parser = predict_subparsers.add_parser("com")
+    predict_dannce_parser = predict_subparsers.add_parser("dannce")
+    predict_sdannce_parser = predict_subparsers.add_parser("sdannce")
+
+    # Create subparsers for COM and DANNCE modes for predict-multi-gpu
+    predict_multi_subparsers = predict_multi_parser.add_subparsers(dest="mode")
+    predict_multi_com_parser = predict_multi_subparsers.add_parser("com")
+    predict_multi_dannce_parser = predict_multi_subparsers.add_parser("dannce")
+    predict_multi_sdannce_parser = predict_multi_subparsers.add_parser("sdannce")
+
+    com_defaults = {**_param_defaults_shared, **_param_defaults_com}
+    dannce_defaults = {**_param_defaults_shared, **_param_defaults_dannce}
+    sdannce_defaults = {**_param_defaults_shared, **_param_defaults_dannce}
+    # Set default values for each mode
+    train_com_parser.set_defaults(**com_defaults)
+    train_dannce_parser.set_defaults(**dannce_defaults)
+    train_sdannce_parser.set_defaults(**sdannce_defaults)
+    predict_com_parser.set_defaults(**com_defaults)
+    predict_dannce_parser.set_defaults(**dannce_defaults)
+    predict_sdannce_parser.set_defaults(**sdannce_defaults)
+    predict_multi_com_parser.set_defaults(**com_defaults)
+    predict_multi_dannce_parser.set_defaults(**dannce_defaults)
+    predict_multi_sdannce_parser.set_defaults(**sdannce_defaults)
+
+    # Add arguments for each subparser
+    train_com_parser = add_shared_args(train_com_parser)
+    train_com_parser = add_shared_train_args(train_com_parser)
+    train_com_parser = add_com_shared_args(train_com_parser)
+    train_com_parser = add_com_train_args(train_com_parser)
+
+    train_dannce_parser = add_shared_args(train_dannce_parser)
+    train_dannce_parser = add_shared_train_args(train_dannce_parser)
+    train_dannce_parser = add_dannce_shared_args(train_dannce_parser)
+    train_dannce_parser = add_dannce_train_args(train_dannce_parser)
+
+    train_sdannce_parser = add_shared_args(train_sdannce_parser)
+    train_sdannce_parser = add_shared_train_args(train_sdannce_parser)
+    train_sdannce_parser = add_dannce_shared_args(train_sdannce_parser)
+    train_sdannce_parser = add_dannce_train_args(train_sdannce_parser)
+
+    predict_com_parser = add_shared_args(predict_com_parser)
+    predict_com_parser = add_shared_predict_args(predict_com_parser)
+    predict_com_parser = add_com_shared_args(predict_com_parser)
+    predict_com_parser = add_com_predict_args(predict_com_parser)
+
+    predict_dannce_parser = add_shared_args(predict_dannce_parser)
+    predict_dannce_parser = add_shared_predict_args(predict_dannce_parser)
+    predict_dannce_parser = add_dannce_shared_args(predict_dannce_parser)
+    predict_dannce_parser = add_dannce_predict_args(predict_dannce_parser)
+
+    predict_sdannce_parser = add_shared_args(predict_sdannce_parser)
+    predict_sdannce_parser = add_shared_predict_args(predict_sdannce_parser)
+    predict_sdannce_parser = add_dannce_shared_args(predict_sdannce_parser)
+    predict_sdannce_parser = add_dannce_predict_args(predict_sdannce_parser)
+
+    predict_multi_com_parser = add_multi_gpu_args(predict_multi_com_parser)
+
+    predict_multi_dannce_parser = add_multi_gpu_args(predict_multi_dannce_parser)
+
+    predict_multi_sdannce_parser = add_multi_gpu_args(predict_multi_sdannce_parser)
+
+    # Parse the arguments
+    return parser.parse_args()
+
+
+def main():
+    """Entry point for the command line interface."""
+    args = get_parser()
+
+    # Handle slurm submission
+    if args.sbatch and args.command != "predict-multi-gpu":
+        submit_job(args)
+        return
+
+    # Handle slurm submission for multi-gpu prediction
+    if args.command == "predict-multi-gpu":
+        if args.mode == "dannce":
+            handler = MultiGpuHandler(**args.__dict__)
+            handler.submit_dannce_predict_multi_gpu()
+        elif args.mode == "sdannce":
+            handler = MultiGpuHandler(**args.__dict__)
+            handler.submit_sdannce_predict_multi_gpu()
+        elif args.mode == "com":
+            handler = MultiGpuHandler(**args.__dict__)
+            handler.submit_com_predict_multi_gpu()
+
+    # Handle running on the current process
+    params = build_clarg_params(
+        args, dannce_net=(args.mode == "dannce"), prediction=(args.command == "predict")
+    )
+    if args.comand == "train":
+        if args.mode == "dannce":
+            dannce_train(params)
+        elif args.mode == "sdannce":
+            sdannce_train(params)
+        elif args.mode == "com":
+            com_train(params)
+    elif args.command == "predict":
+        if args.mode == "dannce":
+            dannce_predict(params)
+        elif args.mode == "sdannce":
+            sdannce_predict(params)
+        elif args.mode == "com":
+            com_predict(params)
