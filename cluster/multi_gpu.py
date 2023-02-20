@@ -846,19 +846,6 @@ def sdannce_inference():
         else:
             handler.dannce_merge()
 
-def com_merge():
-    """CLI entrypoint to merge batch jobs."""
-    args = cmdline_args()
-    handler = MultiGpuHandler(**args.__dict__)
-    handler.com_merge()
-
-
-def dannce_merge():
-    """CLI entrypoint to merge batch jobs."""
-    args = cmdline_args()
-    handler = MultiGpuHandler(**args.__dict__)
-    handler.dannce_merge()
-
 
 def cmdline_args():
     """Handle command line arguments
