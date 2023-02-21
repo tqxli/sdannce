@@ -986,11 +986,6 @@ def main():
     """Entry point for the command line interface."""
     args = get_parser()
 
-    # Handle slurm submission
-    if args.sbatch and args.command != "predict-multi-gpu":
-        submit_job(args)
-        return
-
     # Handle slurm submission for multi-gpu prediction
     if args.command == "predict-multi-gpu":
         mgpu_args = args.__dict__.copy()
@@ -1019,11 +1014,18 @@ def main():
             handler.com_merge()
         return
 
+    # Handle slurm submission
+    if args.sbatch:
+        submit_job(args)
+        return
+
     # Handle running on the current process
     params = build_clarg_params(
-        args, dannce_net=(args.mode == "dannce"), prediction=(args.command == "predict")
+        args,
+        dannce_net=(args.mode == "dannce") | (args.mode == "sdannce"),
+        prediction=(args.command == "predict"),
     )
-    if args.comand == "train":
+    if args.command == "train":
         if args.mode == "dannce":
             dannce_train(params)
         elif args.mode == "sdannce":
