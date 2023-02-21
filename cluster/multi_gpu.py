@@ -342,6 +342,7 @@ class MultiGpuHandler:
                         "max_num_samples": mb,
                         "com_file": com_file,
                         "dannce_predict_dir": dannce_predict_dir,
+                        "batch_size": 1,  # Set the batch size to 1 for multi-instance to avoid memory issues
                     }
                 )
             # Delete batch_params that were already finished
@@ -377,6 +378,7 @@ class MultiGpuHandler:
 
             # Remove any of the default merged files.
             pred_files = [f for f in pred_files if f != (DANNCE_BASE_NAME + ".mat")]
+            pred_files = [f for f in pred_files if "init" not in f]
             if len(pred_files) > 1:
                 params = load_params(self.config)
                 pred_ids = [
