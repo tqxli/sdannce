@@ -451,7 +451,7 @@ class MultiGpuHandler:
         Divide project into equal chunks of n_samples_per_gpu samples. Submit an array job
         that predicts over each chunk in parallel.
         """
-        n_samples = self.get_n_samples(self.dannce_file, use_com=True)
+        n_samples = self.get_n_samples(self.dannce_file, use_com=False)
         batch_params = self.generate_batch_params_dannce(n_samples)
         slurm_config = load_params(load_params(self.config)["slurm_config"])
 
@@ -469,7 +469,7 @@ class MultiGpuHandler:
         Divide project into equal chunks of n_samples_per_gpu samples. Submit an array job
         that predicts over each chunk in parallel.
         """
-        n_samples = self.get_n_samples(self.dannce_file, use_com=True)
+        n_samples = self.get_n_samples(self.dannce_file, use_com=False)
         batch_params = self.generate_batch_params_dannce(n_samples)
         slurm_config = load_params(load_params(self.config)["slurm_config"])
 
@@ -595,6 +595,7 @@ class MultiGpuHandler:
                 self.predict_path = params["dannce_predict_dir"]
         pred_files = [f for f in os.listdir(self.predict_path) if DANNCE_BASE_NAME in f]
         pred_files = [f for f in pred_files if f != (DANNCE_BASE_NAME + ".mat")]
+        pred_files = [f for f in pred_files if "init" not in f]
         pred_inds = [
             int(f.split(DANNCE_BASE_NAME)[-1].split(".")[0]) for f in pred_files
         ]
@@ -610,12 +611,17 @@ class MultiGpuHandler:
             data.append(M["data"])
             p_max.append(M["p_max"])
             sampleID.append(M["sampleID"])
-            metadata.append(M["metadata"])
+            try:
+                metadata.append(M["metadata"])
+            except KeyError:
+                metadata.append({})
+                continue
         pred = np.concatenate(pred, axis=0)
         data = np.concatenate(data, axis=0)
         p_max = np.concatenate(p_max, axis=0)
         sampleID = np.concatenate(sampleID, axis=0)
         metadata = metadata[0]
+        print(pred.shape)
 
         # Update samples and max_num_samples
         metadata["start_sample"] = 0
