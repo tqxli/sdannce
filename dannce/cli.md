@@ -83,7 +83,7 @@ dannce predict-multi-gpu <mode> --help
 Merge prediction results.
 
 ```
-dannce merge [<args>]
+dannce merge <mode> [<args>]
 ```
 
 
@@ -100,7 +100,11 @@ dannce merge --help
 
 To train a center-of-mass network, run:
 
-```dannce train com com_config.yaml```
+```
+dannce train com com_config.yaml
+dannce train dannce dannce_config.yaml
+dannce train sdannce sdannce_config.yaml
+```
 
 You can also set hyperparameters from the command-line:
 
@@ -109,22 +113,34 @@ You can also set hyperparameters from the command-line:
 
 ## Predicting
 
-To predict using a DANNCE model, run:
+To predict using a trained model, run one of the following:
 
-```dannce predict dannce dannce_config.yaml```
+```
+dannce predict com com_config.yaml #COM prediction
+dannce predict dannce dannce_config.yaml #Dannce prediciton 
+dannce predict sdannce sdannce_config.yaml #Sdancne prediction
+```
 
 ## Multi-gpu prediction
 
 To predict across multiple gpus, you'll need access to a slurm cluster. Additionally you'll need to specify the slurm submission parameters for your institution using a `.yaml` file. The path to this file should be included in your configuration file under the key `slurm_config`.
 
-```dannce predict-multi-gpu dannce dannce_config.yaml```
+```
+dannce predict-multi-gpu com com_config.yaml
+dannce predict-multi-gpu dannce dannce_config.yaml
+dannce predict-multi-gpu sdannce sdannce_config.yaml 
+```
 
 
-### Merging Prediction Results
+## Merging Prediction Results
 
-To merge DANNCE prediction results, run:
+To merge prediction results made with multiple gpus, run one of the following:
 
-```dannce merge dannce_config.yaml```
+```
+dannce merge com dannce_config.yaml
+dannce merge dannce dannce_config.yaml
+dannce merge sdannce sdannce_config.yaml
+```
 
 # Slurm
 
