@@ -649,14 +649,18 @@ def infer_dannce(generator,
         device (Text): Gpu device name
         n_chn (int): Number of output channels
     """
-    if params["maxbatch"] != "max" and params["maxbatch"] > len(generator):
+    n_frames = len(generator)
+    bs = params["batch_size"]
+    generator_maxbatch = np.ceil(n_frames / bs)
+    
+    if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
         print(
-            "Maxbatch was set to a larger number of matches than exist in the video. Truncating"
+            "Maxbatch was set to a larger number of matches than exist in the video. Truncating."
         )
-        print_and_set(params, "maxbatch", len(generator))
+        print_and_set(params, "maxbatch", generator_maxbatch)
 
     if params["maxbatch"] == "max":
-        print_and_set(params, "maxbatch", len(generator))
+        print_and_set(params, "maxbatch", generator_maxbatch)
 
     end_time = time.time()
     save_data = {}
@@ -701,7 +705,7 @@ def infer_dannce(generator,
                     tcoord=False,
                 )
 
-        ims = generator.__getitem__(i)
+        ims = [generator.__getitem__(i)]
         if sil_generator is not None:
             sil_ims = sil_generator.__getitem__(i)
             sil_ims = processing.extract_3d_sil(sil_ims[0][0], 18)
@@ -746,8 +750,8 @@ def infer_dannce(generator,
             pred = pred[0].detach().cpu().numpy()
             for j in range(pred.shape[0]):
                 pred_max = probmap[j]
-                sampleID = partition["valid_sampleIDs"][i * pred.shape[0] + j]
-                save_data[idx * pred.shape[0] + j] = {
+                sampleID = partition["valid_sampleIDs"][i * bs + j]
+                save_data[idx * bs + j] = {
                     "pred_max": pred_max,
                     "pred_coord": pred[j],
                     "sampleID": sampleID,
@@ -768,9 +772,9 @@ def infer_dannce(generator,
                 ) = processing.plot_markers_3d_torch(preds)
                 coord = torch.stack([xcoord, ycoord, zcoord])
                 pred_log = pred_max.log() - pred_total.log()
-                sampleID = partition["valid_sampleIDs"][i * pred.shape[0] + j]
+                sampleID = partition["valid_sampleIDs"][i * bs + j]
 
-                save_data[idx * pred.shape[0] + j] = {
+                save_data[idx * bs + j] = {
                     "pred_max": pred_max.cpu().numpy(),
                     "pred_coord": coord.cpu().numpy(),
                     "true_coord_nogrid": ims[1][0][j],
@@ -812,14 +816,18 @@ def infer_sdannce(
     partition: Dict,
     device: Text,
 ):
-    if params["maxbatch"] != "max" and params["maxbatch"] > len(generator):
+    n_frames = len(generator)
+    bs = params["batch_size"]
+    generator_maxbatch = np.ceil(n_frames / bs)
+    
+    if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
         print(
             "Maxbatch was set to a larger number of matches than exist in the video. Truncating."
         )
-        print_and_set(params, "maxbatch", len(generator))
+        print_and_set(params, "maxbatch", generator_maxbatch)
 
     if params["maxbatch"] == "max":
-        print_and_set(params, "maxbatch", len(generator))
+        print_and_set(params, "maxbatch", generator_maxbatch)
 
     save_data, save_data_init = {}, {}
     start_ind = params["start_batch"]
@@ -835,8 +843,11 @@ def infer_sdannce(
             save_inference_checkpoint(params, save_data, init_poses.shape[-1],
                                       "/init_save_data_AVG.mat")
 
-        ims = generator.__getitem__(i)
-        vols = torch.from_numpy(ims[0][0]).permute(0, 4, 1, 2, 3)
+        # retrieve batched inputs
+        indices = np.arange(idx*bs, min((idx+1)*bs, params["max_num_samples"], n_frames))
+        ims = generator.get_batched(indices)
+        vols = torch.from_numpy(ims[0]).permute(0, 4, 1, 2, 3)
+
         # replace occluded view
         if params["downscale_occluded_view"]:
             occlusion_scores = ims[0][2]
@@ -870,7 +881,7 @@ def infer_sdannce(
             vols = vols.reshape(vols.shape[0], -1, *vols.shape[3:])
 
         model_inputs = [vols.to(device)]
-        grid_centers = torch.from_numpy(ims[0][1]).to(device)
+        grid_centers = torch.from_numpy(ims[1]).to(device)
         model_inputs.append(grid_centers)
 
         init_poses, heatmaps, inter_features = model.pose_generator(
@@ -903,13 +914,13 @@ def infer_sdannce(
 
         for j in range(pred.shape[0]):
             pred_max = probmap[j]
-            sampleID = partition["valid_sampleIDs"][i * pred.shape[0] + j]
-            save_data[idx * pred.shape[0] + j] = {
+            sampleID = partition["valid_sampleIDs"][i * bs + j]
+            save_data[idx * bs + j] = {
                 "pred_max": pred_max,
                 "pred_coord": pred[j],
                 "sampleID": sampleID,
             }
-            save_data_init[idx * pred.shape[0] + j] = {
+            save_data_init[idx * bs + j] = {
                 "pred_max": pred_max,
                 "pred_coord": pred_init[j],
                 "sampleID": sampleID,

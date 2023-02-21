@@ -155,7 +155,7 @@ def infer_params(params, dannce_net, prediction):
                 print_and_set(
                     params,
                     "maxbatch",
-                    int(params["max_num_samples"] // params["batch_size"]),
+                    int(np.ceil(params["max_num_samples"] / params["batch_size"])),
                 )
             else:
                 raise TypeError("max_num_samples must be an int or 'max'")
