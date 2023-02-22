@@ -370,7 +370,7 @@ class MultiGpuHandler:
         """
         dannce_predict_dirs = [param["dannce_predict_dir"] for param in batch_params]
         dannce_predict_dirs = list(set(dannce_predict_dirs))
-
+        print(dannce_predict_dirs)
         # For each instance directory, find the completed batches and delete the params.
         for pred_dir in dannce_predict_dirs:
             # Get all of the files
@@ -381,8 +381,12 @@ class MultiGpuHandler:
             pred_files = [f for f in pred_files if "init" not in f]
             if len(pred_files) > 1:
                 params = load_params(self.config)
+                # pred_ids = [
+                #     int(f.split(".")[0].split("AVG")[1]) * params["batch_size"]
+                #     for f in pred_files
+                # ]
                 pred_ids = [
-                    int(f.split(".")[0].split("AVG")[1]) * params["batch_size"]
+                    int(f.split(".")[0].split("AVG")[1])
                     for f in pred_files
                 ]
                 for i, batch_param in reversed(list(enumerate(batch_params))):
@@ -476,7 +480,7 @@ class MultiGpuHandler:
         slurm_config = load_params(load_params(self.config)["slurm_config"])
 
         cmd = (
-            'sbatch --wait --array=0-%d %s --wrap="%s sdannce-predict-single-batch %s"'
+            'sbatch --wait --array=0-%d %s --wrap="%s sdannce-predict-single-batch %s" &'
             % (
                 len(batch_params) - 1,
                 slurm_config["dannce_multi_predict"],
