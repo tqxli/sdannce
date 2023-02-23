@@ -284,9 +284,7 @@ class DataGenerator_3Dconv(DataGenerator):
         self.segmentation_model = segmentation_model
 
         ts = time.time()
-
-        for ID in list_IDs:
-            experimentID = int(ID.split("_")[0])
+        for experimentID in self.camnames.keys():
             for camname in self.camnames[experimentID]:
                 # M only needs to be computed once for each camera
                 K = self.camera_params[experimentID][camname]["K"]
