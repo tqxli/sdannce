@@ -705,13 +705,7 @@ def infer_dannce(generator,
                     tcoord=False,
                 )
 
-        ims = [generator.__getitem__(i)]
-        if sil_generator is not None:
-            sil_ims = sil_generator.__getitem__(i)
-            sil_ims = processing.extract_3d_sil(sil_ims[0][0], 18)
-            ims[0][0] = [
-                np.concatenate((ims[0][0], sil_ims, sil_ims, sil_ims), axis=-1)
-            ]
+        ims = generator.__getitem__(i)
 
         vols = torch.from_numpy(ims[0][0]).permute(0, 4, 1, 2,
                                                    3)  # [B, C, H, W, D]

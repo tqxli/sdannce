@@ -20,23 +20,29 @@ demo
 
 ```
 
-## Predict Social Animal Centroids
-To infer the animals' centroids/COMs in the 3D space, run
-```
-sh predict_com.sh
-```
-The COMs of both animals are saved into `2021_07_05_M4_M7/COM/predict02/com3d.mat`and will be used next to anchor volumetric representations.
+## Train & Predict Animal Centroids
+DANNCE/s-DANNCE performs 3D pose estimation in a top-down manner, i.e. first localizes the animal's approximate position in space and then resolves the associated 3D posture. We start by training a center-of-mass (COM) prediction network that simultaneously detects both animal. In this set of videos, the two animals were painted respectively with blue and red colors to avoid ID switches.
 
-## Predict Social Animal Poses
-To generate the 3D poses, run
+To train such a model, run
+```
+sh train_com.sh
+```
+Given the limited amount of COM labels in this small demo, we will use presaved COM predictions (`demo/2021_07_05_M4_M7/COM/predict01/com3d.mat`) to proceed with the next part of this demo. For labeling on the custom data, refer to [Label3D](https://github.com/diegoaldarondo/Label3D). 
+
+To predict COMs using a pretrained model, please refer to `demo/predict_com.sh`.
+
+## Train & Predict Social Animal Poses
+To train a SDANNCE pose estimation model, refer to `demo/train_sdannce.sh`.
+
+Here, using a pretrained SDANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`), run the following to predict the associated 3D poses:
 ```
 sh predict_sdannce.sh
 ```
-Both animals' 3D poses are saved into `demo/2021_07_05_M4_M7/SDANNCE/predict02`.
+The prediction results are saved into `demo/2021_07_05_M4_M7/SDANNCE/predict02`.
 
 ## Visualize predictions
-To visualize the predictions we just obtained from last step, run
+To visualize the predictions just obtained from last step, run
 ```
 sh vis_sdannce.sh
 ```
-You should find the resulted video in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis`.
+You should find the resulted video in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis/*.mp4`.
