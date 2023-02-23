@@ -818,7 +818,7 @@ def infer_sdannce(
 ):
     n_frames = len(generator)
     bs = params["batch_size"]
-    generator_maxbatch = np.ceil(n_frames / bs)
+    generator_maxbatch = int(np.ceil(n_frames / bs))
     
     if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
         print(
@@ -844,7 +844,7 @@ def infer_sdannce(
                                       "/init_save_data_AVG.mat")
 
         # retrieve batched inputs
-        indices = np.arange(idx*bs, min((idx+1)*bs, params["max_num_samples"], n_frames))
+        indices = np.arange(i*bs, min((i+1)*bs, params["max_num_samples"], n_frames))
         ims = generator.get_batched(indices)
         vols = torch.from_numpy(ims[0]).permute(0, 4, 1, 2, 3)
 
