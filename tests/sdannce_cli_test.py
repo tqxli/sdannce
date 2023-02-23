@@ -8,6 +8,9 @@ TEST_SDANNCE_PROJECT_FOLDER = os.path.join(SDANNCE_FOLDER, "tests", "2021_07_06_
 TEST_SDANNCE_PREDICT_PROJECT_FOLDER = os.path.join(
     SDANNCE_FOLDER, "tests", "2021_07_05_M4_M7"
 )
+TEST_DANNCE_PREDICT_PROJECT_FOLDER = os.path.join(
+    SDANNCE_FOLDER, "tests", "2021_07_06_M3_M6"
+)
 TEST_COM_TRAIN_PROJECT_FOLDER = os.path.join(
     SDANNCE_FOLDER, "tests", "2021_07_06_M3_M6"
 )
@@ -110,7 +113,7 @@ class TestDannceTrain(unittest.TestCase):
 
 class TestDanncePredict(unittest.TestCase):
     def setUp(self):
-        os.chdir(TEST_SDANNCE_PREDICT_PROJECT_FOLDER)
+        os.chdir(TEST_DANNCE_PREDICT_PROJECT_FOLDER)
 
     def test_dannce_predict(self):
         args = [
@@ -120,7 +123,7 @@ class TestDanncePredict(unittest.TestCase):
             TEST_DANNCE_CONFIG,
             "--dannce-predict-model=../weights/DANNCE_comp_pretrained_single+r7m.pth",
             "--dannce-predict-dir=./DANNCE/predict_test",
-            "--com-file=./COM/predict01/com3d.mat",
+            "--com-file=./COM/predict01/instance0com3d.mat",
             "--max-num-samples=10",
             "--batch-size=1",
         ]
