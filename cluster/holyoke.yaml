@@ -1,8 +1,11 @@
 # Dannce slurm configuration
-dannce_train: "--job-name=trainDannce -p olveczkygpu,gpu --mem=80000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8"
-dannce_train_grid: "--job-name=trainDannce -p olveczkygpu,gpu --mem=80000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8"
-dannce_predict: "--job-name=predictDannce -p olveczkygpu,gpu,cox,gpu_requeue --mem=30000 -t 1-00:00 --gres=gpu:1 -N 1 -n 8"
-dannce_multi_predict: "--job-name=predictDannce -p olveczkygpu,gpu,cox,gpu_requeue --mem=30000 -t 0-03:00 --gres=gpu:1 -N 1 -n 8"
+dannce_train: "--job-name=trainDannce -p olveczkygpu,gpu --mem=80000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
+dannce_train_grid: "--job-name=trainDannce -p olveczkygpu,gpu --mem=80000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
+dannce_predict: "--job-name=predictDannce -p olveczkygpu,gpu,cox,gpu_requeue --mem=30000 -t 1-00:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
+dannce_multi_predict: "--job-name=predictDannce -p olveczkygpu,gpu,cox,gpu_requeue --mem=30000 -t 0-03:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
+
+sdannce_train: "--job-name=trainDannce -p olveczkygpu,gpu --mem=80000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
+sdannce_predict: "--job-name=predictDannce -p olveczkygpu,gpu,cox,gpu_requeue --mem=30000 -t 1-00:00 --gres=gpu:1 -N 1 -n 8 --constraint=cc7.0 --exclude=holygpu7c1311,holygpu7c26306,holygpu8a25204,holygpu8a25205,holygpu8a29104"
 
 # Com slurm configuration
 com_train: "--job-name=trainCom -p olveczkygpu,gpu --mem=30000 -t 3-00:00 --gres=gpu:1 -N 1 -n 8"
