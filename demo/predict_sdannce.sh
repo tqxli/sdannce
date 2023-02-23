@@ -3,7 +3,7 @@
 cd ./2021_07_05_M4_M7
 echo "Predicting SDANNCE..."
 
-sdannce-predict \
+dannce predict sdannce \
 	../../configs/sdannce_rat_config.yaml \
 	--dannce-predict-model ../weights/SDANNCE_gcn_bsl_FM_ep100.pth \
 	--dannce-predict-dir ./SDANNCE/predict02 \
