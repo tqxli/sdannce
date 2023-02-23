@@ -381,12 +381,10 @@ class MultiGpuHandler:
             pred_files = [f for f in pred_files if "init" not in f]
             if len(pred_files) > 1:
                 params = load_params(self.config)
-                # pred_ids = [
-                #     int(f.split(".")[0].split("AVG")[1]) * params["batch_size"]
-                #     for f in pred_files
-                # ]
+                if "batch_size" in batch_params:
+                    params["batch_size"] = batch_params["batch_size"]
                 pred_ids = [
-                    int(f.split(".")[0].split("AVG")[1])
+                    int(f.split(".")[0].split("AVG")[1]) * params["batch_size"]
                     for f in pred_files
                 ]
                 for i, batch_param in reversed(list(enumerate(batch_params))):
@@ -479,14 +477,11 @@ class MultiGpuHandler:
         batch_params = self.generate_batch_params_dannce(n_samples)
         slurm_config = load_params(load_params(self.config)["slurm_config"])
 
-        cmd = (
-            'sbatch --wait --array=0-%d %s --wrap="%s sdannce-predict-single-batch %s" &'
-            % (
-                len(batch_params) - 1,
-                slurm_config["dannce_multi_predict"],
-                slurm_config["setup"],
-                self.config,
-            )
+        cmd = 'sbatch --array=0-%d %s --wrap="%s sdannce-predict-single-batch %s"' % (
+            len(batch_params) - 1,
+            slurm_config["dannce_multi_predict"],
+            slurm_config["setup"],
+            self.config,
         )
 
         if len(batch_params) > 0:
