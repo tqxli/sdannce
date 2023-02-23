@@ -36,17 +36,6 @@ n_channels_out: 23
 new_n_channels_out: 23
 n_views: 6
 
-graph_cfg:
-    model: PoseGCN
-    n_instances: 1
-    hidden_dim: 128
-    n_layers: 3
-    dropout: 0.2
-    use_residual: False
-    predict_diff: True
-    use_features: True
-    fuse_dim: 128
-
 ### loss ###
 metric: ['euclidean_distance_3D']
 loss:
