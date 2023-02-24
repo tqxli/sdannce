@@ -331,7 +331,7 @@ def initialize_train(params, n_cams, device, logger):
 
 
 def initialize_com_model(params, device):
-    model = COMNet(params["n_channels_in"], params["n_channels_out"], params["input_shape"]).to(device)
+    model = COMNet(params["chan_num"], params["n_channels_out"], params["input_shape"]).to(device)
     return model
 
 

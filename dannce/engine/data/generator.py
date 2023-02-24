@@ -284,9 +284,7 @@ class DataGenerator_3Dconv(DataGenerator):
         self.segmentation_model = segmentation_model
 
         ts = time.time()
-
-        for ID in list_IDs:
-            experimentID = int(ID.split("_")[0])
+        for experimentID in self.camnames.keys():
             for camname in self.camnames[experimentID]:
                 # M only needs to be computed once for each camera
                 K = self.camera_params[experimentID][camname]["K"]
@@ -318,6 +316,24 @@ class DataGenerator_3Dconv(DataGenerator):
         X, y = self.__data_generation(list_IDs_temp)
 
         return X, y
+
+    def get_batched(self, indices):
+        """Return batched inputs. Used during sdannce inference.
+
+        Args:
+            indices (list): list of frames indices
+        """
+        all_X = []
+        for index in indices:
+            X, y = self.__getitem__(index)
+            all_X.append(X)
+
+        n_inputs = len(all_X[0])
+        batched_inputs = []
+        for input_idx in range(n_inputs):
+            batched_input = np.concatenate([X[input_idx] for X in all_X], axis=0)
+            batched_inputs.append(batched_input)
+        return batched_inputs  
 
     def pj_grid(self, X_grid, camname, ID, experimentID):
         """Projects 3D voxel centers and sample images as projected 2D pixel coordinates
@@ -753,6 +769,24 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
         X, y = self.__data_generation(list_IDs_temp)
 
         return X, y
+
+    def get_batched(self, indices):
+        """Return batched inputs. Used during sdannce inference.
+
+        Args:
+            indices (list): list of frames indices
+        """
+        all_X = []
+        for index in indices:
+            X, y = self.__getitem__(index)
+            all_X.append(X)
+
+        n_inputs = len(all_X[0])
+        batched_inputs = []
+        for input_idx in range(n_inputs):
+            batched_input = np.concatenate([X[input_idx] for X in all_X], axis=0)
+            batched_inputs.append(batched_input)
+        return batched_inputs    
 
     def proj_grid(self, X_grids, camnames, IDs, experimentIDs, com_3ds):
         """Projects 3D voxel centers and sample images as projected 2D pixel coordinates

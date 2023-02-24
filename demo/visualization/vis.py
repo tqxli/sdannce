@@ -16,7 +16,12 @@ from matplotlib.animation import FFMpegWriter
 def main(args):
     EXP_ROOT = args.root
     EXP = args.pred
-    DATA_FILE = 'save_data_AVG0.mat'
+    DATA_FILE = args.datafile
+    datafile_start = int(DATA_FILE.split('save_data_AVG')[-1].split('.mat')[0])
+    try:
+        datafile_start = int(datafile_start)
+    except ValueError:
+        raise Exception('Datafile not named as save_data_AVG%n.mat')
     LABEL3D_FILE = [f for f in os.listdir(EXP_ROOT) if f.endswith('dannce.mat')][0]
     N_FRAMES = args.n_frames
     VID_NAME = "0.mp4"
@@ -40,9 +45,16 @@ def main(args):
     cameras = load_cameras(os.path.join(EXP_ROOT, LABEL3D_FILE))
 
     pred_path = os.path.join(EXP_ROOT, EXP)
-    pose_3d = sio.loadmat(os.path.join(pred_path, DATA_FILE))['pred'][START_FRAME: START_FRAME+N_FRAMES]
+    # prediction file might not start at frame 0
+    pose_3d = sio.loadmat(os.path.join(pred_path, DATA_FILE))['pred'][
+        START_FRAME-datafile_start: START_FRAME-datafile_start+N_FRAMES
+    ]
+    # pose_3d: [N, n_instances, n_landmarks, 3]
     pred_3d1 = pose_3d[:, 0, :, :]
     pred_3d2 = pose_3d[:, 1, :, :]
+
+    # load centers of masses used for predictions
+    # com_3d: [N, 3, n+instances]
     com_3d = sio.loadmat(os.path.join(pred_path, 'com3d_used.mat'))['com'][START_FRAME: START_FRAME+N_FRAMES]
     com_3d1 = com_3d[:, :, 0]
     com_3d2 = com_3d[:, :, 1]  
@@ -143,7 +155,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str)
     parser.add_argument("--pred", type=str)
-    parser.add_argument("--n_instances", type=int, default=2, help="number of animals present in the scene (1 or 2)")
+    parser.add_argument("--datafile", type=str, default='save_data_AVG0.mat', help='name of the saved prediction file')
     parser.add_argument("--skeleton", type=str, default="rat23", help="corresponding skeleton connectivity for the animal, see ./skeletons")
     parser.add_argument("--start_frame", type=int, default=0)
     parser.add_argument("--n_frames", type=int, help="number of frames to plot", default=10)

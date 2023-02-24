@@ -1,0 +1,15 @@
+### SOCIAL COM EXPERIMENTS **
+com_train_dir: ./COM/train_test
+com_predict_dir: ./COM/predict_test
+com_predict_weights:
+com_exp:
+    - label3d_file: 'test_social_com_dannce.mat'
+
+
+### SDANNCE EXPERIMENTS **
+dannce_train_dir: ./SDANNCE/train_test/
+dannce_predict_dir: ./SDANNCE/predict_test/
+
+exp:
+    - label3d_file: '../2021_07_06_M3_M6/test_social_dannce_dannce.mat'
+      com_file: '../2021_07_06_M3_M6/COM/predict01/instance0com3d.mat'

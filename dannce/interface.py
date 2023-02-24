@@ -7,7 +7,11 @@ import torch
 import dannce.config as config
 import dannce.engine.run.inference as inference
 import dannce.engine.models.posegcn.nets as sdanncenets
-from dannce.engine.models.nets import initialize_train, initialize_model, initialize_com_train
+from dannce.engine.models.nets import (
+    initialize_train,
+    initialize_model,
+    initialize_com_train,
+)
 from dannce.engine.trainer import *
 from dannce.engine.run.logger import setup_logging
 from dannce.engine.run.run_utils import *
@@ -30,14 +34,14 @@ def dannce_train(params: Dict):
         base_params,
         shared_args,
         shared_args_train,
-        shared_args_valid
+        shared_args_valid,
     ) = config.setup_train(params)
 
     # Make the training directory if it does not exist.
     make_folder("dannce_train_dir", params)
 
     # setup logger
-    logger = setup_logging(params["dannce_train_dir"], 'training.log')
+    logger = setup_logging(params["dannce_train_dir"], "training.log")
 
     # deploy GPU devices
     device = set_device(params, logger)
@@ -45,8 +49,7 @@ def dannce_train(params: Dict):
     # fix random seed if specified
     if params["random_seed"] is not None:
         set_random_seed(params["random_seed"])
-        logger.info(
-            "***Fix random seed as {}***".format(params["random_seed"]))
+        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     spec_args = params["dataset_args"]
     spec_args = {} if spec_args is None else spec_args
@@ -64,8 +67,7 @@ def dannce_train(params: Dict):
 
     # Build network
     logger.info("Initializing Network...")
-    model, optimizer, lr_scheduler = initialize_train(
-        params, n_cams, device, logger)
+    model, optimizer, lr_scheduler = initialize_train(params, n_cams, device, logger)
     logger.info(model)
     logger.info("COMPLETE\n")
 
@@ -80,7 +82,7 @@ def dannce_train(params: Dict):
         device=device,
         logger=logger,
         visualize_batch=False,
-        lr_scheduler=lr_scheduler
+        lr_scheduler=lr_scheduler,
     )
 
     trainer.train()
@@ -101,12 +103,15 @@ def dannce_predict(params: Dict):
     if params["dataset"] == "rat7m":
         predict_generator = dataset.RAT7MNPYDataset(train=False)
         predict_generator_sil = None
-        camnames = [["Camera1", "Camera2", "Camera3",
-                     "Camera4", "Camera5", "Camera6"]]
+        camnames = [["Camera1", "Camera2", "Camera3", "Camera4", "Camera5", "Camera6"]]
         partition = {"valid_sampleIDs": np.arange(len(predict_generator))}
     else:
-        predict_generator, predict_generator_sil, camnames, partition = make_dataset_inference(
-            params, valid_params)
+        (
+            predict_generator,
+            predict_generator_sil,
+            camnames,
+            partition,
+        ) = make_dataset_inference(params, valid_params)
 
     # model = build_model(params, camnames)
     print("Initializing Network...")
@@ -132,8 +137,7 @@ def dannce_predict(params: Dict):
         inference.save_results(params, save_data)
         return
 
-    model.load_state_dict(torch.load(
-        params["dannce_predict_model"])['state_dict'])
+    model.load_state_dict(torch.load(params["dannce_predict_model"])["state_dict"])
     model.eval()
 
     save_data = inference.infer_dannce(
@@ -144,7 +148,7 @@ def dannce_predict(params: Dict):
         device,
         params["n_markers"],
         predict_generator_sil,
-        save_heatmaps=False
+        save_heatmaps=False,
     )
     inference.save_results(params, save_data)
 
@@ -163,7 +167,7 @@ def sdannce_train(params: Dict):
         base_params,
         shared_args,
         shared_args_train,
-        shared_args_valid
+        shared_args_valid,
     ) = config.setup_train(params)
 
     # handle specific params
@@ -173,7 +177,7 @@ def sdannce_train(params: Dict):
     make_folder("dannce_train_dir", params)
 
     # setup logger
-    logger = setup_logging(params["dannce_train_dir"], 'training.log')
+    logger = setup_logging(params["dannce_train_dir"], "training.log")
 
     # deploy GPU devices
     device = set_device(params, logger)
@@ -181,8 +185,7 @@ def sdannce_train(params: Dict):
     # fix random seed if specified
     if params["random_seed"] is not None:
         set_random_seed(params["random_seed"])
-        logger.info(
-            "***Fix random seed as {}***".format(params["random_seed"]))
+        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     spec_args = params["dataset_args"]
     spec_args = {} if spec_args is None else spec_args
@@ -202,11 +205,10 @@ def sdannce_train(params: Dict):
     logger.info("Initializing Network...")
 
     params["use_features"] = custom_model_params.get("use_features", False)
-    pose_generator = initialize_train(params, n_cams, 'cpu', logger)[0]
+    pose_generator = initialize_train(params, n_cams, "cpu", logger)[0]
 
     # second stage: pose refiner
-    model_class = getattr(
-        sdanncenets, custom_model_params.get("model", "PoseGCN"))
+    model_class = getattr(sdanncenets, custom_model_params.get("model", "PoseGCN"))
     model = model_class(
         params,
         custom_model_params,
@@ -214,9 +216,10 @@ def sdannce_train(params: Dict):
     )
 
     # load full-model checkpoint (if exists)
-    if 'checkpoint' in custom_model_params.keys():
-        model.load_state_dict(torch.load(
-            custom_model_params["checkpoint"])["state_dict"])
+    if "checkpoint" in custom_model_params.keys():
+        model.load_state_dict(
+            torch.load(custom_model_params["checkpoint"])["state_dict"]
+        )
     model = model.to(device)
     logger.info(model)
 
@@ -259,14 +262,17 @@ def sdannce_predict(params):
     # handle specific params
     # load in params saved in checkpoint to ensure consistency
     try:
-        custom_model_params = torch.load(params["dannce_predict_model"])[
-            "params"]["graph_cfg"]
+        custom_model_params = torch.load(params["dannce_predict_model"])["params"][
+            "graph_cfg"
+        ]
     except:
-        custom_model_params = torch.load(params["dannce_predict_model"])[
-            "params"]["custom_model"]
+        custom_model_params = torch.load(params["dannce_predict_model"])["params"][
+            "custom_model"
+        ]
 
     predict_generator, _, camnames, partition = make_dataset_inference(
-        params, valid_params)
+        params, valid_params
+    )
 
     print("Initializing Network...")
     # first stage: pose generator
@@ -274,8 +280,7 @@ def sdannce_predict(params):
     pose_generator = initialize_model(params, len(camnames[0]), "cpu")
 
     # second stage: pose refiner
-    model_class = getattr(
-        sdanncenets, custom_model_params.get("model", "PoseGCN"))
+    model_class = getattr(sdanncenets, custom_model_params.get("model", "PoseGCN"))
     model = model_class(
         params,
         custom_model_params,
@@ -304,18 +309,12 @@ def sdannce_predict(params):
         return
 
     # load predict model
-    model.load_state_dict(torch.load(
-        params["dannce_predict_model"])['state_dict'])
+    model.load_state_dict(torch.load(params["dannce_predict_model"])["state_dict"])
     model.eval()
 
     # inference
     inference.infer_sdannce(
-        predict_generator,
-        params,
-        custom_model_params,
-        model,
-        partition,
-        device
+        predict_generator, params, custom_model_params, model, partition, device
     )
 
 
@@ -330,7 +329,7 @@ def com_train(params: Dict):
     make_folder("com_train_dir", params)
 
     # setup logger
-    logger = setup_logging(params["com_train_dir"], 'training.log')
+    logger = setup_logging(params["com_train_dir"], "training.log")
 
     # deploy GPU devices
     device = set_device(params, logger)
@@ -339,16 +338,15 @@ def com_train(params: Dict):
     # fix random seed if specified
     if params["random_seed"] is not None:
         set_random_seed(params["random_seed"])
-        logger.info(
-            "***Fix random seed as {}***".format(params["random_seed"]))
+        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     train_dataloader, valid_dataloader = make_data_com(
-        params, train_params, valid_params, logger)
+        params, train_params, valid_params, logger
+    )
 
     # Build network
     logger.info("Initializing Network...")
-    model, optimizer, lr_scheduler = initialize_com_train(
-        params, device, logger)
+    model, optimizer, lr_scheduler = initialize_com_train(params, device, logger)
     logger.info(model)
     logger.info("COMPLETE\n")
 
@@ -362,7 +360,7 @@ def com_train(params: Dict):
         optimizer=optimizer,
         device=device,
         logger=logger,
-        lr_scheduler=lr_scheduler
+        lr_scheduler=lr_scheduler,
     )
 
     trainer.train()
@@ -371,27 +369,36 @@ def com_train(params: Dict):
 def com_predict(params):
     os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
     make_folder("com_predict_dir", params)
-    logger = setup_logging(params["com_predict_dir"], 'training.log')
+    logger = setup_logging(params["com_predict_dir"], "training.log")
 
     device = "cuda:0"
     params, predict_params = config.setup_com_predict(params)
-    predict_generator, params, partition, camera_mats, cameras, datadict = make_dataset_com_inference(
-        params, predict_params)
+    (
+        predict_generator,
+        params,
+        partition,
+        camera_mats,
+        cameras,
+        datadict,
+    ) = make_dataset_com_inference(params, predict_params)
 
     print("Initializing Network...")
     model = initialize_com_train(params, device, logger)[0]
-    model.load_state_dict(torch.load(
-        params["com_predict_weights"])['state_dict'])
+    model.load_state_dict(torch.load(params["com_predict_weights"])["state_dict"])
     model.eval()
 
     # do frame-wise inference
     save_data = {}
-    endIdx = np.min(
-        [
-            params["start_sample"] + params["max_num_samples"],
-            len(predict_generator),
-        ]
-    ) if params["max_num_samples"] != "max" else len(predict_generator)
+    endIdx = (
+        np.min(
+            [
+                params["start_sample"] + params["max_num_samples"],
+                len(predict_generator),
+            ]
+        )
+        if params["max_num_samples"] != "max"
+        else len(predict_generator)
+    )
 
     save_data = inference.infer_com(
         params["start_sample"],
