@@ -828,7 +828,6 @@ def sdannce_inference():
     else:
         handler.com_merge()
 
-    dannce_params = load_params(args["dannce_config"])
     params = load_params("io.yaml")
     com_file = os.path.join(params["com_predict_dir"], COM_BASE_NAME + ".mat")
     handler = MultiGpuHandler(
