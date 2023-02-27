@@ -128,7 +128,8 @@ _param_defaults_dannce = {
     ## error fixing
     "allow_valid_replace": False,
     "replace_view": None,
-    "COM_augmentation": False
+    "COM_augmentation": False,
+    "unlabeled_sampling": None,
 }
 _param_defaults_com = {
     "dsmode": "nn",

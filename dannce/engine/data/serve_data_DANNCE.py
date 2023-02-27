@@ -22,7 +22,7 @@ def prepare_data(
     support=False,
     downsample=1,
     return_cammat=False,
-    return_full2d=False
+    return_full2d=False,
 ):
     """Assemble necessary data structures given a set of config params.
 

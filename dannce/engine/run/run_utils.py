@@ -149,6 +149,19 @@ def make_dataset(
         partition, pairs = processing.resplit_social(partition)
 
     # check all nan inputs
+    if params["unlabeled_sampling"] is not None:
+        samples = partition["train_sampleIDs"]
+        unlabeled_samples = []
+        for samp in samples:
+            if np.isnan(datadict_3d[samp]).all():
+                unlabeled_samples.append(samp)
+        labeled_samples = list(set(samples) - set(unlabeled_samples))
+        n_unlabeled = len(unlabeled_samples)
+        n_labeled = len(labeled_samples)
+        logger.info(
+        "***LABELED: UNLABELED = {}:{}".format(n_labeled, n_unlabeled)
+        )
+        
     if params["unlabeled_fraction"] != None:
         partition = processing.reselect_training(
             partition, datadict_3d, params["unlabeled_fraction"], logger
