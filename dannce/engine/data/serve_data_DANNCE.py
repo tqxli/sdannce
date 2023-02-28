@@ -706,7 +706,7 @@ def setup_dataloaders(train_dataset, valid_dataset, params):
     valid_dataloader = torch.utils.data.DataLoader(
         valid_dataset, valid_batch_size, shuffle=False, collate_fn=collate_fn,
         num_workers=1,
-        persististent_workers=True,
+        persistent_workers=True,
     )
     return train_dataloader, valid_dataloader
 
