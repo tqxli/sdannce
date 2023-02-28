@@ -701,10 +701,12 @@ def setup_dataloaders(train_dataset, valid_dataset, params):
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=valid_batch_size, shuffle=True, collate_fn=collate_fn,
         num_workers=1,
+        persistent_workers=True,
     )
     valid_dataloader = torch.utils.data.DataLoader(
         valid_dataset, valid_batch_size, shuffle=False, collate_fn=collate_fn,
-        num_workers=1
+        num_workers=1,
+        persististent_workers=True,
     )
     return train_dataloader, valid_dataloader
 
