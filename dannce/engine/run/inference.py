@@ -77,6 +77,7 @@ def debug_com(
     n_frame: int,
     n_batch: int,
     n_cam: int,
+    n_instance=None,
 ):
     """Print useful figures for COM debugging.
 
@@ -105,12 +106,16 @@ def debug_com(
     # Write preds
     plt.figure(0)
     plt.cla()
-    plt.imshow(np.squeeze(pred[n_cam]))
-    plt.savefig(
-        os.path.join(
+    pred_to_plot = np.squeeze(pred[n_cam])
+    fname = os.path.join(
             cmapdir,
             params["com_debug"] + str(n_frame * batch_size + n_batch) + ".png",
-        ))
+    )    
+    if n_instance is not None:
+        pred_to_plot = pred_to_plot[..., n_instance]
+        fname = fname.replace('.png', '_0{}.png'.format(n_instance))
+    plt.imshow(pred_to_plot)
+    plt.savefig(fname)
 
     plt.figure(1)
     plt.cla()
@@ -121,11 +126,8 @@ def debug_com(
         (ind[1] - params["crop_height"][0]) / params["downfac"],
         "or",
     )
-    plt.savefig(
-        os.path.join(
-            overlaydir,
-            params["com_debug"] + str(n_frame * batch_size + n_batch) + ".png",
-        ))
+    fname = fname.replace(cmapdir, overlaydir)
+    plt.savefig(fname)
 
 
 def extract_multi_instance_single_channel(
@@ -265,6 +267,7 @@ def extract_multi_instance_multi_channel(
                     n_frame,
                     n_batch,
                     n_cam,
+                    instance
                 )
 
         # Undistort this COM here.
