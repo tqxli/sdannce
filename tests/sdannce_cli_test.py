@@ -54,6 +54,20 @@ class TestComPredict(unittest.TestCase):
         ]
         test_main(args)
 
+    def test_com_predict_mono(self):
+        args = [
+            "dannce",
+            "predict",
+            "com",
+            TEST_COM_CONFIG,
+            "--com-predict-weights=./COM/train_mono_test/checkpoint-epoch2.pth",
+            "--mono=True",
+            "--com-predict-dir=./COM/predict_mono_test",
+            "--max-num-samples=10",
+            "--batch-size=1",
+        ]
+        test_main(args)
+
 
 class TestSdannceTrain(unittest.TestCase):
     def setUp(self):
