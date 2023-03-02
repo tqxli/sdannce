@@ -17,7 +17,7 @@ module load cuda/11.1.0-fasrc01 cudnn/8.0.4.30_cuda11.1-fasrc01
 # Create conda environment if it doesn't exist
 if [ ! -d $HOME/.conda/envs/sdannce ]
 then
-    conda create --name sdannce python=3.7 -Y
+    conda create --name sdannce python=3.7 -y
 fi
 
 # Activate conda environment
