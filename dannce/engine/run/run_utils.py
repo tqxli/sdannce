@@ -218,6 +218,8 @@ def make_dataset(
 
     # Dump the params into file for reproducibility
     processing.save_params_pickle(params)
+    # Save a yaml copy for direct check
+    processing.save_params_yaml(params)
 
     # Setup additional variables for later use
     tifdirs = []  # Training from single images not yet supported in this demo
