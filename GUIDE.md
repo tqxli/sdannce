@@ -12,12 +12,12 @@ For training new networks FROM SCRATCH on custom data:
     - `joint_names`: names of N body landmarks.
     - `joints_idx`: [M, 2] indices indicating M connected landmark pairs (e.g. ElbowL - HandL). 1-indexed.
 
-## Training Workflow
+## Training s-DANNCE
 To maximize utilization of the manual annotations, we recommend the following steps:
 
 1. Warm up by training the **DANNCE** encoder-decoder first. Refer to `demo/train_dannce.sh` for details.
     - Initialize with RAT7M pretrained weights (`demo/weights/DANNCE_comp_pretrained_r7m.pth`) for better and faster convergence. 
-    - We recommend using `COM_augmentation: True` which augments training samples by perturbating COM positions in 3D. The default setting would increase the number of training samples by 3x.
+    - We recommend using `COM_augmentation: {}` which augments training samples by perturbating COM positions in 3D. The default setting would increase the number of training samples by 3x.
     - number of epochs: < 100 or until performance plateau.
     - estimated time: < 8 hours.
 2. Start SDANNCE training by finetuning from networks trained in Step 1. Refer to `demo/train_sdannce.sh` for details.
