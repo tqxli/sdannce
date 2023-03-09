@@ -343,6 +343,8 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
             )
 
             # unlabeled frames sampling
+            # currently assume that all training com files are named `instance%ncom3d.mat`
+            # and there are exactly two instances
             if training and (params["unlabeled_sampling"] is not None) and ('instance' in exp["com_file"].split('/')[-1]):
                 unlabeled_sampling = params["unlabeled_sampling"]
                 sampling_num = unlabeled_sampling
@@ -351,34 +353,12 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
                     sampling_num = len(samples_)
 
                 # read com
-                common_com_file = os.path.join(
-                    "/".join(exp["com_file"].split('/')[:-1]),
-                    'com3d.mat'
-                )
                 if 'instance0' in exp["com_file"]:
                     pair_com_file = exp["com_file"].replace('instance0', 'instance1')
                 else:
                     pair_com_file = exp["com_file"].replace('instance1', 'instance0')
                 
                 selected_samples = []
-                # if os.path.exists(common_com_file):
-                #     comfile = sio.loadmat(exp["com_file"])
-                #     c3d = comfile["com"]
-                #     sampleIDs = np.squeeze(comfile["sampleID"])
-
-                #     if c3d.shape[-1] == 2:
-                #         com_dist = np.sum(np.diff(c3d, axis=-1) ** 2, axis=1)
-                #         com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
-                #         indices_below_thres = np.where(com_dist < 120)[0]
-                #         indices_existing = [i for i in range(
-                #             len(sampleIDs)) if sampleIDs[i] in samples_]
-                #         indices_below_thres = set(
-                #             indices_below_thres) - set(indices_existing)
-                #         indices_below_thres = np.array(indices_below_thres)
-                #         selected_indices = np.random.choice(
-                #             indices_below_thres, sampling_num, replace=False)
-
-                #         selected_samples = sampleIDs[selected_indices]
                 if params.get("valid_exp") is not None and e in params["valid_exp"]:
                     selected_samples = []
                 elif os.path.exists(pair_com_file):
@@ -387,6 +367,7 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
                     sampleIDs = np.squeeze(comfile["sampleID"])
                     com_dist = np.sum((c3d-c3dfile["com"]) ** 2, axis=1)
                     com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
+                    # only sample from close interaction? hard coded distance threshold for now
                     indices_below_thres = np.where(com_dist < 120)[0]
                     indices_existing = [i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_]
                     indices_below_thres = list(set(
