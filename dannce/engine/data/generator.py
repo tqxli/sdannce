@@ -1654,4 +1654,5 @@ class DataGenerator_COM(torch.utils.data.Dataset):
             X -= 114.67
         else:
             X = processing._preprocess_numpy_input(X)
+        X = X.astype("float32", copy=False)
         return X, y
