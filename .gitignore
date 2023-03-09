@@ -32,7 +32,7 @@ tests/2021_07_07_M5_M1/*
 tests/demo_data.zip
 tests/test_social_com_dannce.mat
 tests/weights/*
-priors/*
+tests/priors/*
 *.out
 
 # PyInstaller
