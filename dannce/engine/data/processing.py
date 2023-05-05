@@ -731,13 +731,6 @@ def make_data_splits(
 
         partition["valid_sampleIDs"] = samples[valid_inds]
         partition["train_sampleIDs"] = train_samples[train_inds]
-
-        # Save train/val inds
-        with open(os.path.join(results_dir, "val_samples.pickle"), "wb") as f:
-            cPickle.dump(partition["valid_sampleIDs"], f)
-
-        with open(os.path.join(results_dir, "train_samples.pickle"), "wb") as f:
-            cPickle.dump(partition["train_sampleIDs"], f)
     else:
         # Load validation samples from elsewhere
         with open(
@@ -748,7 +741,13 @@ def make_data_splits(
         partition["train_sampleIDs"] = [
             f for f in samples if f not in partition["valid_sampleIDs"]
         ]
+    # Save train/val inds
+    with open(os.path.join(results_dir, "val_samples.pickle"), "wb") as f:
+        cPickle.dump(partition["valid_sampleIDs"], f)
 
+    with open(os.path.join(results_dir, "train_samples.pickle"), "wb") as f:
+        cPickle.dump(partition["train_sampleIDs"], f)
+    
     # Reset any seeding so that future batch shuffling, etc. are not tied to this seed
     if params["data_split_seed"] is not None:
         np.random.seed()
