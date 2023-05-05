@@ -738,6 +738,13 @@ class PoseDatasetNPY(PoseDatasetFromMem):
             X_grid = np.reshape(X_grid, (X_grid.shape[0], -1, 3))
             y_3d = y_3d_max
 
+        ncam = int(X.shape[-1] // self.chan_num)
+        # breakpoint()
+        X, X_grid, y_3d, aux = self.do_augmentation(X, X_grid, y_3d, aux)
+
+        # Randomly re-order, if desired
+        X = self.do_random(X)
+        
         if self.mono and self.chan_num == 3:
             # Convert from RGB to mono using the skimage formula. Drop the duplicated frames.
             # Reshape so RGB can be processed easily.
@@ -758,13 +765,6 @@ class PoseDatasetNPY(PoseDatasetFromMem):
                 + X[:, :, :, :, 1] * 0.7154
                 + X[:, :, :, :, 2] * 0.0721
             )
-
-        ncam = int(X.shape[-1] // self.chan_num)
-
-        X, X_grid, y_3d, aux = self.do_augmentation(X, X_grid, y_3d, aux)
-
-        # Randomly re-order, if desired
-        X = self.do_random(X)
 
         if self.cam1:
             # collapse the cameras to the batch dimensions.

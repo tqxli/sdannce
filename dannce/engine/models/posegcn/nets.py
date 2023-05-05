@@ -3,7 +3,7 @@ import torch.nn as nn
 from dannce.engine.models.posegcn.gcn_blocks import _ResGraphConv, SemGraphConv, _GraphConv
 from dannce.engine.models.posegcn.utils import *
 import dannce.engine.data.ops as ops
-
+from dannce.engine.skeletons.utils import load_body_profile
 
 NODES_GROUP = [[i] for i in range(23)]
 TEMPORAL_FLOW = np.array([0, 4, 9, 13, 17, 21]) # restrict the flows along temporal dimension 
@@ -44,7 +44,14 @@ class PoseGCN(nn.Module):
         self.social = (n_instances > 1) and inter_social
         
         # adjacency matrix
-        self.adj = adj = build_adj_mx_from_edges(social=self.social, t_dim=t_dim, t_flow=t_flow, num_joints=n_joints)
+        body_profile = load_body_profile(params.get('skeleton', 'rat23'))
+        self.adj = adj = build_adj_mx_from_edges(
+            social=self.social, 
+            t_dim=t_dim, 
+            t_flow=t_flow, 
+            num_joints=n_joints,
+            edge=body_profile['limbs']
+        )
 
         # construct GCN layers
         self.use_features = use_features = model_params.get("use_features", False)

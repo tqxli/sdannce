@@ -130,6 +130,7 @@ _param_defaults_dannce = {
     "replace_view": None,
     "COM_augmentation": None,
     "unlabeled_sampling": None,
+    "skeleton": None
 }
 _param_defaults_com = {
     "dsmode": "nn",
