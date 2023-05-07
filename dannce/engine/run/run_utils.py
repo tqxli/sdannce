@@ -779,6 +779,22 @@ def _make_data_mem(
         if params["social_training"]
         else generator.DataGenerator_3Dconv
     )
+    
+    # Populate with COM augmented samples if needed
+    if params["COM_augmentation"] is not None:
+        (
+            samples,
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            partition,
+        ) = sample_COM_augmentation(
+            params["COM_augmentation"],
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            partition,
+        )
 
     # Used to initialize arrays for mono, and also in *frommem (the final generator)
     params["chan_num"] = 1 if params["mono"] else params["n_channels_in"]
