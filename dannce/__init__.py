@@ -6,7 +6,7 @@ _param_defaults_shared = {
     "immode": "vid",
     "verbose": 1,
     "gpu_id": "0",
-    "loss": "mask_nan_keep_loss",
+    "loss": "L1Loss",
     "start_batch": 0,
     "exp": None,
     "viddir": "videos",
@@ -51,7 +51,6 @@ _param_defaults_shared = {
     "save_period": 100,
     "predict_labeled_only": False,
     "training_fraction": None,
-    "custom_model": None,
     "graph_cfg": None,
     "label3d_index": 0
 }
@@ -69,7 +68,6 @@ _param_defaults_dannce = {
     "weighted": False,
     "com_method": "median",
     "channel_combo": None,
-    "new_last_kernel_size": [3, 3, 3],
     "n_channels_out": 20,
     "cthresh": None,
     "medfilt_window": None,

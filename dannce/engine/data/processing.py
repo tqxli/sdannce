@@ -8,6 +8,7 @@ from typing import Dict, Text
 import pickle
 from tqdm import tqdm
 from copy import deepcopy
+import yaml
 
 import scipy.io as sio
 from scipy.ndimage.filters import maximum_filter
@@ -1299,6 +1300,21 @@ def save_params_pickle(params):
     return True
 
 
+def save_params_yaml(params):
+    """Save copy of params as yaml.
+
+    Args:
+        params (Dict): experiment parameters
+    """
+    # exclude keys for intermediate computations
+    _exclude = ['experiment', 'chunks']
+    params_to_save = {k:v for k, v in params.items() if k not in _exclude}
+    handle = open(
+        os.path.join(params["dannce_train_dir"], "params.yaml"), "w"
+    )
+    yaml.dump(params_to_save, handle, default_flow_style=False, sort_keys=False)
+
+
 def prepare_save_metadata(params):
     """
     To save metadata, i.e. the prediction param values associated with COM or DANNCE
@@ -1316,12 +1332,6 @@ def prepare_save_metadata(params):
             meta["loss"] = [loss.__name__ for loss in meta["loss"]]
         except:
             meta["loss"] = list(meta["loss"].keys())
-    # if "net" in meta:
-    #     meta["net"] = meta["net"].__name__
-    # if "metric" in meta:
-    #     meta["metric"] = [
-    #         f.__name__ if not isinstance(f, str) else f for f in meta["metric"]
-    #     ]
 
     meta = make_none_safe(meta.copy())
     return meta

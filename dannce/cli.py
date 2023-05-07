@@ -175,11 +175,6 @@ def add_shared_args(
     )
 
     parser.add_argument(
-        "--custom-model",
-        dest="custom_model",
-    )
-
-    parser.add_argument(
         "--random-seed",
         dest="random_seed",
         type=int,
@@ -354,12 +349,6 @@ def add_dannce_shared_args(
         "--com-file",
         dest="com_file",
         help="Path to com file to use during dannce prediction.",
-    )
-    parser.add_argument(
-        "--new-last-kernel-size",
-        dest="new_last_kernel_size",
-        type=ast.literal_eval,
-        help="List denoting last 3d kernel size. Ex: --new-last-kernel-size=[3,3,3]",
     )
     parser.add_argument(
         "--new-n-channels_out",
