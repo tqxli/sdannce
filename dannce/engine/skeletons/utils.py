@@ -7,7 +7,7 @@ _BODY_PROFILES = [file.split('.mat')[0] for file in os.listdir(ROOT) if file.end
 
 
 def load_body_profile(name):
-    assert name in _BODY_PROFILES
+    assert name in _BODY_PROFILES, f"{name} not a valid skeleton profile"
     profile = sio.loadmat(os.path.join(ROOT, f"{name}.mat"))
     limbs = profile["joints_idx"] - 1
     return {'limbs': limbs}
