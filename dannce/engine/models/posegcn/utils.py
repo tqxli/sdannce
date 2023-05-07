@@ -14,12 +14,6 @@ def build_adj_mx_from_edges(
     num_joints=NUM_JOINTS, edge=EDGE, social=False, t_dim=1, t_flow=TEMPORAL_FLOW
 ):
     t_flow = np.arange(num_joints)
-    if num_joints == 23:
-        edge = load_body_profile("rat23")["limbs"] 
-    elif num_joints == 22:
-        edge = load_body_profile("mouse22")["limbs"]
-    elif num_joints == 20:
-        edge = load_body_profile("jesse_skeleton")["limbs"]
         
     if social:
         inter = np.stack((np.arange(num_joints), np.arange(num_joints)+num_joints), axis=-1)

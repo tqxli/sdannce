@@ -457,6 +457,9 @@ def adjust_loss_params(params):
         # adjust batch size to the number of unique samples
         # populate with augmented samples on the fly during training
         params["batch_size"] = n_samples_unique
+    
+    if "BoneLengthLoss" in params["loss"]:
+        params["loss"]["BoneLengthLoss"]["body_profile"] = params.get("skeleton", "rat23")
 
     return params
 

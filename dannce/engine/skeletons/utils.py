@@ -2,17 +2,15 @@ from logging import RootLogger
 import os
 import scipy.io as sio
 
-_BODY_PROFILES = ['mouse22', 'rat7m', 'rat16', 'rat23', 'jesse_skeleton']
-
 ROOT = os.path.abspath(os.path.dirname(__file__))
+_BODY_PROFILES = [file.split('.mat')[0] for file in os.listdir(ROOT) if file.endswith('.mat')]
 
 
 def load_body_profile(name):
-    assert name in _BODY_PROFILES
+    assert name in _BODY_PROFILES, f"{name} not a valid skeleton profile"
     profile = sio.loadmat(os.path.join(ROOT, f"{name}.mat"))
     limbs = profile["joints_idx"] - 1
-    joints_name = [j[0][0] for j in profile["joint_names"]]
-    return {'joints_name': joints_name, 'limbs': limbs}
+    return {'limbs': limbs}
 
 
 SYMMETRY = {

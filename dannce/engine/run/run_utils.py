@@ -149,6 +149,19 @@ def make_dataset(
         partition, pairs = processing.resplit_social(partition)
 
     # check all nan inputs
+    if params["unlabeled_sampling"] is not None:
+        samples = partition["train_sampleIDs"]
+        unlabeled_samples = []
+        for samp in samples:
+            if np.isnan(datadict_3d[samp]).all():
+                unlabeled_samples.append(samp)
+        labeled_samples = list(set(samples) - set(unlabeled_samples))
+        n_unlabeled = len(unlabeled_samples)
+        n_labeled = len(labeled_samples)
+        logger.info(
+        "***LABELED: UNLABELED = {}:{}".format(n_labeled, n_unlabeled)
+        )
+        
     if params["unlabeled_fraction"] != None:
         partition = processing.reselect_training(
             partition, datadict_3d, params["unlabeled_fraction"], logger
@@ -524,20 +537,28 @@ def make_rat7m(
 
 
 def sample_COM_augmentation(
-    datadict, datadict_3d, com3d_dict, partition, aug_radius=20, iters=2
+    comaug_params,
+    datadict, datadict_3d, com3d_dict, partition,
 ):
+    perturb_radius = comaug_params.get('perturb_radius', 20)
+    aug_iters = comaug_params.get("aug_iters", 2)
+    
     train_samples = list(partition["train_sampleIDs"])
     valid_samples = list(partition["valid_sampleIDs"])
     train_samples_new = []
-    for iter in range(iters):
+    for iter in range(aug_iters):
         pbar = tqdm(train_samples)
         for sample in pbar:
             # Only augment training samples
             if sample not in train_samples:
                 continue
+            
+            # Only augment labeled samples
+            if np.isnan(datadict_3d[sample]).all():
+                continue
 
             com3d_new = deepcopy(com3d_dict[sample])
-            com_aug = aug_radius * 2 * np.random.rand(len(com3d_new)) - aug_radius
+            com_aug = perturb_radius * 2 * np.random.rand(len(com3d_new)) - perturb_radius
             com3d_new += com_aug
             # Embed the used COM augmentation in sampleID?
             # sample_new = sample+"-aug{}".format('_'.join(str(coord) for coord in com_aug))
@@ -547,6 +568,7 @@ def sample_COM_augmentation(
             datadict_3d[sample_new] = datadict_3d[sample]
             datadict[sample_new] = datadict[sample]
 
+    print("Added {} COM augmented samples.".format(len(train_samples_new)))
     partition["train_sampleIDs"] = np.array(sorted(train_samples + train_samples_new))
     samples = np.array(sorted(train_samples + train_samples_new + valid_samples))
     return samples, datadict, datadict_3d, com3d_dict, partition
@@ -583,7 +605,7 @@ def _make_data_npy(
         missing_samples = np.array(sorted(missing_samples))
     else:
         # Populate with COM augmented samples if needed
-        if params["COM_augmentation"]:
+        if params["COM_augmentation"] is not None:
             (
                 samples,
                 datadict,
@@ -591,6 +613,7 @@ def _make_data_npy(
                 com3d_dict,
                 partition,
             ) = sample_COM_augmentation(
+                params["COM_augmentation"],
                 datadict,
                 datadict_3d,
                 com3d_dict,
@@ -758,6 +781,22 @@ def _make_data_mem(
         if params["social_training"]
         else generator.DataGenerator_3Dconv
     )
+    
+    # Populate with COM augmented samples if needed
+    if params["COM_augmentation"] is not None:
+        (
+            samples,
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            partition,
+        ) = sample_COM_augmentation(
+            params["COM_augmentation"],
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            partition,
+        )
 
     # Used to initialize arrays for mono, and also in *frommem (the final generator)
     params["chan_num"] = 1 if params["mono"] else params["n_channels_in"]
