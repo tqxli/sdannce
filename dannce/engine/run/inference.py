@@ -829,6 +829,7 @@ def infer_sdannce(
     save_data, save_data_init = {}, {}
     start_ind = params["start_batch"]
     end_ind = params["maxbatch"]
+    max_num_sample = params["max_num_sample"] if params["maxbatch"] != "max" else n_frames
 
     pbar = tqdm(range(start_ind, end_ind))
     for idx, i in enumerate(pbar):
@@ -841,7 +842,7 @@ def infer_sdannce(
                                       "/init_save_data_AVG.mat")
 
         # retrieve batched inputs
-        indices = np.arange(i*bs, min((i+1)*bs, params["max_num_samples"], n_frames))
+        indices = np.arange(i*bs, min((i+1)*bs, max_num_sample, n_frames))
         ims = generator.get_batched(indices)
         vols = torch.from_numpy(ims[0]).permute(0, 4, 1, 2, 3)
 
