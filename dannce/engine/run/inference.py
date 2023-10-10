@@ -829,7 +829,7 @@ def infer_sdannce(
     save_data, save_data_init = {}, {}
     start_ind = params["start_batch"]
     end_ind = params["maxbatch"]
-    max_num_sample = params["max_num_sample"] if params["maxbatch"] != "max" else n_frames
+    max_num_sample = params["max_num_samples"] if params["maxbatch"] != "max" else n_frames
 
     pbar = tqdm(range(start_ind, end_ind))
     for idx, i in enumerate(pbar):
