@@ -13,11 +13,11 @@ from dannce.engine.models.nets import (
     initialize_com_train,
 )
 from dannce.engine.trainer import *
-from dannce.engine.run.logger import setup_logging
 from dannce.engine.run.run_utils import *
 
+# from loguru import logger
+
 process = psutil.Process(os.getpid())
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
 
 def dannce_train(params: Dict):
@@ -29,6 +29,7 @@ def dannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
+    logger, device = experiment_setup(params, "dannce_train")
     (
         params,
         base_params,
@@ -36,20 +37,6 @@ def dannce_train(params: Dict):
         shared_args_train,
         shared_args_valid,
     ) = config.setup_train(params)
-
-    # Make the training directory if it does not exist.
-    make_folder("dannce_train_dir", params)
-
-    # setup logger
-    logger = setup_logging(params["dannce_train_dir"], "training.log")
-
-    # deploy GPU devices
-    device = set_device(params, logger)
-
-    # fix random seed if specified
-    if params["random_seed"] is not None:
-        set_random_seed(params["random_seed"])
-        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     spec_args = params["dataset_args"]
     spec_args = {} if spec_args is None else spec_args
@@ -69,7 +56,7 @@ def dannce_train(params: Dict):
     logger.info("Initializing Network...")
     model, optimizer, lr_scheduler = initialize_train(params, n_cams, device, logger)
     logger.info(model)
-    logger.info("COMPLETE\n")
+    logger.success("Ready for training!\n")
 
     # set up trainer
     trainer_class = DannceTrainer
@@ -94,11 +81,7 @@ def dannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
-    make_folder("dannce_predict_dir", params)
-
-    # Because CUDA_VISBILE_DEVICES is already set to a single GPU, the gpu_id here should be "0"
-    device = "cuda:0"
+    logger, device = experiment_setup(params, "dannce_predict")
     params, valid_params = config.setup_predict(params)
     if params["dataset"] == "rat7m":
         predict_generator = dataset.RAT7MNPYDataset(train=False)
@@ -112,9 +95,8 @@ def dannce_predict(params: Dict):
             camnames,
             partition,
         ) = make_dataset_inference(params, valid_params)
-
-    # model = build_model(params, camnames)
-    print("Initializing Network...")
+        
+    logger.info("Initializing Network...")
     model = initialize_model(params, len(camnames[0]), device)
 
     # load predict model
@@ -162,6 +144,7 @@ def sdannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
+    logger, device = experiment_setup(params, "dannce_train")
     (
         params,
         base_params,
@@ -172,20 +155,6 @@ def sdannce_train(params: Dict):
 
     # handle specific params
     custom_model_params = params["graph_cfg"]
-
-    # Make the training directory if it does not exist.
-    make_folder("dannce_train_dir", params)
-
-    # setup logger
-    logger = setup_logging(params["dannce_train_dir"], "training.log")
-
-    # deploy GPU devices
-    device = set_device(params, logger)
-
-    # fix random seed if specified
-    if params["random_seed"] is not None:
-        set_random_seed(params["random_seed"])
-        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     spec_args = params["dataset_args"]
     spec_args = {} if spec_args is None else spec_args
@@ -227,7 +196,7 @@ def sdannce_train(params: Dict):
     optimizer = set_optimizer(params, model)
     lr_scheduler = set_lr_scheduler(params, optimizer, logger)
 
-    logger.info("COMPLETE\n")
+    logger.success("Ready for training!\n")
 
     # set up trainer
     trainer = GCNTrainer(
@@ -253,9 +222,7 @@ def sdannce_predict(params):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    device = "cuda:0"
-    os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
-    make_folder("dannce_predict_dir", params)
+    logger, device = experiment_setup(params, "dannce_predict")
 
     params, valid_params = config.setup_predict(params)
 
@@ -274,7 +241,7 @@ def sdannce_predict(params):
         params, valid_params
     )
 
-    print("Initializing Network...")
+    logger.info("Initializing Network...")
     # first stage: pose generator
     params["use_features"] = custom_model_params.get("use_features", False)
     pose_generator = initialize_model(params, len(camnames[0]), "cpu")
@@ -323,23 +290,8 @@ def com_train(params: Dict):
     Args:
         params (Dict): Parameters dictionary.
     """
+    logger, device = experiment_setup(params, "com_train")
     params, train_params, valid_params = config.setup_com_train(params)
-
-    # make the train directory if does not exist
-    make_folder("com_train_dir", params)
-
-    # setup logger
-    logger = setup_logging(params["com_train_dir"], "training.log")
-
-    # deploy GPU devices
-    device = set_device(params, logger)
-    logger.info("***Use {} GPU for training.***".format(params["gpu_id"]))
-
-    # fix random seed if specified
-    if params["random_seed"] is not None:
-        set_random_seed(params["random_seed"])
-        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
-
     train_dataloader, valid_dataloader = make_data_com(
         params, train_params, valid_params, logger
     )
@@ -348,7 +300,7 @@ def com_train(params: Dict):
     logger.info("Initializing Network...")
     model, optimizer, lr_scheduler = initialize_com_train(params, device, logger)
     logger.info(model)
-    logger.info("COMPLETE\n")
+    logger.success("Ready for training!\n")
 
     # set up trainer
     trainer_class = COMTrainer
@@ -367,11 +319,7 @@ def com_train(params: Dict):
 
 
 def com_predict(params):
-    os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
-    make_folder("com_predict_dir", params)
-    logger = setup_logging(params["com_predict_dir"], "training.log")
-
-    device = "cuda:0"
+    logger, device = experiment_setup(params, "com_predict")
     params, predict_params = config.setup_com_predict(params)
     (
         predict_generator,
@@ -382,7 +330,7 @@ def com_predict(params):
         datadict,
     ) = make_dataset_com_inference(params, predict_params)
 
-    print("Initializing Network...")
+    logger.info("Initializing Network...")
     model = initialize_com_train(params, device, logger)[0]
     model.load_state_dict(torch.load(params["com_predict_weights"])["state_dict"])
     model.eval()

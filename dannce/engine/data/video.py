@@ -8,6 +8,7 @@ import multiprocessing
 import imageio
 import time
 from typing import List, Dict, Tuple, Text
+from loguru import logger
 
 
 @attr.s(auto_attribs=True, eq=False, order=False)
@@ -229,7 +230,7 @@ class LoadVideoFrame:
                     if self.predict_flag
                     else MediaVideo(thisvid_name, grayscale=False)
                 )
-            print("Loading new video: {} for {}".format(abname, camname))
+            logger.info("Loading new video: {} for {}".format(abname, camname))
             self.currvideo_name[camname] = abname
             # close current vid
             # Without a sleep here, ffmpeg can hang on video close
@@ -273,7 +274,7 @@ class LoadVideoFrame:
             )
         # This deals with a strange indexing error in the pup data.
         except IndexError:
-            print("Indexing error, using previous frame")
+            logger.warning("Indexing error, using previous frame")
             im = (
                 vid.get_data(frame_num - 1).astype("uint8")
                 if self.predict_flag

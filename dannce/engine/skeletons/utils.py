@@ -6,6 +6,11 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 _BODY_PROFILES = [file.split('.mat')[0] for file in os.listdir(ROOT) if file.endswith('.mat')]
 
 
+# _BODY_PROFILES = {
+#     ""
+# }
+
+
 def load_body_profile(name):
     assert name in _BODY_PROFILES, f"{name} not a valid skeleton profile"
     profile = sio.loadmat(os.path.join(ROOT, f"{name}.mat"))

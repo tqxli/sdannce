@@ -103,7 +103,6 @@ _param_defaults_dannce = {
     "heatmap_reg": False,
     "heatmap_reg_coeff": 0.01,
     "save_pred_targets": False,
-    "avg+max": None,
     ## changes made to temporal
     "support_exp": None,
     "n_support_chunks": None,
