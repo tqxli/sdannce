@@ -8,7 +8,7 @@ dannce predict sdannce \
 	--dannce-predict-model ../weights/SDANNCE_gcn_bsl_FM_ep100.pth \
 	--dannce-predict-dir ./SDANNCE/predict02 \
 	--com-file ./COM/predict01/com3d.mat \
-	--max-num-samples 10 \
+	--max-num-samples 500 \
 	--batch-size 1
 
 cd ..

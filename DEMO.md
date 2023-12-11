@@ -22,7 +22,7 @@
 
 ## Quickest demo of s-DANNCE
 ### Prediction with s-DANNCE
-Here, using a pretrained s-DANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`), we predict social animal 3D poses for the first 10 frames of an experiment `2021_07_05_M4_M7` by running the script
+Here, using a pretrained s-DANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`), we predict social animal 3D poses for the first 500 frames of an experiment `2021_07_05_M4_M7` by running the script
 ```
 sh predict_sdannce.sh
 ```
@@ -34,12 +34,12 @@ We then visualize the predictions just obtained from last step, from running
 ```
 sh vis_sdannce.sh
 ```
-You should find the resulted video overlay with keypoint projections in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis/*.mp4`.
+You should find the resulted 10-second video overlay with keypoint projections in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis/*.mp4`.
 
 
 <details>
-<summary>MovieWriter stderr during visualization</summary>
-- "MovieWriter stderr:
+<summary> In case that you encountered a MovieWriter stderr during visualization</summary>
+- Error: "MovieWriter stderr:
 [libopenh264 @ 0x55b92cb33580] Incorrect library version loaded
 Error initializing output stream 0:0 -- Error while opening encoder for output stream #0:0 - maybe incorrect parameters such as bit_rate, rate, width or height ..."
 
