@@ -22,6 +22,7 @@ setup(
         "psutil",
         "tqdm",
         "pandas",
+        "loguru",
     ],
     entry_points={
         "console_scripts": [

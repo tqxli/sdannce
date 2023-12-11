@@ -9,6 +9,7 @@ import pickle
 from tqdm import tqdm
 from copy import deepcopy
 import yaml
+from loguru import logger
 
 import scipy.io as sio
 from scipy.ndimage.filters import maximum_filter
@@ -117,7 +118,7 @@ def generate_readers(
         if pathonly:
             out[mp4files_scrub[i]] = os.path.join(viddir, mp4files[i])
         else:
-            print(
+            logger.warning(
                 "NOTE: Ignoring {} files numbered above {}".format(
                     extensions, maxopt
                 )
@@ -329,7 +330,7 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
     # If there is "clean" data (full marker set), can take the
     # 3D COM from the labels
     if exp["com_fromlabels"] and training:
-        print("For experiment {}, calculating 3D COM from labels".format(e))
+        logger.info("For experiment {}, calculating 3D COM from labels".format(e))
         com3d_dict_ = deepcopy(datadict_3d_)
         for key in com3d_dict_.keys():
             com3d_dict_[key] = np.nanmean(
@@ -378,7 +379,7 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
                         indices_below_thres, size=sampling_num, replace=False)
                     selected_samples = sampleIDs[selected_indices]
                 
-                print("Unlabeled sampling: EXP {} added {} samples".format(e, len(selected_samples)))
+                logger.info("Unlabeled sampling: EXP {} added {} samples".format(e, len(selected_samples)))
                 samples_ = list(samples_) + list(selected_samples)
                 samples_ = sorted(samples_)
                 samples_ = np.array(samples_)
@@ -520,7 +521,7 @@ def make_data_splits(
                         v = params["num_validation_per_exp"]
                         if v > len(temporal_chunks[e]):
                             v = len(temporal_chunks[e])
-                            print(
+                            logger.warning(
                                 "Setting all {} samples in experiment {} for validation purpose."
                                 .format(v, e)
                             )
@@ -560,7 +561,7 @@ def make_data_splits(
                     train_chunks += list(temporal_chunks[e])
 
             train_expts = np.arange(num_experiments)
-            print("TRAIN EXPTS: {}".format(train_expts))
+            logger.info("TRAIN EXPTS: {}".format(train_expts))
 
             if isinstance(params["training_fraction"], float):
                 assert (params["training_fraction"] <
@@ -654,7 +655,7 @@ def make_data_splits(
                 v = params["num_validation_per_exp"]
                 if v > len(tinds):
                     v = len(tinds)
-                    print(
+                    logger.info(
                         "Setting all {} samples in experiment {} for validation purpose."
                         .format(v, e)
                     )
@@ -710,7 +711,7 @@ def make_data_splits(
         else:
             train_expts = np.arange(num_experiments)
 
-        print("TRAIN EXPTS: {}".format(train_expts))
+        logger.info("TRAIN EXPTS: {}".format(train_expts))
 
         if params["num_train_per_exp"] is not None:
             # Then sample randomly without replacement from training sampleIDs
@@ -719,8 +720,8 @@ def make_data_splits(
                     i for i in range(len(train_samples))
                     if int(train_samples[i].split("_")[0]) == e
                 ]
-                print(e)
-                print(len(tinds))
+                # print(e)
+                # print(len(tinds))
                 train_inds = train_inds + list(
                     np.random.choice(
                         tinds, (params["num_train_per_exp"], ), replace=False
@@ -835,7 +836,7 @@ def remove_samples_npy(npydir, samples, params):
         sampdiff = len(npysamps) - len(goodsamps)
 
         # import pdb; pdb.set_trace()
-        print(
+        logger.warning(
             "Removed {} samples from {} because corresponding image or grid files could not be found"
             .format(sampdiff, params["experiment"][e]["label3d_file"])
         )
@@ -1014,7 +1015,7 @@ def write_debug(
         # Plot all training images and save
         # create new directory for images if necessary
         debugdir = os.path.join(params["com_train_dir"], outdir)
-        print("Saving debug images to: " + debugdir)
+        logger.success("Saving debug images to: " + debugdir)
         if not os.path.exists(debugdir):
             os.makedirs(debugdir)
 
@@ -1034,7 +1035,7 @@ def write_debug(
                 plot_out(ims_out[i], label_out[i], str(i) + ".png")
 
     elif params["debug"] and params["multi_mode"]:
-        print("Note: Cannot output debug information in COM multi-mode")
+        logger.error("Note: Cannot output debug information in COM multi-mode")
 
 
 def save_volumes_into_npy(
@@ -1348,7 +1349,7 @@ def save_COM_dannce_mat(params, com3d, sampleID):
     com["metadata"] = prepare_save_metadata(params)
 
     # Open dannce.mat file, add com and re-save
-    print("Saving COM predictions to " + params["label3d_file"])
+    logger.success("Saving COM predictions to " + params["label3d_file"])
     rr = sio.loadmat(params["label3d_file"])
     # For safety, save old file to temp and delete it at the end
     sio.savemat(params["label3d_file"] + ".temp", rr)
@@ -1401,7 +1402,7 @@ def save_COM_checkpoint(
         )
 
     cfilename = os.path.join(results_dir, file_name + ".mat")
-    print("Saving 3D COM to {}".format(cfilename))
+    logger.success("Saving 3D COM to {}".format(cfilename))
     samples_keys = list(com3d_dict.keys())
 
     if params["n_instances"] > 1:
@@ -1442,7 +1443,7 @@ def save_COM_checkpoint(
 
 def write_com_file(params, samples_, com3d_dict_):
     cfilename = os.path.join(params["dannce_predict_dir"], "com3d_used.mat")
-    print("Saving 3D COM to {}".format(cfilename))
+    logger.success("Saving 3D COM to {}".format(cfilename))
     c3d_shape = com3d_dict_[samples_[0]].shape
     c3d = np.zeros((len(samples_), *c3d_shape))
     for i in range(len(samples_)):
@@ -1601,35 +1602,6 @@ def __initAvgMax(t, g, o, params):
             )
 
     return o
-
-
-def initAvgMax(y_train, y_valid, Xtg, Xvg, params):
-    """
-    Converts 3D coordinate targets into 3D volumes, for AVG+MAX training
-    """
-    gridsize = tuple([params["nvox"]] * 3)
-    y_train_aux = np.zeros(
-        (
-            y_train.shape[0],
-            *gridsize,
-            params["new_n_channels_out"],
-        ),
-        dtype="float32",
-    )
-
-    y_valid_aux = np.zeros(
-        (
-            y_valid.shape[0],
-            *gridsize,
-            params["new_n_channels_out"],
-        ),
-        dtype="float32",
-    )
-
-    return (
-        __initAvgMax(y_train, Xtg, y_train_aux, params),
-        __initAvgMax(y_valid, Xvg, y_valid_aux, params),
-    )
 
 
 def batch_rgb2gray(imstack):

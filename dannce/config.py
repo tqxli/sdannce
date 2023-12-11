@@ -12,6 +12,7 @@ from dannce import (
     _param_defaults_shared,
     _param_defaults_com,
 )
+from loguru import logger
 
 _DEFAULT_VIDDIR = "videos"
 _DEFAULT_VIDDIR_SIL = "videos_sil"
@@ -29,12 +30,11 @@ def grab_predict_label3d_file(defaultdir="", index=0):
     label3d_files = [
         os.path.join(def_ep, f) for f in label3d_files if "dannce.mat" in f
     ]
-    # label3d_files.sort()
     label3d_files = sorted(label3d_files)
-    # breakpoint()
+
     if len(label3d_files) == 0:
         raise Exception("Did not find any *dannce.mat file in {}".format(def_ep))
-    print("Using the following *dannce.mat files: {}".format(label3d_files[index]))
+    logger.info("Using the following *dannce.mat files: {}".format(label3d_files[index]))
     return label3d_files[index]
 
 
@@ -99,12 +99,6 @@ def infer_params(params, dannce_net, prediction):
     # set the raw im height and width
     print_and_set(params, "raw_im_h", im.shape[0])
     print_and_set(params, "raw_im_w", im.shape[1])
-
-    if dannce_net and params["avg+max"] is not None:
-        # To use avg+max, need to start with an AVG network
-        # In case the net type is not properly specified, set it here
-        print_and_set(params, "expval", True)
-        print_and_set(params, "net_type", "AVG")
 
     if dannce_net and params["net"] is None:
         # Here we assume that if the network and expval are specified by the user
@@ -201,7 +195,7 @@ def infer_params(params, dannce_net, prediction):
 def print_and_set(params, varname, value):
     # Should add new values to params in place, no need to return
     params[varname] = value
-    print("Setting {} to {}.".format(varname, params[varname]))
+    logger.warning("Setting {} to {}.".format(varname, params[varname]))
 
 
 def check_config(params, dannce_net, prediction):
@@ -239,57 +233,23 @@ def check_camnames(camp):
                 raise Exception("Camera names cannot contain '_' ")
 
 
-def check_net_expval(params):
-    """
-    Raise an exception if the network and expval (i.e. AVG/MAX) are incompatible
-    """
-    if params["net"] is None:
-        raise Exception("net is None. You must set either net or net_type.")
-    if params["net_type"] is not None:
-        if (
-            params["net_type"] == "AVG"
-            and "AVG" not in params["net"]
-            and "expected" not in params["net"]
-        ):
-            raise Exception("net_type is set to AVG, but you are using a MAX network")
-        if (
-            params["net_type"] == "MAX"
-            and "MAX" not in params["net"]
-            and params["net"] != "unet3d_big"
-        ):
-            raise Exception("net_type is set to MAX, but you are using a AVG network")
+# def copy_config(results_dir, main_config, io_config):
+#     """
+#     Copies config files into the results directory, and creates results
+#         directory if necessary
+#     """
+#     print("Saving results to: {}".format(results_dir))
 
-    if (
-        params["expval"]
-        and "AVG" not in params["net"]
-        and "expected" not in params["net"]
-    ):
-        raise Exception("expval is set to True but you are using a MAX network")
-    if (
-        not params["expval"]
-        and "MAX" not in params["net"]
-        and params["net"] != "unet3d_big"
-    ):
-        raise Exception("expval is set to False but you are using an AVG network")
+#     if not os.path.exists(results_dir):
+#         os.makedirs(results_dir)
 
+#     mconfig = os.path.join(
+#         results_dir, "copy_main_config_" + main_config.split(os.sep)[-1]
+#     )
+#     dconfig = os.path.join(results_dir, "copy_io_config_" + io_config.split(os.sep)[-1])
 
-def copy_config(results_dir, main_config, io_config):
-    """
-    Copies config files into the results directory, and creates results
-        directory if necessary
-    """
-    print("Saving results to: {}".format(results_dir))
-
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir)
-
-    mconfig = os.path.join(
-        results_dir, "copy_main_config_" + main_config.split(os.sep)[-1]
-    )
-    dconfig = os.path.join(results_dir, "copy_io_config_" + io_config.split(os.sep)[-1])
-
-    shutil.copyfile(main_config, mconfig)
-    shutil.copyfile(io_config, dconfig)
+#     shutil.copyfile(main_config, mconfig)
+#     shutil.copyfile(io_config, dconfig)
 
 
 def inherit_config(child, parent, keys):
@@ -300,8 +260,8 @@ def inherit_config(child, parent, keys):
     for key in keys:
         if key not in child.keys():
             child[key] = parent[key]
-            print(
-                "{} not found in io.yaml file, falling back to main config".format(key)
+            logger.warning(
+                "{} not found in io.yaml file, falling back to default".format(key)
             )
 
     return child
@@ -430,7 +390,7 @@ def adjust_loss_params(params):
 
         # by default, the maximum batch size should be >= temporal seq len
         if params["batch_size"] < temp_n:
-            print("Batch size < temporal seq size; reducing temporal chunk size.")
+            logger.warning("Batch size < temporal seq size; reducing temporal chunk size.")
             params["temporal_chunk_size"] = params["batch_size"]
             params["loss"]["TemporalLoss"]["temporal_chunk_size"] = params["batch_size"]
 
@@ -501,12 +461,12 @@ def setup_train(params):
         randflag = True
 
     if params["n_rand_views"] == 0:
-        print(
+        logger.info(
             "Using default n_rand_views augmentation with {} views and with replacement".format(
                 params["n_views"]
             )
         )
-        print("To disable n_rand_views augmentation, set it to None in the config.")
+        logger.warning("To disable n_rand_views augmentation, set it to None in the config.")
         params["n_rand_views"] = params["n_views"]
         params["rand_view_replace"] = True
 
@@ -604,7 +564,7 @@ def setup_predict(params):
         params["base_exp_folder"] = os.path.dirname(params["label3d_file"])
     params["multi_mode"] = False
 
-    print("Using camnames: {}".format(params["camnames"]))
+    logger.info("Using camnames: {}".format(params["camnames"]))
     # Also add parent params under the 'experiment' key for compatibility
     # with DANNCE's video loading function
     if (params["use_silhouette_in_volume"]) or (
@@ -734,7 +694,7 @@ def setup_com_predict(params):
     # Grab the input file for prediction
     params["label3d_file"] = grab_predict_label3d_file(index=params["label3d_index"])
 
-    print("Using camnames: {}".format(params["camnames"]))
+    logger.info("Using camnames: {}".format(params["camnames"]))
 
     params["experiment"] = {}
     params["experiment"][0] = params

@@ -54,8 +54,8 @@ class DannceTrainer(BaseTrainer):
             for k in self.stats_keys:
                 stats.append(train_stats[k])
                     
-            result_msg = f"Epoch[{epoch}/{self.epochs}] " \
-                + "".join(f"train_{k}: {val:.4f} " for k, val in train_stats.items()) 
+            result_msg = f"Epoch[{epoch}/{self.epochs}]\n" \
+                + "".join(f"train_{k}: {val:.4f}\n" for k, val in train_stats.items()) 
             
             # validation
             valid_stats= self._valid_epoch(epoch)
@@ -64,7 +64,7 @@ class DannceTrainer(BaseTrainer):
                 stats.append(valid_stats[k])
                     
             result_msg = result_msg \
-                + "".join(f"val_{k}: {val:.4f} " for k, val in valid_stats.items()) 
+                + "".join(f"val_{k}: {val:.4f}\n" for k, val in valid_stats.items()) 
             self.logger.info(result_msg)
 
             # write stats to csv

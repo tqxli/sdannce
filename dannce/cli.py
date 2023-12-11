@@ -18,6 +18,7 @@ import sys
 import ast
 import argparse
 import yaml
+from loguru import logger
 from typing import Dict, Text
 import subprocess
 from cluster.multi_gpu import MultiGpuHandler
@@ -201,18 +202,6 @@ def add_shared_train_args(
         help="List of experiment dictionaries for network training. See examples in io.yaml.",
     )
     parser.add_argument(
-        "--loss",
-        dest="loss",
-        help="Loss function to use during training. See losses.py.",
-    )
-    # Taken from changes by robb
-    parser.add_argument(
-        "--huber-delta",
-        dest="huber-delta",
-        type=float,
-        help="Delta Value if using huber loss",
-    )
-    parser.add_argument(
         "--epochs", dest="epochs", type=int, help="Number of epochs to train."
     )
     parser.add_argument(
@@ -227,13 +216,6 @@ def add_shared_train_args(
         type=int,
         help="Number of training images to use per recording during training.",
     )
-    parser.add_argument(
-        "--metric",
-        dest="metric",
-        type=ast.literal_eval,
-        help="List of additional metrics to report. See losses.py",
-    )
-
     parser.add_argument("--lr", dest="lr", type=float, help="Learning rate.")
 
     parser.add_argument(
@@ -331,8 +313,6 @@ def add_dannce_shared_args(
         "--net-type",
         dest="net_type",
         help="Net types can be:\n"
-        "AVG: more precise spatial average DANNCE, can be harder to train\n"
-        "MAX: DANNCE where joint locations are at the maximum of the 3D output distribution\n",
     )
     parser.add_argument(
         "--com-fromlabels",
@@ -431,33 +411,13 @@ def add_dannce_shared_args(
         help="Training modes can be:\n"
         "new: initializes and trains a network from scratch\n"
         "finetune: loads in pre-trained weights and fine-tuned from there\n"
-        "continued: initializes a full model, including optimizer state, and continuous training from the last full model checkpoint",
-    )
+)
     parser.add_argument(
         "--dannce-finetune-weights",
         dest="dannce_finetune_weights",
         help="Path to weights of initial model for dannce fine tuning.",
     )
 
-    parser.add_argument(
-        "--use-silhouette",
-        type=ast.literal_eval,
-        dest="use_silhouette",
-    )
-
-    parser.add_argument(
-        "--use-silhouette-in-volume",
-        default=False,
-        type=ast.literal_eval,
-        dest="use_silhouette_in_volume",
-    )
-
-    parser.add_argument(
-        "--soft-silhouette",
-        default=False,
-        type=ast.literal_eval,
-        dest="soft_silhouette",
-    )
     parser.add_argument("--dataset", default="label3d", dest="dataset")
     return parser
 
@@ -545,18 +505,6 @@ def add_dannce_train_args(
         help="If True, save predictions evaluated at checkpoints during training. Note that for large training datasets, this can cause memory issues.",
     )
     parser.add_argument(
-        "--avg-max",
-        dest="avg+max",
-        type=float,
-        help="Pass a floating point value here for DANNCE to enter AVG+MAX training mode, where the 3D maps are MAX-like regularized to be Gaussian. The avg+max value is used to weight the contribution of the MAX-like loss.",
-    )
-
-    parser.add_argument(
-        "--silhouette-loss-weight",
-        type=float,
-        dest="silhouette_loss_weight",
-    )
-    parser.add_argument(
         "--temporal-loss-weight",
         type=float,
         dest="temporal_loss_weight",
@@ -576,30 +524,6 @@ def add_dannce_train_args(
         "--n-support-chunks",
         type=int,
         dest="n_support_chunks",
-    )
-
-    parser.add_argument(
-        "--separation-loss-weight",
-        type=float,
-        dest="separation_loss_weight",
-    )
-
-    parser.add_argument(
-        "--separation-delta",
-        type=float,
-        dest="separation_delta",
-    )
-
-    # parser.add_argument(
-    #     "--lr-scheduler",
-    #     type=str,
-    #     dest="lr_scheduler",
-    # )
-
-    parser.add_argument(
-        "--symmetry-loss-weight",
-        type=float,
-        dest="symmetry_loss_weight",
     )
 
     return parser
@@ -853,7 +777,7 @@ def combine(base_params: Dict, clargs: argparse.Namespace, dannce_net: bool) -> 
             base_params[k] = v
 
     for k, v in base_params.items():
-        print("{} set to: {}".format(k, v))
+        logger.info("Setting {} to: {}".format(k, v))
     return base_params
 
 

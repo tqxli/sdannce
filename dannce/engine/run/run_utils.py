@@ -9,12 +9,13 @@ from copy import deepcopy
 from typing import Dict, Text
 import torch
 
+from dannce.engine.run.logger import setup_logging
 from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
 from dannce.engine.models.segmentation import get_instance_segmentation_model
 from dannce.config import _DEFAULT_SEG_MODEL
 
 from tqdm import tqdm
-
+from loguru import logger
 
 def set_random_seed(seed: int):
     """
@@ -101,12 +102,25 @@ def make_folder(key: Text, params: Dict):
             os.makedirs(params[key])
     else:
         raise ValueError(key + " must be defined.")
+    
+def experiment_setup(params, mode):
+    assert mode in ["dannce_train", "dannce_predict", "com_train", "com_predict"]
 
-    # if key == "dannce_train_dir":
-    #     curr_time = datetime.now().strftime('%Y-%m-%d-%H-%M')
-    #     new_dir = os.path.join(params[key], curr_time)
-    #     os.makedirs(new_dir)
-    #     params[key] = new_dir
+    # Make the training directory if it does not exist.
+    make_folder(f"{mode}_dir", params)
+
+    # setup logger
+    # logger = setup_logging(params[f"{mode}_dir"], f"stats_{mode}.log")
+    logger.add(f"stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}")
+    # deploy GPU devices
+    device = set_device(params, logger)
+    
+    # fix random seed if specified
+    if params["random_seed"] is not None:
+        set_random_seed(params["random_seed"])
+        logger.info("***Fix random seed as {}***".format(params["random_seed"]))
+
+    return logger, device
 
 
 def make_dataset(
@@ -906,19 +920,6 @@ def _make_data_mem(
         )
         X_valid, X_valid_grid, y_valid, y_valid_aux = processing.align_social_data(
             X_valid, X_valid_grid, y_valid, y_valid_aux
-        )
-
-    # For AVG+MAX training, need to update the expval flag in the generators
-    # and re-generate the 3D training targets
-    # TODO: Add code to infer_params
-    if params["avg+max"] is not None and params["use_silhouette"]:
-        print(
-            "******Cannot combine AVG+MAX with silhouette - Using ONLY silhouette*******"
-        )
-
-    elif params["avg+max"] is not None:
-        y_train_aux, y_valid_aux = processing.initAvgMax(
-            y_train, y_valid, X_train_grid, X_valid_grid, params
         )
 
     genfunc = dataset.PoseDatasetFromMem
