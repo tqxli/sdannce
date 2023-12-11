@@ -20,4 +20,8 @@ pip install setuptools==59.5.0
 pip install -e .
 ```
 
-The code is tested with Python >= 3.7, PyTorch >= 1.8 (and torchvision that matches the PyTorch installation according to the official instructions https://pytorch.org/get-started/previous-versions/). Users should also be mindful of choosing PyTorch versions compatible with the local CUDA installation. 
+The installation was tested on Linux (Ubuntu 20.04) with a NVIDIA GPU (RTX 3090, A5000, A6000) and Conda version=4.10.3.
+
+The code was tested for Python >= 3.7, PyTorch >= 1.8 (and torchvision that matches the PyTorch installation according to the official instructions https://pytorch.org/get-started/previous-versions/). 
+
+Users should be mindful of choosing PyTorch versions compatible with their local CUDA installation. 
