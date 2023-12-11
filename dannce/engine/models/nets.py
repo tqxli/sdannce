@@ -282,10 +282,29 @@ def initialize_train(params, n_cams, device, logger):
 
         state_dict = checkpoints["state_dict"]
 
+        ckpt_input_num = state_dict["encoder_decoder.encoder_res1.block.0.weight"].shape[1]
+
+        # check for input & output dimension mismatch
+        if ckpt_input_num != n_cams*params["chan_num"]:
+            state_dict.pop("encoder_decoder.encoder_res1.block.0.weight", None)
+            state_dict.pop("encoder_decoder.encoder_res1.block.0.bias", None)
+            logger.warning(
+                "Current input dimension ({}) mismatch with checkpoint ({}): re-initialize weights.".format(
+                    n_cams*params["chan_num"], ckpt_input_num,
+                )
+            )
+
         ckpt_channel_num = state_dict["output_layer.weight"].shape[0]
         if ckpt_channel_num != params["n_channels_out"]:
             state_dict.pop("output_layer.weight", None)
             state_dict.pop("output_layer.bias", None)
+            logger.warning(
+                "Current output dimension ({}) mismatch with checkpoint ({}): re-initialize weights.".format(
+                    params["n_channels_out"], ckpt_channel_num
+                )
+            )
+
+        # load checkpoints
         model.load_state_dict(state_dict, strict=False)
  
         model_params = [p for p in model.parameters() if p.requires_grad]
