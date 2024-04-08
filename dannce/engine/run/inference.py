@@ -667,8 +667,8 @@ def infer_dannce(generator,
 
     end_time = time.time()
     save_data = {}
-    start_ind = params["start_batch"]
-    end_ind = params["maxbatch"]
+    start_ind = int(params["start_batch"])
+    end_ind = int(params["maxbatch"])
 
     if save_heatmaps:
         save_path = os.path.join(params["dannce_predict_dir"], "heatmaps")

@@ -1069,10 +1069,11 @@ def make_dataset_inference(params, valid_params):
     if params["social_training"]:
         for sample in samples:
             expID, sampleID = sample.split("_")
-            if int(expID) % 2 != 0:
+            if int(expID) != 0:
                 continue
-            new_sample = "{}_".format(int(expID) + 1) + sampleID
-            com3d_dict[new_sample] = com3d_dict[new_sample][:, 1]
+            for i in range(1, params["n_instances"]):
+                new_sample = f"{int(i)}_{sampleID}"
+                com3d_dict[new_sample] = com3d_dict[sample][:, i]
             com3d_dict[sample] = com3d_dict[sample][:, 0]
 
     samples = np.array(samples)
@@ -1098,11 +1099,13 @@ def make_dataset_inference(params, valid_params):
         com3d_dict,
         tifdirs,
     ]
-    spec_params = (
-        {"occlusion": params.get("downscale_occluded_view", False)}
-        if params["social_training"]
-        else {}
-    )
+    # spec_params = {
+    #     "occlusion": params.get("downscale_occluded_view", False)}
+    #     if params["social_training"]
+    #     else {}
+    spec_params = {
+        "n_instances": params["n_instances"]
+    }
     predict_generator = genfunc(*predict_params, **valid_params, **spec_params)
 
     predict_generator_sil = None

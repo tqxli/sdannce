@@ -579,18 +579,20 @@ def setup_predict(params):
 
     if params.get("n_instances") > 1:
         params["social_training"] = True
-    if params["social_training"]:
-        # load in parameters from the other animal
-        comfile = params["com_file"]
 
-        paired_expdict = {
-            "label3d_file": params["label3d_file"],  # .replace('RAT1', 'RAT2'),
-            "com_file": comfile,  # new_comfile,
-        }
-        paired_exp = deepcopy(params)
-        for k, v in paired_expdict.items():
-            paired_exp[k] = v
-        params["experiment"][1] = paired_exp
+    if params["social_training"]:
+        # repeat parameters for the remaining animals (besides instance_0)
+        for i in range(1, params["n_instances"]):
+            comfile = params["com_file"]
+
+            paired_expdict = {
+                "label3d_file": params["label3d_file"],
+                "com_file": comfile,
+            }
+            paired_exp = deepcopy(params)
+            for k, v in paired_expdict.items():
+                paired_exp[k] = v
+            params["experiment"][i] = paired_exp
 
     if params["start_batch"] is None:
         params["start_batch"] = 0
@@ -639,12 +641,6 @@ def setup_predict(params):
         "predict_flag": True,
     }
 
-    # if params.get("social_joint_training", False):
-    #     params["social_training"] = False
-    #     params["n_channels_out"] *= 2
-    #     valid_params["n_channels_out"] *= 2
-    #     params["n_markers"] *= 2
-
     return params, valid_params
 
 
@@ -687,7 +683,7 @@ def setup_com_train(params):
 
 def setup_com_predict(params):
     params["multi_mode"] = MULTI_MODE = (
-        params["n_channels_out"] > 1 & params["n_instances"] == 1
+        (params["n_channels_out"] > 1) & (params["n_instances"] == 1)
     )
     params["n_channels_out"] = params["n_channels_out"] + int(MULTI_MODE)
 
