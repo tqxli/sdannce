@@ -1103,9 +1103,13 @@ def make_dataset_inference(params, valid_params):
     #     "occlusion": params.get("downscale_occluded_view", False)}
     #     if params["social_training"]
     #     else {}
-    spec_params = {
-        "n_instances": params["n_instances"]
-    }
+    if params['social_training']:
+        spec_params = {
+            "n_instances": params["n_instances"]
+        }
+    else:
+        spec_params = {}
+        
     predict_generator = genfunc(*predict_params, **valid_params, **spec_params)
 
     predict_generator_sil = None
