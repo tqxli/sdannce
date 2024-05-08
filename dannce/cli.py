@@ -954,3 +954,7 @@ def main():
         elif args.mode == "com":
             com_predict(params)
         return
+
+if __name__ == "__main__":
+    main()
+    
