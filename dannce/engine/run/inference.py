@@ -882,23 +882,27 @@ def infer_sdannce(
         grid_centers = torch.from_numpy(ims[1]).to(device)
         model_inputs.append(grid_centers)
 
-        init_poses, heatmaps, inter_features = model.pose_generator(
-            *model_inputs)
+        try:
+            init_poses, heatmaps, inter_features = model.pose_generator(
+                *model_inputs)
+            final_poses = model.inference(init_poses, grid_centers, heatmaps,
+                                        inter_features)
 
-        final_poses = model.inference(init_poses, grid_centers, heatmaps,
-                                      inter_features)
+            if custom_model_params.get("relpose", True):
+                com3d = torch.mean(grid_centers, dim=1).unsqueeze(-1)  #[N, 3, 1]
+                nvox = round(grid_centers.shape[1]**(1 / 3))
+                vsize = (grid_centers[0, :, 0].max() -
+                        grid_centers[0, :, 0].min()) / nvox
+                final_poses = final_poses * vsize
+                if not custom_model_params.get("predict_diff", True):
+                    final_poses += com3d
 
-        if custom_model_params.get("relpose", True):
-            com3d = torch.mean(grid_centers, dim=1).unsqueeze(-1)  #[N, 3, 1]
-            nvox = round(grid_centers.shape[1]**(1 / 3))
-            vsize = (grid_centers[0, :, 0].max() -
-                     grid_centers[0, :, 0].min()) / nvox
-            final_poses = final_poses * vsize
-            if not custom_model_params.get("predict_diff", True):
-                final_poses += com3d
-
-        if custom_model_params.get("predict_diff", True):
-            final_poses += init_poses[..., :final_poses.shape[-1]]
+            if custom_model_params.get("predict_diff", True):
+                final_poses += init_poses[..., :final_poses.shape[-1]]
+        except:
+            final_poses, heatmaps, _ = model(*model_inputs)
+            init_poses = final_poses
+            # params["n_instances"] = 2
 
         probmap = torch.amax(heatmaps, dim=(2, 3, 4)).squeeze(0).detach().cpu()
         probmap = probmap.reshape(-1, params["n_instances"],

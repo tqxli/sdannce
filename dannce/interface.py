@@ -122,17 +122,21 @@ def dannce_predict(params: Dict):
     model.load_state_dict(torch.load(params["dannce_predict_model"])["state_dict"])
     model.eval()
 
-    save_data = inference.infer_dannce(
-        predict_generator,
-        params,
-        model,
-        partition,
-        device,
-        params["n_markers"],
-        predict_generator_sil,
-        save_heatmaps=False,
+    # save_data = inference.infer_dannce(
+    #     predict_generator,
+    #     params,
+    #     model,
+    #     partition,
+    #     device,
+    #     params["n_markers"],
+    #     predict_generator_sil,
+    #     save_heatmaps=False,
+    # )
+    # inference.save_results(params, save_data)
+    
+    inference.infer_sdannce(
+        predict_generator, params, {}, model, partition, device
     )
-    inference.save_results(params, save_data)
 
 
 def sdannce_train(params: Dict):
@@ -186,8 +190,11 @@ def sdannce_train(params: Dict):
 
     # load full-model checkpoint (if exists)
     if "checkpoint" in custom_model_params.keys():
+        checkpoint_path = custom_model_params['checkpoint']
+        logger.info(f'Loading SDANNCE checkpoint: {checkpoint_path}')
         model.load_state_dict(
-            torch.load(custom_model_params["checkpoint"])["state_dict"]
+            torch.load(checkpoint_path)["state_dict"],
+            strict=False,
         )
     model = model.to(device)
     logger.info(model)
@@ -216,7 +223,7 @@ def sdannce_train(params: Dict):
     trainer.train()
 
 
-def sdannce_predict(params):
+def sdannce_predict(params: Dict):
     """Predict with SDANNCE network
 
     Args:

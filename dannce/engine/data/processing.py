@@ -1425,7 +1425,7 @@ def save_COM_checkpoint(
 
     # If multiple instances, additionally save to different files for each instance
     # keep consistent with `multi_gpu.py` com_merge()
-    if params["n_instances"] > 1 and file_name == "com3d":
+    if params["n_instances"] > 1: #and file_name == "com3d":
         for n_instance in range(params["n_instances"]):
             fn = os.path.join(
                 results_dir,
