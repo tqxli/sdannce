@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 import dannce.cli as cli
+from dannce.engine.utils.vis import visualize_pose_predictions
 import os
 
 SDANNCE_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -99,12 +100,23 @@ class TestSdanncePredict(unittest.TestCase):
             "sdannce",
             TEST_SDANNCE_CONFIG,
             "--dannce-predict-model=../weights/SDANNCE_gcn_bsl_FM_ep100.pth",
-            "--dannce-predict-dir=./DANNCE/predict_test",
+            "--dannce-predict-dir=./SDANNCE/predict_test",
             "--com-file=./COM/predict01/com3d.mat",
             "--max-num-samples=10",
             "--batch-size=1",
         ]
         test_main(args)
+        
+        visualize_pose_predictions(
+            exproot=TEST_SDANNCE_PREDICT_PROJECT_FOLDER,
+            expfolder='SDANNCE/predict_test',
+            datafile='save_data_AVG0.mat',
+            n_frames=10,
+            start_frame=0,
+            cameras="1",
+            animal="rat23",
+            n_animals=2,
+        )
 
 
 class TestDannceTrain(unittest.TestCase):
@@ -125,6 +137,7 @@ class TestDannceTrain(unittest.TestCase):
         ]
         test_main(args)
 
+
 class TestDanncePredict(unittest.TestCase):
     def setUp(self):
         os.chdir(TEST_DANNCE_PREDICT_PROJECT_FOLDER)
@@ -142,6 +155,37 @@ class TestDanncePredict(unittest.TestCase):
             "--batch-size=1",
         ]
         test_main(args)
+
+
+class TestDanncePredictMulti(unittest.TestCase):
+    def setUp(self):
+        os.chdir(TEST_SDANNCE_PREDICT_PROJECT_FOLDER)
+
+    def test_dannce_predict(self):
+        args = [
+            "dannce",
+            "predict",
+            "dannce",
+            TEST_DANNCE_CONFIG,
+            "--dannce-predict-model=../weights/DANNCE_comp_pretrained_single+r7m.pth",
+            "--dannce-predict-dir=./DANNCE/predict_test_multi",
+            "--com-file=./COM/predict01/com3d.mat",
+            "--max-num-samples=10",
+            "--batch-size=1",
+            "--n-instances=2",
+        ]
+        test_main(args)
+
+        visualize_pose_predictions(
+            exproot=TEST_SDANNCE_PREDICT_PROJECT_FOLDER,
+            expfolder='DANNCE/predict_test_multi',
+            datafile='save_data_AVG0.mat',
+            n_frames=10,
+            start_frame=0,
+            cameras="1",
+            animal="rat23",
+            n_animals=2,
+        )
 
 
 if __name__ == "__main__":
