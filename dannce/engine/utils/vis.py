@@ -15,10 +15,12 @@ from matplotlib.animation import FFMpegWriter
 
 
 MARKER_COLOR = {
+    1: ['blue'],
     2: ['blue', 'red'],
     3: ['blue', 'green', 'red'],
 }
 LINE_COLOR = {
+    1: ['yellow'],
     2: ['yellow', 'white'],
     3: ['yellow', 'orange', 'white'],
 }

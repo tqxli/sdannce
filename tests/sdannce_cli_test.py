@@ -155,6 +155,16 @@ class TestDanncePredict(unittest.TestCase):
             "--batch-size=1",
         ]
         test_main(args)
+        visualize_pose_predictions(
+            exproot=TEST_DANNCE_PREDICT_PROJECT_FOLDER,
+            expfolder='DANNCE/predict_test',
+            datafile='save_data_AVG0.mat',
+            n_frames=10,
+            start_frame=0,
+            cameras="1",
+            animal="rat23",
+            n_animals=1,
+        )
 
 
 class TestDanncePredictMulti(unittest.TestCase):
@@ -189,4 +199,19 @@ class TestDanncePredictMulti(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    import shutil
+
+    # clean up any previous test outputs
+    def clean_DANNCE_outputs(folder):
+        dannce_folder = f"{folder}/DANNCE"
+        sdannce_folder = f"{folder}/SDANNCE"
+        
+        if os.path.exists(dannce_folder):
+            shutil.rmtree(dannce_folder)
+        if os.path.exists(sdannce_folder):
+            shutil.rmtree(sdannce_folder)
+    
+    clean_DANNCE_outputs(TEST_SDANNCE_PREDICT_PROJECT_FOLDER)
+    clean_DANNCE_outputs(TEST_DANNCE_PREDICT_PROJECT_FOLDER)
+    
     unittest.main()
