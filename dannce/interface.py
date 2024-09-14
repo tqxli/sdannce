@@ -41,7 +41,6 @@ def _train_prep(params: Dict, model_type: str = "dannce"):
         shared_args,
         shared_args_train,
         shared_args_valid,
-        logger,
         **spec_args
     )
 

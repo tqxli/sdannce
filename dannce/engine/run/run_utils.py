@@ -6,10 +6,9 @@ import os, random
 import pandas as pd
 import json
 from copy import deepcopy
-from typing import Dict, Text
+from typing import Dict, List, Literal, Text
 import torch
 
-from dannce.engine.run.logger import setup_logging
 from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
 from dannce.engine.models.segmentation import get_instance_segmentation_model
 from dannce.config import _DEFAULT_SEG_MODEL
@@ -30,15 +29,10 @@ def set_random_seed(seed: int):
     torch.backends.cudnn.deterministic = True
 
 
-def set_device(params, logger):
+def set_device(params: Dict):
     """
-    Set GPU for torch
+    Set proper device for torch.
     """
-    # set GPU ID
-    # Temporarily commented out to test on dsplus gpu
-    # if not params["multi_gpu_train"]:
-    # os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
-    # deploy GPU devices
     assert torch.cuda.is_available(), "No available GPU device."
 
     if params.get("multi_gpu_train", False):
@@ -48,11 +42,10 @@ def set_device(params, logger):
         params["gpu_id"] = [0]
         device = torch.device("cuda")
     logger.info("***Use {} GPU for training.***".format(params["gpu_id"]))
-    # device = "cuda:0" if torch.cuda.is_available() else "cpu"
     return device
 
 
-def set_dataset(params):
+def set_dataset(params: Dict):
     if params["dataset"] == "rat7m":
         dataset_preparer = make_rat7m
     elif params["dataset"] == "rat7m+pair":
@@ -64,27 +57,6 @@ def set_dataset(params):
         dataset_preparer = make_dataset
 
     return dataset_preparer
-
-
-def set_optimizer(params, model):
-    model_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
-    return optimizer
-
-
-def set_lr_scheduler(params, optimizer, logger):
-    lr_scheduler = None
-    if params["lr_scheduler"] is not None:
-        lr_scheduler_class = getattr(
-            torch.optim.lr_scheduler, params["lr_scheduler"]["type"]
-        )
-        lr_scheduler = lr_scheduler_class(
-            optimizer=optimizer, **params["lr_scheduler"]["args"], verbose=True
-        )
-        logger.info(
-            "Using learning rate scheduler: {}".format(params["lr_scheduler"]["type"])
-        )
-    return lr_scheduler
 
 
 def make_folder(key: Text, params: Dict):
@@ -105,19 +77,19 @@ def make_folder(key: Text, params: Dict):
         raise ValueError(key + " must be defined.")
 
 
-def experiment_setup(params, mode):
-    assert mode in ["dannce_train", "dannce_predict", "com_train", "com_predict"]
-
+def experiment_setup(
+    params: Dict,
+    mode: Literal["dannce_train", "dannce_predict", "com_train", "com_predict"],
+):
     # Make the training directory if it does not exist.
     make_folder(f"{mode}_dir", params)
 
     # setup logger
-    # logger = setup_logging(params[f"{mode}_dir"], f"stats_{mode}.log")
     logger.add(
         f"stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}"
     )
     # deploy GPU devices
-    device = set_device(params, logger)
+    device = set_device(params)
 
     # fix random seed if specified
     if params["random_seed"] is not None:
@@ -128,7 +100,11 @@ def experiment_setup(params, mode):
 
 
 def make_dataset(
-    params, base_params, shared_args, shared_args_train, shared_args_valid, logger
+    params: Dict,
+    base_params: Dict,
+    shared_args: Dict,
+    shared_args_train: Dict,
+    shared_args_valid: Dict,
 ):
     # load in experiments from config file
     exps = params["exp"]
@@ -300,7 +276,10 @@ def make_dataset(
     return train_dataloader, valid_dataloader, params["n_views"]  # len(camnames[0])
 
 
-def _convert_rat7m_to_label3d(annot_dict, all_exps):
+def _convert_rat7m_to_label3d(
+    annot_dict: Dict,
+    all_exps: List[str],
+):
     camnames = annot_dict["camera_names"]
 
     samples = []
@@ -524,7 +503,6 @@ def make_rat7m(
             shared_args,
             shared_args_train,
             shared_args_valid,
-            logger,
             merge_pair=True,
         )
         train_generator = torch.utils.data.ConcatDataset(
@@ -539,7 +517,6 @@ def make_rat7m(
             shared_args,
             shared_args_train,
             shared_args_valid,
-            logger,
         )
         train_generator = torch.utils.data.ConcatDataset(
             [train_generator, train_generator_label3d.dataset]
@@ -1445,7 +1422,6 @@ def make_pair(
     shared_args,
     shared_args_train,
     shared_args_valid,
-    logger,
     root="/media/mynewdrive/datasets/PAIR/PAIR-R24M-Dataset",
     viddir="videos_merged",
     train=True,
