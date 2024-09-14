@@ -34,7 +34,9 @@ def grab_predict_label3d_file(defaultdir="", index=0):
 
     if len(label3d_files) == 0:
         raise Exception("Did not find any *dannce.mat file in {}".format(def_ep))
-    logger.info("Using the following *dannce.mat files: {}".format(label3d_files[index]))
+    logger.info(
+        "Using the following *dannce.mat files: {}".format(label3d_files[index])
+    )
     return label3d_files[index]
 
 
@@ -390,7 +392,9 @@ def adjust_loss_params(params):
 
         # by default, the maximum batch size should be >= temporal seq len
         if params["batch_size"] < temp_n:
-            logger.warning("Batch size < temporal seq size; reducing temporal chunk size.")
+            logger.warning(
+                "Batch size < temporal seq size; reducing temporal chunk size."
+            )
             params["temporal_chunk_size"] = params["batch_size"]
             params["loss"]["TemporalLoss"]["temporal_chunk_size"] = params["batch_size"]
 
@@ -417,9 +421,11 @@ def adjust_loss_params(params):
         # adjust batch size to the number of unique samples
         # populate with augmented samples on the fly during training
         params["batch_size"] = n_samples_unique
-    
+
     if "BoneLengthLoss" in params["loss"]:
-        params["loss"]["BoneLengthLoss"]["body_profile"] = params.get("skeleton", "rat23")
+        params["loss"]["BoneLengthLoss"]["body_profile"] = params.get(
+            "skeleton", "rat23"
+        )
 
     return params
 
@@ -466,7 +472,9 @@ def setup_train(params):
                 params["n_views"]
             )
         )
-        logger.warning("To disable n_rand_views augmentation, set it to None in the config.")
+        logger.warning(
+            "To disable n_rand_views augmentation, set it to None in the config."
+        )
         params["n_rand_views"] = params["n_views"]
         params["rand_view_replace"] = True
 
@@ -553,9 +561,9 @@ def setup_predict(params):
     params["n_views"] = int(params["n_views"])
 
     params["downsample"] = 1
-    
-    if not 'n_instances' in params:
-        params['n_instances'] = 1
+
+    if not "n_instances" in params:
+        params["n_instances"] = 1
     params["is_social_dataset"] = params["n_instances"] > 1
 
     # While we can use experiment files for DANNCE training,
@@ -579,7 +587,7 @@ def setup_predict(params):
         )
 
     params["experiment"] = {}
-    params["experiment"][0] = params        
+    params["experiment"][0] = params
 
     if params["is_social_dataset"]:
         # repeat parameters for the remaining animals (besides instance_0)
@@ -683,8 +691,8 @@ def setup_com_train(params):
 
 
 def setup_com_predict(params):
-    params["multi_mode"] = MULTI_MODE = (
-        (params["n_channels_out"] > 1) & (params["n_instances"] == 1)
+    params["multi_mode"] = MULTI_MODE = (params["n_channels_out"] > 1) & (
+        params["n_instances"] == 1
     )
     params["n_channels_out"] = params["n_channels_out"] + int(MULTI_MODE)
 

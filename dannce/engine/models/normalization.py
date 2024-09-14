@@ -1,13 +1,9 @@
 import torch
 import torch.nn as nn
 
-class LayerNormalization(nn.Module):
 
-    def __init__(self,
-                 normal_shape,
-                 gamma=True,
-                 beta=True,
-                 epsilon=1e-3):
+class LayerNormalization(nn.Module):
+    def __init__(self, normal_shape, gamma=True, beta=True, epsilon=1e-3):
         """Layer normalization layer
         See: [Layer Normalization](https://arxiv.org/pdf/1607.06450.pdf)
         :param normal_shape: The shape of the input tensor or the last dimension of the input tensor.
@@ -24,11 +20,11 @@ class LayerNormalization(nn.Module):
         if gamma:
             self.gamma = nn.Parameter(torch.Tensor(1))
         else:
-            self.register_parameter('gamma', None)
+            self.register_parameter("gamma", None)
         if beta:
             self.beta = nn.Parameter(torch.Tensor(1))
         else:
-            self.register_parameter('beta', None)
+            self.register_parameter("beta", None)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -38,10 +34,13 @@ class LayerNormalization(nn.Module):
             self.beta.data.zero_()
 
     def forward(self, x):
-        reduction_axes = list((-1) * torch.arange(1, len(self.normal_shape)+1))
+        reduction_axes = list((-1) * torch.arange(1, len(self.normal_shape) + 1))
 
         mean = torch.mean(x, reduction_axes, keepdims=True)
-        stddev = torch.mean((x-mean) ** 2, dim=reduction_axes, keepdim=True).sqrt() + self.epsilon
+        stddev = (
+            torch.mean((x - mean) ** 2, dim=reduction_axes, keepdim=True).sqrt()
+            + self.epsilon
+        )
         y = (x - mean) / stddev
 
         if self.gamma is not None:
@@ -51,6 +50,9 @@ class LayerNormalization(nn.Module):
         return y
 
     def extra_repr(self):
-        return 'normal_shape={}, gamma={}, beta={}, epsilon={}'.format(
-            self.normal_shape, self.gamma is not None, self.beta is not None, self.epsilon,
+        return "normal_shape={}, gamma={}, beta={}, epsilon={}".format(
+            self.normal_shape,
+            self.gamma is not None,
+            self.beta is not None,
+            self.epsilon,
         )

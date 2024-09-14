@@ -78,9 +78,7 @@ def build_clarg_params(
     return params
 
 
-def add_shared_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_shared_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments shared by all modes.
 
     Args:
@@ -123,10 +121,7 @@ def add_shared_args(
         help="Number of keypoints to output. For COM, this is typically 1, but can be equal to the number of points tracked to run in MULTI_MODE.",
     )
     parser.add_argument(
-        "--batch-size",
-        dest="batch_size",
-        type=int,
-        help="Number of images per batch.",
+        "--batch-size", dest="batch_size", type=int, help="Number of images per batch.",
     )
     parser.add_argument(
         "--sigma",
@@ -170,23 +165,17 @@ def add_shared_args(
     )
 
     parser.add_argument(
-        "--training-fraction",
-        dest="training_fraction",
-        type=float,
+        "--training-fraction", dest="training_fraction", type=float,
     )
 
     parser.add_argument(
-        "--random-seed",
-        dest="random_seed",
-        type=int,
+        "--random-seed", dest="random_seed", type=int,
     )
 
     return parser
 
 
-def add_shared_train_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_shared_train_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments shared by all train modes.
 
     Args:
@@ -304,9 +293,7 @@ def add_shared_predict_args(
     return parser
 
 
-def add_dannce_shared_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_dannce_shared_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments shared by all dannce modes.
 
     Args:
@@ -315,11 +302,7 @@ def add_dannce_shared_args(
     Returns:
         argparse.ArgumentParser: Parser with added arguments.
     """
-    parser.add_argument(
-        "--net-type",
-        dest="net_type",
-        help="Net types can be:\n"
-    )
+    parser.add_argument("--net-type", dest="net_type", help="Net types can be:\n")
     parser.add_argument(
         "--com-fromlabels",
         dest="com_fromlabels",
@@ -416,8 +399,8 @@ def add_dannce_shared_args(
         dest="train_mode",
         help="Training modes can be:\n"
         "new: initializes and trains a network from scratch\n"
-        "finetune: loads in pre-trained weights and fine-tuned from there\n"
-)
+        "finetune: loads in pre-trained weights and fine-tuned from there\n",
+    )
     parser.add_argument(
         "--dannce-finetune-weights",
         dest="dannce_finetune_weights",
@@ -428,9 +411,7 @@ def add_dannce_shared_args(
     return parser
 
 
-def add_dannce_train_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_dannce_train_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments specific to dannce training.
 
     Args:
@@ -511,25 +492,17 @@ def add_dannce_train_args(
         help="If True, save predictions evaluated at checkpoints during training. Note that for large training datasets, this can cause memory issues.",
     )
     parser.add_argument(
-        "--temporal-loss-weight",
-        type=float,
-        dest="temporal_loss_weight",
+        "--temporal-loss-weight", type=float, dest="temporal_loss_weight",
     )
     parser.add_argument(
-        "--temporal-chunk-size",
-        type=int,
-        dest="temporal_chunk_size",
+        "--temporal-chunk-size", type=int, dest="temporal_chunk_size",
     )
     parser.add_argument(
-        "--unlabeled-temp",
-        type=float,
-        dest="unlabeled_temp",
+        "--unlabeled-temp", type=float, dest="unlabeled_temp",
     )
     parser.add_argument("--support-exp", type=ast.literal_eval, dest="support_exp")
     parser.add_argument(
-        "--n-support-chunks",
-        type=int,
-        dest="n_support_chunks",
+        "--n-support-chunks", type=int, dest="n_support_chunks",
     )
 
     return parser
@@ -579,18 +552,13 @@ def add_dannce_predict_args(
         help="If not None, uses this base path to write large dataset to npy files",
     )
     parser.add_argument(
-        "--label3d-index",
-        dest="label3d_index",
-        type=int,
-        default=0,
+        "--label3d-index", dest="label3d_index", type=int, default=0,
     )
 
     return parser
 
 
-def add_com_train_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_com_train_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments specific to COM training.
 
     Args:
@@ -654,9 +622,7 @@ def add_com_train_args(
     return parser
 
 
-def add_com_predict_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_com_predict_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments specific to COM prediction.
 
     Args:
@@ -678,9 +644,7 @@ def add_com_predict_args(
     return parser
 
 
-def add_com_shared_args(
-    parser: argparse.ArgumentParser,
-) -> argparse.ArgumentParser:
+def add_com_shared_args(parser: argparse.ArgumentParser,) -> argparse.ArgumentParser:
     """Add arguments shared by all COM modes.
 
     Args:

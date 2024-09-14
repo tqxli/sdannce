@@ -23,6 +23,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from dannce.engine.data import serve_data_DANNCE, io
 from dannce.config import make_paths_safe, make_none_safe
 from dannce.config import _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL
+
 """
 VIDEO
 """
@@ -41,8 +42,7 @@ def initialize_vids(params, datadict, e, vids, pathonly=True, vidkey="viddir"):
         for key in datadict.keys():
             if int(key.split("_")[0]) == e:
                 flist.append(
-                    datadict[key]["frames"][params["experiment"][e]["camnames"]
-                                            [i]]
+                    datadict[key]["frames"][params["experiment"][e]["camnames"][i]]
                 )
 
         flist = max(flist)
@@ -74,8 +74,9 @@ def initialize_vids(params, datadict, e, vids, pathonly=True, vidkey="viddir"):
         if "_" in params["experiment"][e]["camnames"][i]:
             vids[params["experiment"][e]["camnames"][i]] = {}
             for key in r:
-                vids[params["experiment"][e]["camnames"][i]][str(e) + "_" +
-                                                             key] = r[key]
+                vids[params["experiment"][e]["camnames"][i]][str(e) + "_" + key] = r[
+                    key
+                ]
         else:
             vids[params["experiment"][e]["camnames"][i]] = r
 
@@ -97,17 +98,19 @@ def generate_readers(
     mp4files = [
         os.path.join(camname, f)
         for f in os.listdir(os.path.join(viddir, camname))
-        if extension in f and (f[0] != '_') and
-        (f[0] != '.') and int(f.rsplit(extension)[0]) <= maxopt and
-        int(f.rsplit(extension)[0]) >= minopt
+        if extension in f
+        and (f[0] != "_")
+        and (f[0] != ".")
+        and int(f.rsplit(extension)[0]) <= maxopt
+        and int(f.rsplit(extension)[0]) >= minopt
     ]
     # This is a trick (that should work) for getting rid of
     # awkward sub-directory folder names when they are being used
     mp4files_scrub = [
         os.path.join(
-            os.path.normpath(f).split(os.sep)[0],
-            os.path.normpath(f).split(os.sep)[-1]
-        ) for f in mp4files
+            os.path.normpath(f).split(os.sep)[0], os.path.normpath(f).split(os.sep)[-1]
+        )
+        for f in mp4files
     ]
 
     pixelformat = "yuv420p"
@@ -119,9 +122,7 @@ def generate_readers(
             out[mp4files_scrub[i]] = os.path.join(viddir, mp4files[i])
         else:
             logger.warning(
-                "NOTE: Ignoring {} files numbered above {}".format(
-                    extensions, maxopt
-                )
+                "NOTE: Ignoring {} files numbered above {}".format(extensions, maxopt)
             )
             out[mp4files_scrub[i]] = imageio.get_reader(
                 os.path.join(viddir, mp4files[i]),
@@ -138,9 +139,7 @@ LOAD EXP INFO
 """
 
 
-def load_expdict(
-    params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logger=None
-):
+def load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logger=None):
     """
     Load in camnames and video directories and label3d files for a single experiment
         during training.
@@ -162,9 +161,11 @@ def load_expdict(
     #     logger.info("Experiment {} using videos in {}".format(e, exp["viddir"]))
 
     if params.get("use_silhouette", False):
-        exp["viddir_sil"] = os.path.join(
-            exp["base_exp_folder"], _DEFAULT_VIDDIR_SIL
-        ) if "viddir_sil" not in expdict else expdict["viddir_sil"]
+        exp["viddir_sil"] = (
+            os.path.join(exp["base_exp_folder"], _DEFAULT_VIDDIR_SIL)
+            if "viddir_sil" not in expdict
+            else expdict["viddir_sil"]
+        )
         # if logger is not None:
         #     logger.info("Experiment {} also using masked videos in {}".format(e, exp["viddir_sil"]))
 
@@ -188,8 +189,7 @@ def load_expdict(
             camdir = os.path.join(camdir, intermediate_folder[0])
         video_files = os.listdir(camdir)
         video_files = [
-            f for f in video_files
-            if (".mp4" in f) and (f[0] != '_') and f[0] != '.'
+            f for f in video_files if (".mp4" in f) and (f[0] != "_") and f[0] != "."
         ]
         video_files = sorted(video_files, key=lambda x: int(x.split(".")[0]))
         chunks[str(e) + "_" + name] = np.sort(
@@ -201,9 +201,7 @@ def load_expdict(
 
     # For npy volume training
     if params["use_npy"]:
-        exp["npy_vol_dir"] = os.path.join(
-            exp["base_exp_folder"], _DEFAULT_NPY_DIR
-        )
+        exp["npy_vol_dir"] = os.path.join(exp["base_exp_folder"], _DEFAULT_NPY_DIR)
     return exp
 
 
@@ -225,16 +223,35 @@ def load_all_exps(params, logger):
 
         # load corresponding 2D & 3D labels, COMs
         (
-            exp, samples_, datadict_, datadict_3d_, cameras_, com3d_dict_,
-            temporal_chunks_
+            exp,
+            samples_,
+            datadict_,
+            datadict_3d_,
+            cameras_,
+            com3d_dict_,
+            temporal_chunks_,
         ) = do_COM_load(exp, expdict, e, params)
 
         # logger.info("Using {} samples total.".format(len(samples_)))
 
-        (samples, datadict, datadict_3d, com3d_dict,
-         temporal_chunks) = serve_data_DANNCE.add_experiment(
-             e, samples, datadict, datadict_3d, com3d_dict, samples_, datadict_,
-             datadict_3d_, com3d_dict_, temporal_chunks, temporal_chunks_
+        (
+            samples,
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            temporal_chunks,
+        ) = serve_data_DANNCE.add_experiment(
+            e,
+            samples,
+            datadict,
+            datadict_3d,
+            com3d_dict,
+            samples_,
+            datadict_,
+            datadict_3d_,
+            com3d_dict_,
+            temporal_chunks,
+            temporal_chunks_,
         )
 
         cameras[e] = cameras_
@@ -247,7 +264,16 @@ def load_all_exps(params, logger):
 
     samples = np.array(samples)
 
-    return samples, datadict, datadict_3d, com3d_dict, cameras, camnames, total_chunks, temporal_chunks
+    return (
+        samples,
+        datadict,
+        datadict_3d,
+        com3d_dict,
+        cameras,
+        camnames,
+        total_chunks,
+        temporal_chunks,
+    )
 
 
 def load_all_com_exps(params, exps):
@@ -260,15 +286,17 @@ def load_all_com_exps(params, exps):
     samples = []
     for e, expdict in enumerate(exps):
 
-        exp = load_expdict(
-            params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL
-        )
+        exp = load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL)
 
         params["experiment"][e] = exp
-        (samples_, datadict_, datadict_3d_, cameras_,
-         _) = serve_data_DANNCE.prepare_data(
-             params["experiment"][e],
-             com_flag=not params["multi_mode"],
+        (
+            samples_,
+            datadict_,
+            datadict_3d_,
+            cameras_,
+            _,
+        ) = serve_data_DANNCE.prepare_data(
+            params["experiment"][e], com_flag=not params["multi_mode"],
         )
 
         # No need to prepare any COM file (they don't exist yet).
@@ -313,18 +341,24 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
     Raises:
         Exception: Exception when invalid com file format.
     """
-    (samples_, datadict_, datadict_3d_, cameras_,
-     temporal_chunks) = serve_data_DANNCE.prepare_data(
-         exp,
-         prediction=not training,
-         predict_labeled_only=params["predict_labeled_only"],
-         valid=(e in params["valid_exp"])
-         if params["valid_exp"] is not None else False,
-         support=(e in params["support_exp"])
-         if params["support_exp"] is not None else False,
-         downsample=params["downsample"],
-         return_full2d=params["return_full2d"]
-         if "return_full2d" in params.keys() else False,
+    (
+        samples_,
+        datadict_,
+        datadict_3d_,
+        cameras_,
+        temporal_chunks,
+    ) = serve_data_DANNCE.prepare_data(
+        exp,
+        prediction=not training,
+        predict_labeled_only=params["predict_labeled_only"],
+        valid=(e in params["valid_exp"]) if params["valid_exp"] is not None else False,
+        support=(e in params["support_exp"])
+        if params["support_exp"] is not None
+        else False,
+        downsample=params["downsample"],
+        return_full2d=params["return_full2d"]
+        if "return_full2d" in params.keys()
+        else False,
     )
 
     # If there is "clean" data (full marker set), can take the
@@ -333,33 +367,33 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
         logger.info("For experiment {}, calculating 3D COM from labels".format(e))
         com3d_dict_ = deepcopy(datadict_3d_)
         for key in com3d_dict_.keys():
-            com3d_dict_[key] = np.nanmean(
-                datadict_3d_[key], axis=1, keepdims=True
-            )
+            com3d_dict_[key] = np.nanmean(datadict_3d_[key], axis=1, keepdims=True)
     elif "com_file" in expdict and expdict["com_file"] is not None:
         exp["com_file"] = expdict["com_file"]
         if ".mat" in exp["com_file"]:
             c3dfile = sio.loadmat(exp["com_file"])
-            com3d_dict_ = check_COM_load(
-                c3dfile, "com", params["medfilt_window"]
-            )
+            com3d_dict_ = check_COM_load(c3dfile, "com", params["medfilt_window"])
 
             # unlabeled frames sampling
             # currently assume that all training com files are named `instance%ncom3d.mat`
             # and there are exactly two instances
-            if training and (params["unlabeled_sampling"] is not None) and ('instance' in exp["com_file"].split('/')[-1]):
+            if (
+                training
+                and (params["unlabeled_sampling"] is not None)
+                and ("instance" in exp["com_file"].split("/")[-1])
+            ):
                 unlabeled_sampling = params["unlabeled_sampling"]
                 sampling_num = unlabeled_sampling
                 if not isinstance(unlabeled_sampling, int):
-                    assert unlabeled_sampling in ['equal']
+                    assert unlabeled_sampling in ["equal"]
                     sampling_num = len(samples_)
 
                 # read com
-                if 'instance0' in exp["com_file"]:
-                    pair_com_file = exp["com_file"].replace('instance0', 'instance1')
+                if "instance0" in exp["com_file"]:
+                    pair_com_file = exp["com_file"].replace("instance0", "instance1")
                 else:
-                    pair_com_file = exp["com_file"].replace('instance1', 'instance0')
-                
+                    pair_com_file = exp["com_file"].replace("instance1", "instance0")
+
                 selected_samples = []
                 if params.get("valid_exp") is not None and e in params["valid_exp"]:
                     selected_samples = []
@@ -367,19 +401,27 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
                     comfile = sio.loadmat(pair_com_file)
                     c3d = comfile["com"]
                     sampleIDs = np.squeeze(comfile["sampleID"])
-                    com_dist = np.sum((c3d-c3dfile["com"]) ** 2, axis=1)
+                    com_dist = np.sum((c3d - c3dfile["com"]) ** 2, axis=1)
                     com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
                     # only sample from close interaction? hard coded distance threshold for now
                     indices_below_thres = np.where(com_dist < 120)[0]
-                    indices_existing = [i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_]
-                    indices_below_thres = list(set(
-                        indices_below_thres) - set(indices_existing))
+                    indices_existing = [
+                        i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_
+                    ]
+                    indices_below_thres = list(
+                        set(indices_below_thres) - set(indices_existing)
+                    )
                     sampling_num = min(sampling_num, len(indices_below_thres))
                     selected_indices = np.random.choice(
-                        indices_below_thres, size=sampling_num, replace=False)
+                        indices_below_thres, size=sampling_num, replace=False
+                    )
                     selected_samples = sampleIDs[selected_indices]
-                
-                logger.info("Unlabeled sampling: EXP {} added {} samples".format(e, len(selected_samples)))
+
+                logger.info(
+                    "Unlabeled sampling: EXP {} added {} samples".format(
+                        e, len(selected_samples)
+                    )
+                )
                 samples_ = list(samples_) + list(selected_samples)
                 samples_ = sorted(samples_)
                 samples_ = np.array(samples_)
@@ -413,8 +455,7 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
         # Then load COM from the label3d file
         exp["com_file"] = expdict["label3d_file"]
         c3dfile = io.load_com(exp["com_file"])
-        com3d_dict_ = check_COM_load(
-            c3dfile, "com3d", params["medfilt_window"])
+        com3d_dict_ = check_COM_load(c3dfile, "com3d", params["medfilt_window"])
 
     # print("Experiment {} using com3d: {}".format(e, exp["com_file"]))
 
@@ -430,15 +471,20 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
 
     pre = len(samples_)
     samples_ = serve_data_DANNCE.remove_samples_com(
-        samples_,
-        com3d_dict_,
-        rmc=do_cthresh,
-        cthresh=exp["cthresh"],
+        samples_, com3d_dict_, rmc=do_cthresh, cthresh=exp["cthresh"],
     )
     # msg = "Removed {} samples from the dataset because they either had COM positions over cthresh, or did not have matching sampleIDs in the COM file"
     # print(msg.format(pre - len(samples_)))
 
-    return exp, samples_, datadict_, datadict_3d_, cameras_, com3d_dict_, temporal_chunks
+    return (
+        exp,
+        samples_,
+        datadict_,
+        datadict_3d_,
+        cameras_,
+        com3d_dict_,
+        temporal_chunks,
+    )
 
 
 def check_COM_load(c3dfile: Dict, kkey: Text, win_size: int):
@@ -508,7 +554,9 @@ def make_data_splits(
     partition = {}
     if params.get("use_temporal", False):
         if params["load_valid"] is None:
-            assert temporal_chunks != None, "If use temporal, do partitioning over chunks."
+            assert (
+                temporal_chunks != None
+            ), "If use temporal, do partitioning over chunks."
             v = params["num_validation_per_exp"]
             # fix random seeds
             if params["data_split_seed"] is not None:
@@ -522,14 +570,13 @@ def make_data_splits(
                         if v > len(temporal_chunks[e]):
                             v = len(temporal_chunks[e])
                             logger.warning(
-                                "Setting all {} samples in experiment {} for validation purpose."
-                                .format(v, e)
+                                "Setting all {} samples in experiment {} for validation purpose.".format(
+                                    v, e
+                                )
                             )
 
                         valid_chunk_idx = sorted(
-                            np.random.choice(
-                                len(temporal_chunks[e]), v, replace=False
-                            )
+                            np.random.choice(len(temporal_chunks[e]), v, replace=False)
                         )
                         valid_chunks += list(
                             np.array(temporal_chunks[e])[valid_chunk_idx]
@@ -542,20 +589,14 @@ def make_data_splits(
             elif v > 0:
                 for e in range(num_experiments):
                     valid_chunk_idx = sorted(
-                        np.random.choice(
-                            len(temporal_chunks[e]), v, replace=False
-                        )
+                        np.random.choice(len(temporal_chunks[e]), v, replace=False)
                     )
-                    valid_chunks += list(
-                        np.array(temporal_chunks[e])[valid_chunk_idx]
-                    )
+                    valid_chunks += list(np.array(temporal_chunks[e])[valid_chunk_idx])
                     train_chunks += list(
                         np.delete(temporal_chunks[e], valid_chunk_idx, 0)
                     )
             elif params["valid_exp"] is not None:
-                raise Exception(
-                    "Need to set num_validation_per_exp in using valid_exp"
-                )
+                raise Exception("Need to set num_validation_per_exp in using valid_exp")
             else:
                 for e in range(num_experiments):
                     train_chunks += list(temporal_chunks[e])
@@ -564,12 +605,13 @@ def make_data_splits(
             logger.info("TRAIN EXPTS: {}".format(train_expts))
 
             if isinstance(params["training_fraction"], float):
-                assert (params["training_fraction"] <
-                        1.0) & (params["training_fraction"] > 0)
+                assert (params["training_fraction"] < 1.0) & (
+                    params["training_fraction"] > 0
+                )
 
                 # load in the training samples
                 labeled_train_samples = np.load(
-                    'train_samples/baseline.pickle', allow_pickle=True
+                    "train_samples/baseline.pickle", allow_pickle=True
                 )
                 # labeled_train_chunks = [labeled_train_samples[i:i+params["temporal_chunk_size"]] for i in range(0, len(labeled_train_samples), params["temporal_chunk_size"])]
                 n_chunks = len(labeled_train_samples)
@@ -578,7 +620,7 @@ def make_data_splits(
                     np.random.choice(
                         n_chunks,
                         int(n_chunks * params["training_fraction"]),
-                        replace=False
+                        replace=False,
                     )
                 )
                 idxes_to_be_removed = list(
@@ -600,8 +642,10 @@ def make_data_splits(
             except:
                 valid_sampleIDs = []
 
-            partition["train_sampleIDs"], partition[
-                "valid_sampleIDs"] = train_sampleIDs, valid_sampleIDs
+            partition["train_sampleIDs"], partition["valid_sampleIDs"] = (
+                train_sampleIDs,
+                valid_sampleIDs,
+            )
 
         else:
             # Load validation samples from elsewhere
@@ -645,8 +689,7 @@ def make_data_splits(
             all_valid_inds = []
             for e in params["valid_exp"]:
                 tinds = [
-                    i for i in range(len(samples))
-                    if int(samples[i].split("_")[0]) == e
+                    i for i in range(len(samples)) if int(samples[i].split("_")[0]) == e
                 ]
                 all_valid_inds = all_valid_inds + tinds
 
@@ -656,12 +699,13 @@ def make_data_splits(
                 if v > len(tinds):
                     v = len(tinds)
                     logger.info(
-                        "Setting all {} samples in experiment {} for validation purpose."
-                        .format(v, e)
+                        "Setting all {} samples in experiment {} for validation purpose.".format(
+                            v, e
+                        )
                     )
 
                 valid_inds = valid_inds + list(
-                    np.random.choice(tinds, (v, ), replace=False)
+                    np.random.choice(tinds, (v,), replace=False)
                 )
                 valid_inds = list(np.sort(valid_inds))
 
@@ -669,14 +713,15 @@ def make_data_splits(
                 set(all_inds) - set(all_valid_inds)
             )  # [i for i in all_inds if i not in all_valid_inds]
             if isinstance(params["training_fraction"], float):
-                assert (params["training_fraction"] <
-                        1.0) & (params["training_fraction"] > 0)
+                assert (params["training_fraction"] < 1.0) & (
+                    params["training_fraction"] > 0
+                )
                 n_samples = len(train_inds)
                 train_inds_idx = sorted(
                     np.random.choice(
                         n_samples,
                         int(n_samples * params["training_fraction"]),
-                        replace=False
+                        replace=False,
                     )
                 )
                 train_inds = [train_inds[i] for i in train_inds_idx]
@@ -684,19 +729,16 @@ def make_data_splits(
         elif v > 0:  # if 0, do not perform validation
             for e in range(num_experiments):
                 tinds = [
-                    i for i in range(len(samples))
-                    if int(samples[i].split("_")[0]) == e
+                    i for i in range(len(samples)) if int(samples[i].split("_")[0]) == e
                 ]
                 valid_inds = valid_inds + list(
-                    np.random.choice(tinds, (v, ), replace=False)
+                    np.random.choice(tinds, (v,), replace=False)
                 )
                 valid_inds = list(np.sort(valid_inds))
 
             train_inds = [i for i in all_inds if i not in valid_inds]
         elif params["valid_exp"] is not None:
-            raise Exception(
-                "Need to set num_validation_per_exp in using valid_exp"
-            )
+            raise Exception("Need to set num_validation_per_exp in using valid_exp")
         else:
             train_inds = all_inds
 
@@ -705,8 +747,7 @@ def make_data_splits(
         train_inds = []
         if params["valid_exp"] is not None:
             train_expts = [
-                f
-                for f in range(num_experiments) if f not in params["valid_exp"]
+                f for f in range(num_experiments) if f not in params["valid_exp"]
             ]
         else:
             train_expts = np.arange(num_experiments)
@@ -717,14 +758,15 @@ def make_data_splits(
             # Then sample randomly without replacement from training sampleIDs
             for e in train_expts:
                 tinds = [
-                    i for i in range(len(train_samples))
+                    i
+                    for i in range(len(train_samples))
                     if int(train_samples[i].split("_")[0]) == e
                 ]
                 # print(e)
                 # print(len(tinds))
                 train_inds = train_inds + list(
                     np.random.choice(
-                        tinds, (params["num_train_per_exp"], ), replace=False
+                        tinds, (params["num_train_per_exp"],), replace=False
                     )
                 )
                 train_inds = list(np.sort(train_inds))
@@ -735,10 +777,7 @@ def make_data_splits(
         partition["train_sampleIDs"] = train_samples[train_inds]
     else:
         # Load validation samples from elsewhere
-        with open(
-            os.path.join(params["load_valid"], "val_samples.pickle"),
-            "rb",
-        ) as f:
+        with open(os.path.join(params["load_valid"], "val_samples.pickle"), "rb",) as f:
             partition["valid_sampleIDs"] = cPickle.load(f)
         partition["train_sampleIDs"] = [
             f for f in samples if f not in partition["valid_sampleIDs"]
@@ -749,7 +788,7 @@ def make_data_splits(
 
     with open(os.path.join(results_dir, "train_samples.pickle"), "wb") as f:
         cPickle.dump(partition["train_sampleIDs"], f)
-    
+
     # Reset any seeding so that future batch shuffling, etc. are not tied to this seed
     if params["data_split_seed"] is not None:
         np.random.seed()
@@ -779,9 +818,7 @@ def resplit_social(partition):
         sorted(new_partition["train_sampleIDs"])
     )
     new_partition["valid_sampleIDs"] = np.array(
-        sorted(
-            list(set(all_sampleIDs) - set(new_partition["train_sampleIDs"]))
-        )
+        sorted(list(set(all_sampleIDs) - set(new_partition["train_sampleIDs"])))
     )
 
     for samp in new_partition["valid_sampleIDs"]:
@@ -824,7 +861,8 @@ def remove_samples_npy(npydir, samples, params):
         grids = os.listdir(gridvol)
         npysamps = [
             "0_" + f.split("_")[1] + ".npy"
-            for f in samples if int(f.split("_")[0]) == e
+            for f in samples
+            if int(f.split("_")[0]) == e
         ]
 
         goodsamps = list(set(npysamps) & set(ims) & set(grids))
@@ -837,8 +875,9 @@ def remove_samples_npy(npydir, samples, params):
 
         # import pdb; pdb.set_trace()
         logger.warning(
-            "Removed {} samples from {} because corresponding image or grid files could not be found"
-            .format(sampdiff, params["experiment"][e]["label3d_file"])
+            "Removed {} samples from {} because corresponding image or grid files could not be found".format(
+                sampdiff, params["experiment"][e]["label3d_file"]
+            )
         )
 
     return np.array(samps)
@@ -891,11 +930,18 @@ def load_volumes_into_mem(
     generator,
     train=True,
     silhouette=False,
-    social=False
+    social=False,
 ):
-    n_samples = len(partition["train_sampleIDs"]
-                    ) if train else len(partition["valid_sampleIDs"])
-    message = "Loading training data into memory" if train else "Loading validation data into memory"
+    n_samples = (
+        len(partition["train_sampleIDs"])
+        if train
+        else len(partition["valid_sampleIDs"])
+    )
+    message = (
+        "Loading training data into memory"
+        if train
+        else "Loading validation data into memory"
+    )
     gridsize = tuple([params["nvox"]] * 3)
 
     # initialize vars
@@ -903,22 +949,17 @@ def load_volumes_into_mem(
         X = np.empty((n_samples, *gridsize, n_cams), dtype="float32")
     else:
         X = np.empty(
-            (n_samples, *gridsize, params["chan_num"] * n_cams),
-            dtype="float32"
+            (n_samples, *gridsize, params["chan_num"] * n_cams), dtype="float32"
         )
     logger.info(message)
 
-    X_grid = np.empty((n_samples, params["nvox"]**3, 3), dtype="float32")
+    X_grid = np.empty((n_samples, params["nvox"] ** 3, 3), dtype="float32")
     y = None
     if params["expval"]:
         if not silhouette:
-            y = np.empty(
-                (n_samples, 3, params["n_channels_out"]), dtype="float32"
-            )
+            y = np.empty((n_samples, 3, params["n_channels_out"]), dtype="float32")
     else:
-        y = np.empty(
-            (n_samples, *gridsize, params["n_channels_out"]), dtype="float32"
-        )
+        y = np.empty((n_samples, *gridsize, params["n_channels_out"]), dtype="float32")
 
     # load data from generator
     if social:
@@ -991,15 +1032,14 @@ def write_debug(
         model (Model): Model
         trainData (bool, optional): If True use training data for debug. Defaults to True.
     """
+
     def plot_out(imo, lo, imn):
         plot_markers_2d(norm_im(imo), lo, newfig=False)
         plt.gca().xaxis.set_major_locator(plt.NullLocator())
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
         imname = imn
-        plt.savefig(
-            os.path.join(debugdir, imname), bbox_inches="tight", pad_inches=0
-        )
+        plt.savefig(os.path.join(debugdir, imname), bbox_inches="tight", pad_inches=0)
 
     if params["debug"] and not params["multi_mode"]:
 
@@ -1028,7 +1068,7 @@ def write_debug(
                     plt.cla()
                     plot_out(
                         ims_out[i],
-                        label_out[i, :, :, j:j + 1],
+                        label_out[i, :, :, j : j + 1],
                         str(i) + "_cam_" + str(j) + ".png",
                     )
             else:
@@ -1058,8 +1098,7 @@ def save_volumes_into_npy(
                     X_grid, y = rr[0][1][j], rr[1][0][j]
 
                     for savedir, data in zip(
-                        ['image_volumes', "grid_volumes", "targets"],
-                        [X, X_grid, y]
+                        ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
                     ):
                         outdir = os.path.join(save_root, savedir, fname)
                         if not os.path.exists(outdir):
@@ -1068,7 +1107,7 @@ def save_volumes_into_npy(
                     if params["downscale_occluded_view"]:
                         np.save(
                             os.path.join(save_root, "occlusion_scores", fname),
-                            rr[0][2][j]
+                            rr[0][2][j],
                         )
                 else:
                     # sil = extract_3d_sil(rr[0][0][j].astype("uint8"))
@@ -1083,8 +1122,7 @@ def save_volumes_into_npy(
 
             if not silhouette:
                 for savedir, data in zip(
-                    ['image_volumes', "grid_volumes", "targets"],
-                    [X, X_grid, y]
+                    ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
                 ):
                     outdir = os.path.join(save_root, savedir, fname)
                     if not os.path.exists(outdir):
@@ -1104,18 +1142,16 @@ def save_volumes_into_tif(params, tifdir, X, sampleIDs, n_cams, logger):
     logger.info("Dump training volumes to {}".format(tifdir))
     for i in range(X.shape[0]):
         for j in range(n_cams):
-            im = X[i, :, :, :,
-                   j * params["chan_num"]:(j + 1) * params["chan_num"], ]
+            im = X[
+                i, :, :, :, j * params["chan_num"] : (j + 1) * params["chan_num"],
+            ]
             im = norm_im(im) * 255
             im = im.astype("uint8")
-            of = os.path.join(
-                tifdir,
-                str(sampleIDs[i]) + "_cam" + str(j) + ".tif",
-            )
+            of = os.path.join(tifdir, str(sampleIDs[i]) + "_cam" + str(j) + ".tif",)
             imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))
 
 
-def save_visual_hull(aux, sampleIDs, savedir='./visual_hull'):
+def save_visual_hull(aux, sampleIDs, savedir="./visual_hull"):
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
@@ -1123,18 +1159,16 @@ def save_visual_hull(aux, sampleIDs, savedir='./visual_hull'):
         intersection = np.squeeze(aux[i].astype(np.float32))
 
         # apply marching cubes algorithm
-        verts, faces, normals, values = measure.marching_cubes(
-            intersection, 0.0
-        )
+        verts, faces, normals, values = measure.marching_cubes(intersection, 0.0)
         # print('Number of vertices: ', verts.shape[0])
 
         # save predictions
         fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
 
         # Fancy indexing: `verts[faces]` to generate a collection of triangles
         mesh = Poly3DCollection(verts[faces])
-        mesh.set_edgecolor('k')
+        mesh.set_edgecolor("k")
         ax.add_collection3d(mesh)
 
         min_limit, max_limit = np.min(verts), np.max(verts)
@@ -1154,7 +1188,7 @@ def save_train_volumes(params, tifdir, generator, n_cams):
     for i in range(len(generator)):
         X = generator.__getitem__(i)[0][0].permute(1, 2, 3, 0).numpy()
         for j in range(n_cams):
-            im = X[..., j * params["chan_num"]:(j + 1) * params["chan_num"]]
+            im = X[..., j * params["chan_num"] : (j + 1) * params["chan_num"]]
             im = norm_im(im) * 255
             im = im.astype("uint8")
             of = os.path.join(tifdir, f"{i}_cam{j}.tif")
@@ -1219,10 +1253,7 @@ def write_npy(uri, gen):
 
             # and save
             print(fname)
-            np.save(
-                os.path.join(imdir, fname + ".npy"),
-                bch[0][0][j].astype("uint8")
-            )
+            np.save(os.path.join(imdir, fname + ".npy"), bch[0][0][j].astype("uint8"))
             np.save(os.path.join(griddir, fname + ".npy"), bch[0][1][j])
 
 
@@ -1272,9 +1303,7 @@ def rename_weights(traindir, kkey, mon):
         and value of the monitored quantity
     """
     # First load in the training.csv
-    r = np.genfromtxt(
-        os.path.join(traindir, "training.csv"), delimiter=",", names=True
-    )
+    r = np.genfromtxt(os.path.join(traindir, "training.csv"), delimiter=",", names=True)
     e = r["epoch"]
     q = r[mon]
     minq = np.min(q)
@@ -1283,8 +1312,7 @@ def rename_weights(traindir, kkey, mon):
     else:
         beste = e[np.argmin(q)]
 
-    newname = "weights." + str(int(beste)
-                               ) + "-" + "{:.5f}".format(minq) + ".hdf5"
+    newname = "weights." + str(int(beste)) + "-" + "{:.5f}".format(minq) + ".hdf5"
 
     os.rename(os.path.join(traindir, kkey), os.path.join(traindir, newname))
 
@@ -1293,9 +1321,7 @@ def save_params_pickle(params):
     """
     save copy of params as pickle for reproducibility.
     """
-    handle = open(
-        os.path.join(params["dannce_train_dir"], "params.pickle"), "wb"
-    )
+    handle = open(os.path.join(params["dannce_train_dir"], "params.pickle"), "wb")
     pickle.dump(params, handle)
 
     return True
@@ -1308,11 +1334,9 @@ def save_params_yaml(params):
         params (Dict): experiment parameters
     """
     # exclude keys for intermediate computations
-    _exclude = ['experiment', 'chunks']
-    params_to_save = {k:v for k, v in params.items() if k not in _exclude}
-    handle = open(
-        os.path.join(params["dannce_train_dir"], "params.yaml"), "w"
-    )
+    _exclude = ["experiment", "chunks"]
+    params_to_save = {k: v for k, v in params.items() if k not in _exclude}
+    handle = open(os.path.join(params["dannce_train_dir"], "params.yaml"), "w")
     yaml.dump(params_to_save, handle, default_flow_style=False, sort_keys=False)
 
 
@@ -1415,21 +1439,15 @@ def save_COM_checkpoint(
 
     metadata = prepare_save_metadata(params)
     sio.savemat(
-        cfilename,
-        {
-            "sampleID": samples_keys,
-            "com": c3d,
-            "metadata": metadata,
-        },
+        cfilename, {"sampleID": samples_keys, "com": c3d, "metadata": metadata,},
     )
 
     # If multiple instances, additionally save to different files for each instance
     # keep consistent with `multi_gpu.py` com_merge()
-    if params["n_instances"] > 1: #and file_name == "com3d":
+    if params["n_instances"] > 1:  # and file_name == "com3d":
         for n_instance in range(params["n_instances"]):
             fn = os.path.join(
-                results_dir,
-                "instance" + str(n_instance) + file_name + ".mat",
+                results_dir, "instance" + str(n_instance) + file_name + ".mat",
             )
             sio.savemat(
                 fn,
@@ -1459,7 +1477,7 @@ def savedata_expval(
     num_instances=1,
     num_markers=20,
     tcoord=True,
-    pmax=False
+    pmax=False,
 ):
     """Save the expected values."""
     if data is None:
@@ -1467,11 +1485,9 @@ def savedata_expval(
         data = cPickle.load(f)
         f.close()
 
-    d_coords = np.zeros(
-        (len(list(data.keys())), num_instances, 3, num_markers))
-    t_coords = np.zeros(
-        (len(list(data.keys())), num_instances, 3, num_markers))
-    sID = np.zeros((len(list(data.keys())), ))
+    d_coords = np.zeros((len(list(data.keys())), num_instances, 3, num_markers))
+    t_coords = np.zeros((len(list(data.keys())), num_instances, 3, num_markers))
+    sID = np.zeros((len(list(data.keys())),))
     p_max = np.zeros((len(list(data.keys())), num_instances, num_markers))
 
     for (i, key) in enumerate(data.keys()):
@@ -1493,8 +1509,7 @@ def savedata_expval(
         }
     if write and data is None:
         sio.savemat(
-            fname.split(".pickle")[0] + ".mat",
-            sdict,
+            fname.split(".pickle")[0] + ".mat", sdict,
         )
     elif write and data is not None:
         sio.savemat(fname, sdict)
@@ -1530,13 +1545,11 @@ def savedata_tomat(
     t_coords = np.zeros((list(data.keys())[-1] + 1, 3, num_markers))
     p_max = np.zeros((list(data.keys())[-1] + 1, num_markers))
     log_p_max = np.zeros((list(data.keys())[-1] + 1, num_markers))
-    sID = np.zeros((list(data.keys())[-1] + 1, ))
+    sID = np.zeros((list(data.keys())[-1] + 1,))
     for (i, key) in enumerate(data.keys()):
         d_coords[i] = data[key]["pred_coord"]
         if tcoord:
-            t_coords[i] = np.reshape(
-                data[key]["true_coord_nogrid"], (3, num_markers)
-            )
+            t_coords[i] = np.reshape(data[key]["true_coord_nogrid"], (3, num_markers))
         p_max[i] = data[key]["pred_max"]
         log_p_max[i] = data[key]["logmax"]
         sID[i] = data[key]["sampleID"]
@@ -1552,8 +1565,7 @@ def savedata_tomat(
         # We use the passed comdict to add back in the com, this is useful
         # if one wnats to bootstrap on these values for COMnet or otherwise
         for i in range(len(sID)):
-            pred_out_world[i] = pred_out_world[i] + addCOM[int(sID)][:,
-                                                                     np.newaxis]
+            pred_out_world[i] = pred_out_world[i] + addCOM[int(sID)][:, np.newaxis]
 
     sdict = {
         "pred": pred_out_world,
@@ -1565,13 +1577,11 @@ def savedata_tomat(
     }
     if write and data is None:
         sio.savemat(
-            fname.split(".pickle")[0] + ".mat",
-            sdict,
+            fname.split(".pickle")[0] + ".mat", sdict,
         )
     elif write and data is not None:
         sio.savemat(
-            fname,
-            sdict,
+            fname, sdict,
         )
     return pred_out_world, t_coords, p_max, log_p_max, sID
 
@@ -1586,19 +1596,17 @@ def __initAvgMax(t, g, o, params):
     Helper function for creating 3D targets
     """
     gridsize = tuple([params["nvox"]] * 3)
-    g = np.reshape(
-        g,
-        (-1, *gridsize, 3),
-    )
+    g = np.reshape(g, (-1, *gridsize, 3),)
 
     for i in range(o.shape[0]):
         for j in range(o.shape[-1]):
             o[i, ..., j] = np.exp(
                 -(
-                    (g[i, ..., 1] - t[i, 1, j])**2 +
-                    (g[i, ..., 0] - t[i, 0, j])**2 +
-                    (g[i, ..., 2] - t[i, 2, j])**2
-                ) / (2 * params["sigma"]**2)
+                    (g[i, ..., 1] - t[i, 1, j]) ** 2
+                    + (g[i, ..., 0] - t[i, 0, j]) ** 2
+                    + (g[i, ..., 2] - t[i, 2, j]) ** 2
+                )
+                / (2 * params["sigma"] ** 2)
             )
 
     return o
@@ -1609,9 +1617,7 @@ def batch_rgb2gray(imstack):
 
     batch dimension is first.
     """
-    grayim = np.zeros(
-        (imstack.shape[0], imstack.shape[1], imstack.shape[2]), "float32"
-    )
+    grayim = np.zeros((imstack.shape[0], imstack.shape[1], imstack.shape[2]), "float32")
     for i in range(grayim.shape[0]):
         grayim[i] = rgb2gray(imstack[i].astype("uint8"))
     return grayim
@@ -1622,14 +1628,13 @@ def return_tile(imstack, fac=2):
     height = imstack.shape[1] // fac
     width = imstack.shape[2] // fac
     out = np.zeros(
-        (imstack.shape[0] * fac * fac, height, width, imstack.shape[3]),
-        "float32"
+        (imstack.shape[0] * fac * fac, height, width, imstack.shape[3]), "float32"
     )
     cnt = 0
     for i in range(imstack.shape[0]):
         for j in np.arange(0, imstack.shape[1], height):
             for k in np.arange(0, imstack.shape[2], width):
-                out[cnt, :, :, :] = imstack[i, j:j + height, k:k + width, :]
+                out[cnt, :, :, :] = imstack[i, j : j + height, k : k + width, :]
                 cnt = cnt + 1
     return out
 
@@ -1639,17 +1644,14 @@ def tile2im(imstack, fac=2):
     height = imstack.shape[1]
     width = imstack.shape[2]
     out = np.zeros(
-        (
-            imstack.shape[0] //
-            (fac * fac), height * fac, width * fac, imstack.shape[3]
-        ),
+        (imstack.shape[0] // (fac * fac), height * fac, width * fac, imstack.shape[3]),
         "float32",
     )
     cnt = 0
     for i in range(out.shape[0]):
         for j in np.arange(0, out.shape[1], height):
             for k in np.arange(0, out.shape[2], width):
-                out[i, j:j + height, k:k + width, :] = imstack[cnt]
+                out[i, j : j + height, k : k + width, :] = imstack[cnt]
                 cnt += 1
     return out
 
@@ -1672,8 +1674,7 @@ def downsample_batch(imstack, fac=2, method="PIL"):
             for i in range(imstack.shape[0]):
                 out[i] = np.array(
                     PIL.Image.fromarray(imstack[i].astype("uint8")).resize(
-                        (out.shape[2], out.shape[1]),
-                        resample=PIL.Image.LANCZOS
+                        (out.shape[2], out.shape[1]), resample=PIL.Image.LANCZOS
                     )
                 )
         else:
@@ -1681,8 +1682,7 @@ def downsample_batch(imstack, fac=2, method="PIL"):
                 for j in range(imstack.shape[3]):
                     out[i, :, :, j] = np.array(
                         PIL.Image.fromarray(imstack[i, :, :, j]).resize(
-                            (out.shape[2], out.shape[1]),
-                            resample=PIL.Image.LANCZOS
+                            (out.shape[2], out.shape[1]), resample=PIL.Image.LANCZOS
                         )
                     )
 
@@ -1734,11 +1734,9 @@ def cropcom(im, com, size=512):
     maxlim_c = int(np.round(com[0])) + size // 2
 
     diff = (minlim_r, maxlim_r, minlim_c, maxlim_c)
-    crop_dim = (
-        np.max([minlim_r, 0]), maxlim_r, np.max([minlim_c, 0]), maxlim_c
-    )
+    crop_dim = (np.max([minlim_r, 0]), maxlim_r, np.max([minlim_c, 0]), maxlim_c)
 
-    out = im[crop_dim[0]:crop_dim[1], crop_dim[2]:crop_dim[3], :]
+    out = im[crop_dim[0] : crop_dim[1], crop_dim[2] : crop_dim[3], :]
 
     dim = out.shape[2]
 
@@ -1749,8 +1747,7 @@ def cropcom(im, com, size=512):
         )
     if maxlim_r > im.shape[0]:
         out = np.concatenate(
-            (out, np.zeros((maxlim_r - im.shape[0], out.shape[1], dim))),
-            axis=0
+            (out, np.zeros((maxlim_r - im.shape[0], out.shape[1], dim))), axis=0
         )
     if minlim_c < 0:
         out = np.concatenate(
@@ -1758,8 +1755,7 @@ def cropcom(im, com, size=512):
         )
     if maxlim_c > im.shape[1]:
         out = np.concatenate(
-            (out, np.zeros((out.shape[0], maxlim_c - im.shape[1], dim))),
-            axis=1
+            (out, np.zeros((out.shape[0], maxlim_c - im.shape[1], dim))), axis=1
         )
 
     return out, diff
@@ -1774,8 +1770,7 @@ def plot_markers_2d(im, markers, newfig=True):
 
     for mark in range(markers.shape[-1]):
         ind = np.unravel_index(
-            np.argmax(markers[:, :, mark],
-                      axis=None), markers[:, :, mark].shape
+            np.argmax(markers[:, :, mark], axis=None), markers[:, :, mark].shape
         )
         plt.plot(ind[1], ind[0], ".r")
 
@@ -1865,8 +1860,7 @@ def get_peak_inds(map_):
 
 def get_peak_inds_multi_instance(im, n_instances, window_size=10):
     """Return top n_instances local peaks through non-max suppression."""
-    bw = im == maximum_filter(
-        im, footprint=np.ones((window_size, window_size)))
+    bw = im == maximum_filter(im, footprint=np.ones((window_size, window_size)))
     inds = np.argwhere(bw)
     vals = im[inds[:, 0], inds[:, 1]]
     idx = np.argsort(vals)[::-1]
@@ -1902,7 +1896,7 @@ def spatial_var(map_):
     map_ = map_ / np.sum(map_)
     x, y = np.meshgrid(np.arange(map_.shape[1]), np.arange(map_.shape[0]))
 
-    return np.sum(map_ * ((x - expx)**2 + (y - expy)**2))
+    return np.sum(map_ * ((x - expx) ** 2 + (y - expy) ** 2))
 
 
 def spatial_entropy(map_):
@@ -1917,7 +1911,7 @@ SEGMENTATION
 
 
 def mask_to_bbox(mask):
-    bounding_boxes = np.zeros((4, ))
+    bounding_boxes = np.zeros((4,))
     y, x, _ = np.where(mask != 0)
     try:
         bounding_boxes[0] = np.min(x)
@@ -1940,7 +1934,7 @@ def mask_iou(mask1, mask2):
 
 
 def mask_intersection(mask1, mask2):
-    return (mask1 * mask2)
+    return mask1 * mask2
 
 
 def bbox_iou(bb1, bb2):
@@ -1970,7 +1964,7 @@ def compute_support(coms, mask, support_region_size=10):
         sp_t = np.maximum(0, index[0] - support_region_size)
         sp_b = np.minimum(mask.shape[1], index[0] + support_region_size)
 
-        count = np.sum(mask[int(sp_l):int(sp_r), int(sp_t):int(sp_b), 0])
+        count = np.sum(mask[int(sp_l) : int(sp_r), int(sp_t) : int(sp_b), 0])
         counts.append(count)
     return np.array(counts)
 
@@ -2035,8 +2029,10 @@ def compute_bbox_from_3dmask(mask3d, grids):
 
         new_com3d = grid[mid_point[0], mid_point[1], mid_point[2]]
 
-        new_dim = grid[corner2[0], corner2[1],
-                       corner2[2]] - grid[corner1[0], corner1[1], corner1[2]]
+        new_dim = (
+            grid[corner2[0], corner2[1], corner2[2]]
+            - grid[corner1[0], corner1[1], corner1[2]]
+        )
 
         new_com3ds.append(new_com3d)
         new_dims.append(new_dim)
@@ -2049,9 +2045,7 @@ def compute_bbox_from_3dmask(mask3d, grids):
 
 def create_new_labels(partition, old_com3ds, new_com3ds, new_dims, params):
     com3d_dict, dim_dict = {}, {}
-    all_sampleIDs = [
-        *partition["train_sampleIDs"], *partition["valid_sampleIDs"]
-    ]
+    all_sampleIDs = [*partition["train_sampleIDs"], *partition["valid_sampleIDs"]]
 
     default_dim = np.array([(params["vmax"] - params["vmin"]) * 0.8] * 3)
     for sampleID, new_com, new_dim in zip(all_sampleIDs, new_com3ds, new_dims):
@@ -2072,7 +2066,7 @@ def filter_com3ds(pairs, com3d_dict, datadict_3d, threshold=120):
     for (a, b) in pairs["train_pairs"]:
         com1 = com3d_dict[a]
         com2 = com3d_dict[b]
-        dist = np.sqrt(np.sum((com1 - com2)**2))
+        dist = np.sqrt(np.sum((com1 - com2) ** 2))
         if dist <= threshold:
             train_sampleIDs.append(a)
             new_com3d_dict[a] = (com1 + com2) / 2
@@ -2083,7 +2077,7 @@ def filter_com3ds(pairs, com3d_dict, datadict_3d, threshold=120):
     for (a, b) in pairs["valid_pairs"]:
         com1 = com3d_dict[a]
         com2 = com3d_dict[b]
-        dist = np.sqrt(np.sum((com1 - com2)**2))
+        dist = np.sqrt(np.sum((com1 - com2) ** 2))
 
         if dist <= threshold:
             valid_sampleIDs.append(a)
@@ -2130,17 +2124,13 @@ def prepare_joint_volumes(params, pairs, com3d_dict, datadict_3d):
     for k, v in pairs.items():
         for (vol1, vol2) in v:
             anchor1, anchor2 = com3d_dict[vol1], com3d_dict[vol2]
-            anchor1, anchor2 = anchor1[:,
-                                       np.newaxis], anchor2[:,
-                                                            np.newaxis]  # [3, 1]
+            anchor1, anchor2 = anchor1[:, np.newaxis], anchor2[:, np.newaxis]  # [3, 1]
             pose3d1, pose3d2 = datadict_3d[vol1], datadict_3d[vol2]
 
             n_chan = pose3d1.shape[-1]
 
-            new_pose3d1 = np.concatenate(
-                (pose3d1, pose3d2), axis=-1)  # [3, 46]
-            new_pose3d2 = np.concatenate(
-                (pose3d2, pose3d1), axis=-1)  # [3, 46]
+            new_pose3d1 = np.concatenate((pose3d1, pose3d2), axis=-1)  # [3, 46]
+            new_pose3d2 = np.concatenate((pose3d2, pose3d1), axis=-1)  # [3, 46]
 
             new_pose3d1 = mask_coords_outside_volume(
                 vmin, vmax, new_pose3d1, anchor1, n_chan
@@ -2176,16 +2166,16 @@ def _preprocess_numpy_input(x, data_format="channels_last", mode="torch"):
     if not issubclass(x.dtype.type, np.floating):
         x = x.astype("float32", copy=False)
 
-    if mode == 'tf':
+    if mode == "tf":
         x /= 127.5
-        x -= 1.
+        x -= 1.0
         return x
-    elif mode == 'torch':
-        x /= 255.
+    elif mode == "torch":
+        x /= 255.0
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
     else:
-        if data_format == 'channels_first':
+        if data_format == "channels_first":
             # 'RGB'->'BGR'
             if x.ndim == 3:
                 x = x[::-1, ...]
@@ -2198,7 +2188,7 @@ def _preprocess_numpy_input(x, data_format="channels_last", mode="torch"):
             std = None
 
     # Zero-center by mean pixel
-    if data_format == 'channels_first':
+    if data_format == "channels_first":
         if x.ndim == 3:
             x[0, :, :] -= mean[0]
             x[1, :, :] -= mean[1]

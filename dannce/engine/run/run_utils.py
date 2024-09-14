@@ -103,7 +103,8 @@ def make_folder(key: Text, params: Dict):
             os.makedirs(params[key])
     else:
         raise ValueError(key + " must be defined.")
-    
+
+
 def experiment_setup(params, mode):
     assert mode in ["dannce_train", "dannce_predict", "com_train", "com_predict"]
 
@@ -112,10 +113,12 @@ def experiment_setup(params, mode):
 
     # setup logger
     # logger = setup_logging(params[f"{mode}_dir"], f"stats_{mode}.log")
-    logger.add(f"stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}")
+    logger.add(
+        f"stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}"
+    )
     # deploy GPU devices
     device = set_device(params, logger)
-    
+
     # fix random seed if specified
     if params["random_seed"] is not None:
         set_random_seed(params["random_seed"])
@@ -173,10 +176,8 @@ def make_dataset(
         labeled_samples = list(set(samples) - set(unlabeled_samples))
         n_unlabeled = len(unlabeled_samples)
         n_labeled = len(labeled_samples)
-        logger.info(
-        "***LABELED: UNLABELED = {}:{}".format(n_labeled, n_unlabeled)
-        )
-        
+        logger.info("***LABELED: UNLABELED = {}:{}".format(n_labeled, n_unlabeled))
+
     if params["unlabeled_fraction"] != None:
         partition = processing.reselect_training(
             partition, datadict_3d, params["unlabeled_fraction"], logger
@@ -552,12 +553,11 @@ def make_rat7m(
 
 
 def sample_COM_augmentation(
-    comaug_params,
-    datadict, datadict_3d, com3d_dict, partition,
+    comaug_params, datadict, datadict_3d, com3d_dict, partition,
 ):
-    perturb_radius = comaug_params.get('perturb_radius', 20)
+    perturb_radius = comaug_params.get("perturb_radius", 20)
     aug_iters = comaug_params.get("aug_iters", 2)
-    
+
     train_samples = list(partition["train_sampleIDs"])
     valid_samples = list(partition["valid_sampleIDs"])
     train_samples_new = []
@@ -567,13 +567,15 @@ def sample_COM_augmentation(
             # Only augment training samples
             if sample not in train_samples:
                 continue
-            
+
             # Only augment labeled samples
             if np.isnan(datadict_3d[sample]).all():
                 continue
 
             com3d_new = deepcopy(com3d_dict[sample])
-            com_aug = perturb_radius * 2 * np.random.rand(len(com3d_new)) - perturb_radius
+            com_aug = (
+                perturb_radius * 2 * np.random.rand(len(com3d_new)) - perturb_radius
+            )
             com3d_new += com_aug
             # Embed the used COM augmentation in sampleID?
             # sample_new = sample+"-aug{}".format('_'.join(str(coord) for coord in com_aug))
@@ -796,7 +798,7 @@ def _make_data_mem(
         if params["is_social_dataset"]
         else generator.DataGenerator_3Dconv
     )
-    
+
     # Populate with COM augmented samples if needed
     if params["COM_augmentation"] is not None:
         (
@@ -806,11 +808,7 @@ def _make_data_mem(
             com3d_dict,
             partition,
         ) = sample_COM_augmentation(
-            params["COM_augmentation"],
-            datadict,
-            datadict_3d,
-            com3d_dict,
-            partition,
+            params["COM_augmentation"], datadict, datadict_3d, com3d_dict, partition,
         )
 
     # Used to initialize arrays for mono, and also in *frommem (the final generator)
@@ -1010,11 +1008,7 @@ def make_dataset_inference(params, valid_params):
             com3d_dict_,
             _,
         ) = processing.do_COM_load(
-            params["experiment"][e],
-            params["experiment"][e],
-            e,
-            params,
-            training=False,
+            params["experiment"][e], params["experiment"][e], e, params, training=False,
         )
 
         # Write 3D COM to file. This might be different from the input com3d file
@@ -1101,7 +1095,7 @@ def make_dataset_inference(params, valid_params):
         tifdirs,
     ]
 
-    spec_params = {}    
+    spec_params = {}
     if params["is_social_dataset"]:
         spec_params["n_instances"] = params["n_instances"]
 
@@ -1200,12 +1194,7 @@ def make_data_com(params, train_params, valid_params, logger):
 
     logger.info("Loading data")
     ims_train = np.zeros(
-        (
-            ncams * len(partition["train_sampleIDs"]),
-            dh,
-            dw,
-            params["chan_num"],
-        ),
+        (ncams * len(partition["train_sampleIDs"]), dh, dw, params["chan_num"],),
         dtype="float32",
     )
     y_train = np.zeros(
@@ -1213,12 +1202,7 @@ def make_data_com(params, train_params, valid_params, logger):
         dtype="float32",
     )
     ims_valid = np.zeros(
-        (
-            ncams * len(partition["valid_sampleIDs"]),
-            dh,
-            dw,
-            params["chan_num"],
-        ),
+        (ncams * len(partition["valid_sampleIDs"]), dh, dw, params["chan_num"],),
         dtype="float32",
     )
     y_valid = np.zeros(
@@ -1297,11 +1281,7 @@ def make_dataset_com_inference(params, predict_params):
         datadict_3d,
         cameras,
         camera_mats,
-    ) = serve_data_DANNCE.prepare_data(
-        params,
-        prediction=True,
-        return_cammat=True,
-    )
+    ) = serve_data_DANNCE.prepare_data(params, prediction=True, return_cammat=True,)
 
     # Zero any negative frames
     for key in datadict.keys():

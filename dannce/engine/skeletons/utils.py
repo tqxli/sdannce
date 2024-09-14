@@ -3,7 +3,9 @@ import os
 import scipy.io as sio
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-_BODY_PROFILES = [file.split('.mat')[0] for file in os.listdir(ROOT) if file.endswith('.mat')]
+_BODY_PROFILES = [
+    file.split(".mat")[0] for file in os.listdir(ROOT) if file.endswith(".mat")
+]
 
 
 _BODY_CONNECTIVITY = {
@@ -99,7 +101,7 @@ _BODY_CONNECTIVITY = {
         [20, 21],
         [21, 4],
     ],
-    "mouse14":[
+    "mouse14": [
         [0, 1],
         [0, 2],
         [1, 2],
@@ -119,30 +121,110 @@ _BODY_CONNECTIVITY = {
 
 _JOINT_NAMES = {
     "rat23": [
-        'Snout', 'EarL', 'EarR', 'SpineF', 'SpineM', 'SpineL', 'TailBase', 
-        'ShoulderL', 'ElbowL', 'WristL', 'HandL', 'ShoulderR', 'ElbowR', 'WristR', 'HandR', 
-        'HipL', 'KneeL', 'AnkleL', 'FootL', 'HipR', 'KneeR', 'AnkleR', 'FootR'
+        "Snout",
+        "EarL",
+        "EarR",
+        "SpineF",
+        "SpineM",
+        "SpineL",
+        "TailBase",
+        "ShoulderL",
+        "ElbowL",
+        "WristL",
+        "HandL",
+        "ShoulderR",
+        "ElbowR",
+        "WristR",
+        "HandR",
+        "HipL",
+        "KneeL",
+        "AnkleL",
+        "FootL",
+        "HipR",
+        "KneeR",
+        "AnkleR",
+        "FootR",
     ],
     "rat16": [
-        'EarL', 'EarR', 'Snout', 'SpineF', 'SpineM', 'Tail(base)', 'Tail(mid)', 'Tail(end)', 
-        'ForepawL', 'ForelimbL', 'ForepawR', 'ForelimbR',
-        'HindpawL', 'HindlimbL', 'HindpawR', 'HindlimbR'
+        "EarL",
+        "EarR",
+        "Snout",
+        "SpineF",
+        "SpineM",
+        "Tail(base)",
+        "Tail(mid)",
+        "Tail(end)",
+        "ForepawL",
+        "ForelimbL",
+        "ForepawR",
+        "ForelimbR",
+        "HindpawL",
+        "HindlimbL",
+        "HindpawR",
+        "HindlimbR",
     ],
     "rat7m": [
-        'HeadF', 'HeadB', 'HeadL', 'SpineF', 'SpineM', 'SpineL', 'Offset1', 'Offset2', 
-        'HipL', 'HipR', 'ElbowL', 'ArmL', 'ShoulderL', 'ShoulderR', 'ElbowR', 'ArmR', 
-        'KneeR', 'KneeL', 'ShinL', 'ShinR'
+        "HeadF",
+        "HeadB",
+        "HeadL",
+        "SpineF",
+        "SpineM",
+        "SpineL",
+        "Offset1",
+        "Offset2",
+        "HipL",
+        "HipR",
+        "ElbowL",
+        "ArmL",
+        "ShoulderL",
+        "ShoulderR",
+        "ElbowR",
+        "ArmR",
+        "KneeR",
+        "KneeL",
+        "ShinL",
+        "ShinR",
     ],
     "mouse22": [
-        'EarL', 'EarR', 'Snout', 'SpineF', 'SpineM', 'Tail(base)', 'Tail(mid)', 'Tail(end)', 
-        'ForepawL', 'WristL', 'ElbowL', 'ShoulderL', 'ForepawR', 'WristR', 'ElbowR', 'ShoulderR', 
-        'HindpawL', 'AnkleL', 'KneeL', 'HindpawR', 'AnkleR', 'KneeR'
+        "EarL",
+        "EarR",
+        "Snout",
+        "SpineF",
+        "SpineM",
+        "Tail(base)",
+        "Tail(mid)",
+        "Tail(end)",
+        "ForepawL",
+        "WristL",
+        "ElbowL",
+        "ShoulderL",
+        "ForepawR",
+        "WristR",
+        "ElbowR",
+        "ShoulderR",
+        "HindpawL",
+        "AnkleL",
+        "KneeL",
+        "HindpawR",
+        "AnkleR",
+        "KneeR",
     ],
     "mouse14": [
-        'Snout', 'EarL', 'EarR', 'SpineF', 'SpineM', 'Tail(base)', 
-        'ForShdL', 'ForepawL', 'ForeShdR', 'ForepawR',
-        'HindShdL', 'HindpawL', 'HindShdR', 'HindpawR'
-    ]
+        "Snout",
+        "EarL",
+        "EarR",
+        "SpineF",
+        "SpineM",
+        "Tail(base)",
+        "ForShdL",
+        "ForepawL",
+        "ForeShdR",
+        "ForepawR",
+        "HindShdL",
+        "HindpawL",
+        "HindShdR",
+        "HindpawR",
+    ],
 }
 
 SYMMETRY = {
@@ -161,8 +243,10 @@ SYMMETRY = {
 
 
 def load_body_profile(name):
-    assert (name in _BODY_CONNECTIVITY) and (name in _JOINT_NAMES), f"{name} not a valid skeleton profile"
-    return {'limbs': _BODY_CONNECTIVITY[name], "joint_names": _JOINT_NAMES[name]}
+    assert (name in _BODY_CONNECTIVITY) and (
+        name in _JOINT_NAMES
+    ), f"{name} not a valid skeleton profile"
+    return {"limbs": _BODY_CONNECTIVITY[name], "joint_names": _JOINT_NAMES[name]}
 
 
 # if __name__ == "__main__":

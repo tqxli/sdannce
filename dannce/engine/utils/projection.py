@@ -20,6 +20,7 @@ def project_to_2d(
 
     return projPts
 
+
 def distortPoints(points, intrinsicMatrix, radialDistortion, tangentialDistortion):
     """Distort points according to camera parameters.
     Ported from Matlab 2018a
@@ -77,22 +78,23 @@ def distortPoints(points, intrinsicMatrix, radialDistortion, tangentialDistortio
 
     return distortedPoints
 
+
 def load_cameras(path):
     mat73_flag = False
     # breakpoint()
     try:
-        d = sio.loadmat(path)    
+        d = sio.loadmat(path)
         # camnames = [cam[0][0] for cam in d['camnames']]
-        camnames = [cam[0] for cam in d['camnames'][0]]
+        camnames = [cam[0] for cam in d["camnames"][0]]
     except:
         d = mat73.loadmat(path)
-        camnames = [name[0] for name in d["camnames"]] 
+        camnames = [name[0] for name in d["camnames"]]
         mat73_flag = True
-    fns = ['K', 'RDistort', 'TDistort', 'r', 't']
+    fns = ["K", "RDistort", "TDistort", "r", "t"]
 
     # breakpoint()
     # camnames = [cam[0] for cam in d['camnames'][0]]
-    cam_params = d['params']
+    cam_params = d["params"]
     cameras = {}
     for i, camname in enumerate(camnames):
         cameras[camname] = {}
@@ -154,6 +156,7 @@ def load_sync(path):
         d["data_sampleID"] = d["data_sampleID"].astype(int)
     return dataset
 
+
 def load_labels(path):
     """Load labelData from Label3D file.
 
@@ -168,6 +171,7 @@ def load_labels(path):
         d["data_frame"] = d["data_frame"].astype(int)
         d["data_sampleID"] = d["data_sampleID"].astype(int)
     return dataset
+
 
 def load_com(path):
     """Load COM from .mat file.

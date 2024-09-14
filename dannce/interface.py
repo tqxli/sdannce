@@ -44,18 +44,28 @@ def _train_prep(params: Dict, model_type: str = "dannce"):
         logger,
         **spec_args
     )
-    
+
     if model_type == "sdannce":
         sdannce_model_params = params["graph_cfg"]
         params["use_features"] = sdannce_model_params.get("use_features", False)
-    
+
     # Build network
     logger.info("Initializing Network...")
-    model, optimizer, lr_scheduler = initialize_train(params, n_cams, device, model_type)
+    model, optimizer, lr_scheduler = initialize_train(
+        params, n_cams, device, model_type
+    )
     logger.info(model)
     logger.success("Ready for training!\n")
 
-    return device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler
+    return (
+        device,
+        params,
+        train_dataloader,
+        valid_dataloader,
+        model,
+        optimizer,
+        lr_scheduler,
+    )
 
 
 def _predict_prep(params: Dict, model_type: str = "dannce"):
@@ -74,17 +84,14 @@ def _predict_prep(params: Dict, model_type: str = "dannce"):
         sdannce_model_params = checkpoint_params["custom_model"]
     else:
         sdannce_model_params = {}
-    
+
     if model_type == "sdannce":
         params["use_features"] = sdannce_model_params.get("use_features", False)
-    
-    (
-        predict_generator,
-        _,
-        camnames,
-        partition,
-    ) = make_dataset_inference(params, valid_params)
-    
+
+    (predict_generator, _, camnames, partition,) = make_dataset_inference(
+        params, valid_params
+    )
+
     model = initialize_prediction(params, len(camnames[0]), device, model_type)
     return device, params, sdannce_model_params, partition, predict_generator, model
 
@@ -98,7 +105,15 @@ def dannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
-    device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler = _train_prep(params, "dannce")
+    (
+        device,
+        params,
+        train_dataloader,
+        valid_dataloader,
+        model,
+        optimizer,
+        lr_scheduler,
+    ) = _train_prep(params, "dannce")
 
     # set up trainer
     trainer_class = DannceTrainer
@@ -123,11 +138,11 @@ def dannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    device, params, _, partition, predict_generator, model = _predict_prep(params, "dannce")
-    
-    inference.infer_sdannce(
-        predict_generator, params, {}, model, partition, device
+    device, params, _, partition, predict_generator, model = _predict_prep(
+        params, "dannce"
     )
+
+    inference.infer_sdannce(predict_generator, params, {}, model, partition, device)
 
 
 def sdannce_train(params: Dict):
@@ -139,7 +154,15 @@ def sdannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
-    device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler = _train_prep(params, "sdannce")
+    (
+        device,
+        params,
+        train_dataloader,
+        valid_dataloader,
+        model,
+        optimizer,
+        lr_scheduler,
+    ) = _train_prep(params, "sdannce")
 
     # set up trainer
     sdannce_model_params = params["graph_cfg"]
@@ -166,7 +189,14 @@ def sdannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    device, params, custom_model_params, partition, predict_generator, model = _predict_prep(params, "sdannce")
+    (
+        device,
+        params,
+        custom_model_params,
+        partition,
+        predict_generator,
+        model,
+    ) = _predict_prep(params, "sdannce")
 
     # inference
     inference.infer_sdannce(

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class NodeNorm(nn.Module):
     def __init__(self, nn_type="n", unbiased=False, eps=1e-5, power_root=2):
         super(NodeNorm, self).__init__()
@@ -43,6 +44,7 @@ class NodeNorm(nn.Module):
         components.insert(-1, nn_type_str)
         new_str = "".join(components)
         return new_str
+
 
 def get_normalization(norm_type, num_channels=None):
     if norm_type is None:
