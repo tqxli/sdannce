@@ -689,7 +689,7 @@ def setup_dataloaders(train_dataset, valid_dataset, params):
     # current implementation returns chunked data
     if params["use_temporal"]:
         valid_batch_size = params["batch_size"] // params["temporal_chunk_size"]
-    # elif params["social_training"]:
+    # elif params["is_social_dataset"]:
     #     valid_batch_size = params["batch_size"] // 2
     else:
         valid_batch_size = params["batch_size"]
@@ -716,7 +716,7 @@ AUX_NPY_DIRNAMES = ["visual_hulls"]
 
 def examine_npy_training(params, samples, aux=False):
     TO_BE_EXAMINED = AUX_NPY_DIRNAMES if aux else NPY_DIRNAMES
-    if params["social_training"] and params["downscale_occluded_view"]:
+    if params["is_social_dataset"] and params["downscale_occluded_view"]:
         TO_BE_EXAMINED = TO_BE_EXAMINED + NPY_SOCIAL_DIRNAMES
 
     npydir, missing_npydir = {}, {}

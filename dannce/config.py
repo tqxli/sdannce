@@ -402,7 +402,7 @@ def adjust_loss_params(params):
     params["downsample"] = downsample
 
     if "PairRepulsionLoss" in params["loss"]:
-        params["social_training"] = True
+        params["is_social_dataset"] = True
 
     if "ConsistencyLoss" in params["loss"]:
         # number of copies per unique training sample
@@ -553,6 +553,10 @@ def setup_predict(params):
     params["n_views"] = int(params["n_views"])
 
     params["downsample"] = 1
+    
+    if not 'n_instances' in params:
+        params['n_instances'] = 1
+    params["is_social_dataset"] = params["n_instances"] > 1
 
     # While we can use experiment files for DANNCE training,
     # for prediction we use the base data files present in the main config
@@ -575,12 +579,9 @@ def setup_predict(params):
         )
 
     params["experiment"] = {}
-    params["experiment"][0] = params
+    params["experiment"][0] = params        
 
-    if params.get("n_instances") > 1:
-        params["social_training"] = True
-
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         # repeat parameters for the remaining animals (besides instance_0)
         for i in range(1, params["n_instances"]):
             comfile = params["com_file"]

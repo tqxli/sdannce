@@ -17,6 +17,7 @@ from dannce.config import _DEFAULT_SEG_MODEL
 from tqdm import tqdm
 from loguru import logger
 
+
 def set_random_seed(seed: int):
     """
     Fix numpy and torch random seed generation.
@@ -159,7 +160,7 @@ def make_dataset(
         temporal_chunks=temporal_chunks,
     )
     pairs = None
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         partition, pairs = processing.resplit_social(partition)
 
     # check all nan inputs
@@ -226,7 +227,7 @@ def make_dataset(
         params["vmax"] = vmax + threshold / 2
         base_params["vmin"] = params["vmin"]
         base_params["vmax"] = params["vmax"]
-        params["social_training"] = False
+        params["is_social_dataset"] = False
 
     if params.get("social_joint_training", False):
         # OPTION1: only choose volumes with both animals present
@@ -236,12 +237,12 @@ def make_dataset(
             params, pairs, com3d_dict, datadict_3d
         )
 
-        # params["social_training"] = False
+        # params["is_social_dataset"] = False
         params["n_channels_out"] *= 2
         base_params["n_channels_out"] *= 2
 
         pairs = None
-        params["social_training"] = False
+        params["is_social_dataset"] = False
 
     # Dump the params into file for reproducibility
     processing.save_params_pickle(params)
@@ -662,7 +663,7 @@ def _make_data_npy(
     }
 
     genfunc = generator.DataGenerator_3Dconv
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         spec_params["occlusion"] = params["downscale_occluded_view"]
         genfunc = generator.DataGenerator_3Dconv_social
 
@@ -756,7 +757,7 @@ def _make_data_npy(
         else None,
     }
 
-    # if params["social_training"]:
+    # if params["is_social_dataset"]:
     #     args_train = {**args_train, "pairs": pairs["train_pairs"]}
     #     args_valid = {**args_valid, "pairs": pairs["valid_pairs"]}
 
@@ -792,7 +793,7 @@ def _make_data_mem(
 
     genfunc = (
         generator.DataGenerator_3Dconv_social
-        if params["social_training"]
+        if params["is_social_dataset"]
         else generator.DataGenerator_3Dconv
     )
     
@@ -853,7 +854,7 @@ def _make_data_mem(
         n_cams,
         train_generator,
         train=True,
-        social=params["social_training"],
+        social=params["is_social_dataset"],
     )
     X_valid, X_valid_grid, y_valid = processing.load_volumes_into_mem(
         params,
@@ -862,7 +863,7 @@ def _make_data_mem(
         n_cams,
         valid_generator,
         train=False,
-        social=params["social_training"],
+        social=params["is_social_dataset"],
     )
 
     segmentation_model, valid_params_sil = get_segmentation_model(
@@ -887,7 +888,7 @@ def _make_data_mem(
             train_generator_sil,
             train=True,
             silhouette=True,
-            social=params["social_training"],
+            social=params["is_social_dataset"],
         )
         _, _, y_valid_aux = processing.load_volumes_into_mem(
             params,
@@ -897,7 +898,7 @@ def _make_data_mem(
             valid_generator_sil,
             train=False,
             silhouette=True,
-            social=params["social_training"],
+            social=params["is_social_dataset"],
         )
 
         if params["use_silhouette_in_volume"]:
@@ -914,7 +915,7 @@ def _make_data_mem(
             logger.info("Turn off silhouette loss.")
             y_train_aux, y_valid_aux = None, None
 
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         X_train, X_train_grid, y_train, y_train_aux = processing.align_social_data(
             X_train, X_train_grid, y_train, y_train_aux
         )
@@ -955,7 +956,7 @@ def _make_data_mem(
         else None,
     }
 
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         args_train = {**args_train, "pairs": pairs["train_pairs"]}
         args_valid = {**args_valid, "pairs": pairs["valid_pairs"]}
 
@@ -1066,7 +1067,7 @@ def make_dataset_inference(params, valid_params):
     }
 
     # Datasets
-    if params["social_training"]:
+    if params["is_social_dataset"]:
         for sample in samples:
             expID, sampleID = sample.split("_")
             if int(expID) != 0:
@@ -1086,7 +1087,7 @@ def make_dataset_inference(params, valid_params):
     # Generators
     genfunc = (
         generator.DataGenerator_3Dconv_social
-        if params["social_training"]
+        if params["is_social_dataset"]
         else generator.DataGenerator_3Dconv
     )
 
@@ -1099,13 +1100,11 @@ def make_dataset_inference(params, valid_params):
         com3d_dict,
         tifdirs,
     ]
-    # spec_params = {
-    #     "occlusion": params.get("downscale_occluded_view", False)}
-    #     if params["social_training"]
-    #     else {}
-    spec_params = {
-        "n_instances": params["n_instances"]
-    }
+
+    spec_params = {}    
+    if params["is_social_dataset"]:
+        spec_params["n_instances"] = params["n_instances"]
+
     predict_generator = genfunc(*predict_params, **valid_params, **spec_params)
 
     predict_generator_sil = None

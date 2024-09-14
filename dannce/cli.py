@@ -293,6 +293,12 @@ def add_shared_predict_args(
         type=int,
         help="Starting sample number during dannce prediction.",
     )
+    parser.add_argument(
+        "--n-instances",
+        dest="n_instances",
+        type=int,
+        help="Number of instances in the scene.",
+    )
     parser.add_argument("--multigpu", dest="multigpu", action="store_true")
 
     return parser

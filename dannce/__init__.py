@@ -111,7 +111,7 @@ _param_defaults_dannce = {
     "use_silhouette": False,
     "use_silhouette_in_volume": False,
     ## social
-    "social_training": False,
+    "is_social_dataset": False,
     "downscale_occluded_view": False,
     "social_joint_training": False,
     "social_big_volume": False,

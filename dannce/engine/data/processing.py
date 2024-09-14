@@ -1048,7 +1048,7 @@ def save_volumes_into_npy(
         rr = npy_generator.__getitem__(i)
         # print(i, end="\r")
 
-        if params["social_training"]:
+        if params["is_social_dataset"]:
             for j in range(npy_generator.n_instances):
                 exp = int(samp.split("_")[0]) + j
                 save_root = missing_npydir[exp]

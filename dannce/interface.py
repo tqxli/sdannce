@@ -1,7 +1,5 @@
-"""Handle training and prediction for DANNCE and COM networks."""
 import os
 from typing import Dict
-import psutil
 import torch
 
 import dannce.config as config
@@ -9,25 +7,19 @@ import dannce.engine.run.inference as inference
 import dannce.engine.models.posegcn.nets as sdanncenets
 from dannce.engine.models.nets import (
     initialize_train,
-    initialize_model,
+    initialize_prediction,
     initialize_com_train,
 )
 from dannce.engine.trainer import *
 from dannce.engine.run.run_utils import *
 
-# from loguru import logger
 
-process = psutil.Process(os.getpid())
-
-
-def dannce_train(params: Dict):
-    """Train DANNCE network.
+def _train_prep(params: Dict, model_type: str = "dannce"):
+    """Prepare for training by setting up experiment, dataset, and model.
 
     Args:
         params (Dict): Parameters dictionary.
-
-    Raises:
-        Exception: Error if training mode is invalid.
+        model_type (str): dannce OR sdannce.
     """
     logger, device = experiment_setup(params, "dannce_train")
     (
@@ -41,6 +33,7 @@ def dannce_train(params: Dict):
     spec_args = params["dataset_args"]
     spec_args = {} if spec_args is None else spec_args
 
+    # Prepare dataset
     dataset_preparer = set_dataset(params)
     train_dataloader, valid_dataloader, n_cams = dataset_preparer(
         params,
@@ -51,12 +44,61 @@ def dannce_train(params: Dict):
         logger,
         **spec_args
     )
-
+    
+    if model_type == "sdannce":
+        sdannce_model_params = params["graph_cfg"]
+        params["use_features"] = sdannce_model_params.get("use_features", False)
+    
     # Build network
     logger.info("Initializing Network...")
-    model, optimizer, lr_scheduler = initialize_train(params, n_cams, device, logger)
+    model, optimizer, lr_scheduler = initialize_train(params, n_cams, device, model_type)
     logger.info(model)
     logger.success("Ready for training!\n")
+
+    return device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler
+
+
+def _predict_prep(params: Dict, model_type: str = "dannce"):
+    """Prepare for prediction by setting up experiment and model.
+
+    Args:
+        params (Dict): Parameters dictionary.
+    """
+    logger, device = experiment_setup(params, "dannce_predict")
+    params, valid_params = config.setup_predict(params)
+
+    checkpoint_params = torch.load(params["dannce_predict_model"])["params"]
+    if "graph_cfg" in checkpoint_params:
+        sdannce_model_params = checkpoint_params["graph_cfg"]
+    elif "custom_model" in checkpoint_params:
+        sdannce_model_params = checkpoint_params["custom_model"]
+    else:
+        sdannce_model_params = {}
+    
+    if model_type == "sdannce":
+        params["use_features"] = sdannce_model_params.get("use_features", False)
+    
+    (
+        predict_generator,
+        _,
+        camnames,
+        partition,
+    ) = make_dataset_inference(params, valid_params)
+    
+    model = initialize_prediction(params, len(camnames[0]), device, model_type)
+    return device, params, sdannce_model_params, partition, predict_generator, model
+
+
+def dannce_train(params: Dict):
+    """Train DANNCE network.
+
+    Args:
+        params (Dict): Parameters dictionary.
+
+    Raises:
+        Exception: Error if training mode is invalid.
+    """
+    device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler = _train_prep(params, "dannce")
 
     # set up trainer
     trainer_class = DannceTrainer
@@ -81,58 +123,7 @@ def dannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    logger, device = experiment_setup(params, "dannce_predict")
-    params, valid_params = config.setup_predict(params)
-    if params["dataset"] == "rat7m":
-        predict_generator = dataset.RAT7MNPYDataset(train=False)
-        predict_generator_sil = None
-        camnames = [["Camera1", "Camera2", "Camera3", "Camera4", "Camera5", "Camera6"]]
-        partition = {"valid_sampleIDs": np.arange(len(predict_generator))}
-    else:
-        (
-            predict_generator,
-            predict_generator_sil,
-            camnames,
-            partition,
-        ) = make_dataset_inference(params, valid_params)
-        
-    logger.info("Initializing Network...")
-    model = initialize_model(params, len(camnames[0]), device)
-
-    # load predict model
-    if params.get("inference_ttt", None) is not None:
-        ttt_params = params["inference_ttt"]
-        model_params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
-        save_data = inference.inference_ttt(
-            predict_generator,
-            params,
-            model,
-            optimizer,
-            device,
-            partition,
-            online=ttt_params.get("online", False),
-            niter=ttt_params.get("niter", 20),
-            transform=ttt_params.get("transform", False),
-            downsample=ttt_params.get("downsample", 1),
-        )
-        inference.save_results(params, save_data)
-        return
-
-    model.load_state_dict(torch.load(params["dannce_predict_model"])["state_dict"])
-    model.eval()
-
-    # save_data = inference.infer_dannce(
-    #     predict_generator,
-    #     params,
-    #     model,
-    #     partition,
-    #     device,
-    #     params["n_markers"],
-    #     predict_generator_sil,
-    #     save_heatmaps=False,
-    # )
-    # inference.save_results(params, save_data)
+    device, params, _, partition, predict_generator, model = _predict_prep(params, "dannce")
     
     inference.infer_sdannce(
         predict_generator, params, {}, model, partition, device
@@ -148,64 +139,10 @@ def sdannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
-    logger, device = experiment_setup(params, "dannce_train")
-    (
-        params,
-        base_params,
-        shared_args,
-        shared_args_train,
-        shared_args_valid,
-    ) = config.setup_train(params)
-
-    # handle specific params
-    custom_model_params = params["graph_cfg"]
-
-    spec_args = params["dataset_args"]
-    spec_args = {} if spec_args is None else spec_args
-
-    dataset_preparer = set_dataset(params)
-    train_dataloader, valid_dataloader, n_cams = dataset_preparer(
-        params,
-        base_params,
-        shared_args,
-        shared_args_train,
-        shared_args_valid,
-        logger,
-        **spec_args
-    )
-
-    # Build network
-    logger.info("Initializing Network...")
-
-    params["use_features"] = custom_model_params.get("use_features", False)
-    pose_generator = initialize_train(params, n_cams, "cpu", logger)[0]
-
-    # second stage: pose refiner
-    model_class = getattr(sdanncenets, custom_model_params.get("model", "PoseGCN"))
-    model = model_class(
-        params,
-        custom_model_params,
-        pose_generator,
-    )
-
-    # load full-model checkpoint (if exists)
-    if "checkpoint" in custom_model_params.keys():
-        checkpoint_path = custom_model_params['checkpoint']
-        logger.info(f'Loading SDANNCE checkpoint: {checkpoint_path}')
-        model.load_state_dict(
-            torch.load(checkpoint_path)["state_dict"],
-            strict=False,
-        )
-    model = model.to(device)
-    logger.info(model)
-
-    # optimization
-    optimizer = set_optimizer(params, model)
-    lr_scheduler = set_lr_scheduler(params, optimizer, logger)
-
-    logger.success("Ready for training!\n")
+    device, params, train_dataloader, valid_dataloader, model, optimizer, lr_scheduler = _train_prep(params, "sdannce")
 
     # set up trainer
+    sdannce_model_params = params["graph_cfg"]
     trainer = GCNTrainer(
         params=params,
         model=model,
@@ -216,8 +153,8 @@ def sdannce_train(params: Dict):
         logger=logger,
         visualize_batch=False,
         lr_scheduler=lr_scheduler,
-        predict_diff=custom_model_params.get("predict_diff", True),
-        relpose=custom_model_params.get("relpose", True),
+        predict_diff=sdannce_model_params.get("predict_diff", True),
+        relpose=sdannce_model_params.get("relpose", True),
     )
 
     trainer.train()
@@ -229,62 +166,7 @@ def sdannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    logger, device = experiment_setup(params, "dannce_predict")
-
-    params, valid_params = config.setup_predict(params)
-
-    # handle specific params
-    # load in params saved in checkpoint to ensure consistency
-    try:
-        custom_model_params = torch.load(params["dannce_predict_model"])["params"][
-            "graph_cfg"
-        ]
-    except:
-        custom_model_params = torch.load(params["dannce_predict_model"])["params"][
-            "custom_model"
-        ]
-
-    predict_generator, _, camnames, partition = make_dataset_inference(
-        params, valid_params
-    )
-
-    logger.info("Initializing Network...")
-    # first stage: pose generator
-    params["use_features"] = custom_model_params.get("use_features", False)
-    pose_generator = initialize_model(params, len(camnames[0]), "cpu")
-
-    # second stage: pose refiner
-    model_class = getattr(sdanncenets, custom_model_params.get("model", "PoseGCN"))
-    model = model_class(
-        params,
-        custom_model_params,
-        pose_generator,
-    ).to(device)
-
-    # (DEV) test-time optimization
-    if params.get("inference_ttt", None) is not None:
-        ttt_params = params["inference_ttt"]
-        model_params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
-        save_data = inference.inference_ttt(
-            predict_generator,
-            params,
-            model,
-            optimizer,
-            device,
-            partition,
-            online=ttt_params.get("online", False),
-            niter=ttt_params.get("niter", 20),
-            transform=ttt_params.get("transform", False),
-            downsample=ttt_params.get("downsample", 1),
-            gcn=True,
-        )
-        inference.save_results(params, save_data)
-        return
-
-    # load predict model
-    model.load_state_dict(torch.load(params["dannce_predict_model"])["state_dict"])
-    model.eval()
+    device, params, custom_model_params, partition, predict_generator, model = _predict_prep(params, "sdannce")
 
     # inference
     inference.infer_sdannce(
@@ -325,7 +207,9 @@ def com_train(params: Dict):
     trainer.train()
 
 
-def com_predict(params):
+def com_predict(params: Dict):
+    """Predict with COM network
+    """
     logger, device = experiment_setup(params, "com_predict")
     params, predict_params = config.setup_com_predict(params)
     (
