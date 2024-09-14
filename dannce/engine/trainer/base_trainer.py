@@ -6,7 +6,7 @@ import os
 
 class BaseTrainer:
     """
-    Base class for all trainers
+    Base class for all trainers, manage training and validation loops
     """
 
     def __init__(self, params, model, optimizer, logger, dannce=True):

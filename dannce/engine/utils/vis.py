@@ -5,14 +5,13 @@ import imageio
 import tqdm
 import time
 import argparse
-from dannce.engine.utils.projection import *
 from dannce.engine.skeletons.utils import load_body_profile
+from dannce.engine.utils.projection import project_to_2d, distortPoints, load_cameras
 
 import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter
+matplotlib.use("Agg")
 
 
 MARKER_COLOR = {
