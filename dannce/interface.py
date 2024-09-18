@@ -211,12 +211,12 @@ def com_train(params: Dict):
     logger, device = experiment_setup(params, "com_train")
     params, train_params, valid_params = config.setup_com_train(params)
     train_dataloader, valid_dataloader = make_data_com(
-        params, train_params, valid_params, logger
+        params, train_params, valid_params,
     )
 
     # Build network
     logger.info("Initializing Network...")
-    model, optimizer, lr_scheduler = initialize_com_train(params, device, logger)
+    model, optimizer, lr_scheduler = initialize_com_train(params, device)
     logger.info(model)
     logger.success("Ready for training!\n")
 
@@ -251,11 +251,11 @@ def com_predict(params: Dict):
     ) = make_dataset_com_inference(params, predict_params)
 
     logger.info("Initializing Network...")
-    model = initialize_com_train(params, device, logger)[0]
+    model = initialize_com_train(params, device)[0]
     model.load_state_dict(torch.load(params["com_predict_weights"])["state_dict"])
     model.eval()
 
-    # do frame-wise inference
+    # do inference frame by frame
     save_data = {}
     endIdx = (
         np.min(

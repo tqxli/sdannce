@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Literal
 import os
 import torch
 import torch.nn as nn
@@ -366,13 +366,20 @@ def _initialize_sdannce(
     return model
 
 
+def _initialize_com(params: Dict, n_cams: int):
+    model = COMNet(
+        params["chan_num"], params["n_channels_out"], params["input_shape"]
+    )
+    return model
+
+
 def initialize_model(
     params: Dict, n_cams: int, device: torch.device, model_type="dannce",
 ):
     initialize_fcn = globals()[f"_initialize_{model_type}"]
     model = initialize_fcn(params, n_cams)
 
-    if params["multi_gpu_train"]:
+    if params.get("multi_gpu_train", False):
         model = nn.DataParallel(model, device_ids=params["gpu_id"])
     return model.to(device)
 
@@ -407,6 +414,9 @@ def checkpoint_weights_type(state_dict: Dict):
 def load_pretrained_weights(
     model: nn.Module, checkpoint_path: str, skip_io_check: bool = False,
 ):
+    """
+    Load pretrained weights into (s)DANNCE model.
+    """
     assert checkpoint_path is not None and os.path.exists(
         checkpoint_path
     ), f"Checkpoint not found: {checkpoint_path}"
@@ -466,7 +476,10 @@ def load_pretrained_weights(
 
 
 def initialize_train(
-    params: Dict, n_cams: int, device: torch.device, model_type="dannce",
+    params: Dict,
+    n_cams: int,
+    device: torch.device,
+    model_type=Literal["dannce", "sdannce"],
 ):
     """
     Initialize model and load pretrained weights if 'dannce_finetune_weights' is specified in config.
@@ -479,6 +492,8 @@ def initialize_train(
         "finetune",
         "continued",
     ], f"Invalid training mode: {train_mode}"
+
+    # initialize model
 
     model = initialize_model(params, n_cams, device, model_type)
 
@@ -533,57 +548,63 @@ def initialize_prediction(
     return model
 
 
-def initialize_com_model(params, device):
-    model = COMNet(
-        params["chan_num"], params["n_channels_out"], params["input_shape"]
-    ).to(device)
+def load_pretrained_com_weights(
+    params: Dict,
+    model: nn.Module,
+    checkpoint_path: str,
+    skip_io_check: bool = False,
+):
+    """
+    Load pretrained weights for COM model.
+    """
+    assert checkpoint_path is not None and os.path.exists(
+        checkpoint_path
+    ), f"Checkpoint not found: {checkpoint_path}"
+    logger.info(f"Loading pretrained weights from {checkpoint_path}")
+    state_dict = torch.load(checkpoint_path)["state_dict"]
+
+    if skip_io_check:
+        model.load_state_dict(state_dict, strict=False)
+        return model
+    
+    ckpt_channel_num = state_dict["output_layer.weight"].shape[0]
+    if ckpt_channel_num != params["n_channels_out"]:
+        state_dict.pop("output_layer.weight", None)
+        state_dict.pop("output_layer.bias", None)
+
+    model.load_state_dict(state_dict, strict=True)
     return model
 
 
-def initialize_com_train(params, device, logger):
-    if params["train_mode"] == "new":
-        logger.info("*** Traininig from scratch. ***")
-        model = initialize_com_model(params, device)
-        model_params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
+def initialize_com_train(
+    params: Dict,
+    device: torch.device,
+):
+    """
+    Initialize COM model and load pretrained weights if 'com_finetune_weights' is specified in config.
+    """
+    train_mode = params["train_mode"]
+    assert train_mode in [
+        "new",
+        "finetune",
+    ], f"Invalid training mode: {train_mode}"
+    
+    # initialize model
+    model = initialize_model(params, -1, device, "com")
+    
+    # load pretrained weights
+    if train_mode == "finetune":
+        checkpoint_path = params.get("com_finetune_weights", None)
+        if checkpoint_path is None:
+            logger.warning("No pretrained weights specified for finetuning mode.")
+        model = load_pretrained_com_weights(params, model, checkpoint_path)
 
-    elif params["train_mode"] == "finetune":
-        logger.info(
-            "*** Finetuning from {}. ***".format(params["com_finetune_weights"])
-        )
-        checkpoints = torch.load(params["com_finetune_weights"])
-        model = initialize_com_model(params, device)
-
-        state_dict = checkpoints["state_dict"]
-        # replace final output layer if do not match with the checkpoint
-        ckpt_channel_num = state_dict["output_layer.weight"].shape[0]
-        if ckpt_channel_num != params["n_channels_out"]:
-            state_dict.pop("output_layer.weight", None)
-            state_dict.pop("output_layer.bias", None)
-
-        model.load_state_dict(state_dict, strict=False)
-
-        model_params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
-
-    elif params["train_mode"] == "continued":
-        logger.info(
-            "*** Resume training from {}. ***".format(params["dannce_finetune_weights"])
-        )
-        checkpoints = torch.load(params["dannce_finetune_weights"])
-
-        # ensure the same architecture
-        model = initialize_com_model(checkpoints["params"], device)
-        model.load_state_dict(checkpoints["state_dict"], strict=True)
-
-        model_params = [p for p in model.parameters() if p.requires_grad]
-
-        optimizer = torch.optim.Adam(model_params)
-        optimizer.load_state_dict(checkpoints["optimizer"])
-
-        # specify the start epoch
-        params["start_epoch"] = checkpoints["epoch"]
-
+    model_params = [p for p in model.parameters() if p.requires_grad]
+    logger.info(
+        f"Total trainable parameters: {sum(p.numel() for p in model_params) / 1e6:.2f}M"
+    )
+    optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
+    
     lr_scheduler = None
     if params["lr_scheduler"] is not None:
         lr_scheduler_class = getattr(
@@ -592,6 +613,8 @@ def initialize_com_train(params, device, logger):
         lr_scheduler = lr_scheduler_class(
             optimizer=optimizer, **params["lr_scheduler"]["args"], verbose=True
         )
-        logger.info("Using learning rate scheduler.")
-
+        logger.info(
+            "Using learning rate scheduler: {}".format(params["lr_scheduler"]["type"])
+        )
     return model, optimizer, lr_scheduler
+
