@@ -4,8 +4,9 @@ import imageio
 import os
 import PIL
 from six.moves import cPickle
-from typing import Dict, Text
+from typing import Dict, List, Text, Union
 import pickle
+import torch
 from tqdm import tqdm
 from copy import deepcopy
 import yaml
@@ -139,7 +140,7 @@ LOAD EXP INFO
 """
 
 
-def load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logger=None):
+def load_expdict(params: Dict, e: int, expdict: Dict, viddir=_DEFAULT_VIDDIR):
     """
     Load in camnames and video directories and label3d files for a single experiment
         during training.
@@ -153,30 +154,15 @@ def load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logge
     if "viddir" not in expdict:
         # if the videos are not at the _DEFAULT_VIDDIR, then it must
         # be specified in the io.yaml experiment portion
-        exp["viddir"] = os.path.join(exp["base_exp_folder"], _DEFAULT_VIDDIR)
+        exp["viddir"] = os.path.join(exp["base_exp_folder"], viddir)
     else:
         exp["viddir"] = expdict["viddir"]
-
-    # if logger is not None:
-    #     logger.info("Experiment {} using videos in {}".format(e, exp["viddir"]))
-
-    if params.get("use_silhouette", False):
-        exp["viddir_sil"] = (
-            os.path.join(exp["base_exp_folder"], _DEFAULT_VIDDIR_SIL)
-            if "viddir_sil" not in expdict
-            else expdict["viddir_sil"]
-        )
-        # if logger is not None:
-        #     logger.info("Experiment {} also using masked videos in {}".format(e, exp["viddir_sil"]))
 
     l3d_camnames = io.load_camnames(expdict["label3d_file"])
     if "camnames" in expdict:
         exp["camnames"] = expdict["camnames"]
     elif l3d_camnames is not None:
         exp["camnames"] = l3d_camnames
-
-    # if logger is not None:
-    #     logger.info("Experiment {} using camnames: {}".format(e, exp["camnames"]))
 
     # Use the camnames to find the chunks for each video
     chunks = {}
@@ -196,8 +182,6 @@ def load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logge
             [int(x.split(".")[0]) for x in video_files]
         )
     exp["chunks"] = chunks
-    # if logger is not None:
-    #     logger.info(chunks)
 
     # For npy volume training
     if params["use_npy"]:
@@ -205,7 +189,10 @@ def load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logge
     return exp
 
 
-def load_all_exps(params, logger):
+def load_all_exps(params: Dict):
+    """
+    For a given set of experiments, load in the experiment-related information
+    """
     samples = []  # training sample identifiers
     datadict, datadict_3d, com3d_dict = {}, {}, {}  # labels
     cameras, camnames = {}, {}  # camera
@@ -218,7 +205,7 @@ def load_all_exps(params, logger):
 
         # load basic exp info
         exp = load_expdict(
-            params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL, logger
+            params, e, expdict, _DEFAULT_VIDDIR,
         )
 
         # load corresponding 2D & 3D labels, COMs
@@ -231,8 +218,6 @@ def load_all_exps(params, logger):
             com3d_dict_,
             temporal_chunks_,
         ) = do_COM_load(exp, expdict, e, params)
-
-        # logger.info("Using {} samples total.".format(len(samples_)))
 
         (
             samples,
@@ -256,7 +241,6 @@ def load_all_exps(params, logger):
 
         cameras[e] = cameras_
         camnames[e] = exp["camnames"]
-        # logger.info("Using the following cameras: {}".format(camnames[e]))
 
         params["experiment"][e] = exp
         for name, chunk in exp["chunks"].items():
@@ -276,7 +260,10 @@ def load_all_exps(params, logger):
     )
 
 
-def load_all_com_exps(params, exps):
+def load_all_com_exps(params: Dict, exps: List):
+    """
+    Load all COM experiments.
+    """
     params["experiment"] = {}
     total_chunks = {}
     cameras = {}
@@ -286,7 +273,7 @@ def load_all_com_exps(params, exps):
     samples = []
     for e, expdict in enumerate(exps):
 
-        exp = load_expdict(params, e, expdict, _DEFAULT_VIDDIR, _DEFAULT_VIDDIR_SIL)
+        exp = load_expdict(params, e, expdict, _DEFAULT_VIDDIR)
 
         params["experiment"][e] = exp
         (
@@ -796,7 +783,7 @@ def make_data_splits(
     return partition
 
 
-def resplit_social(partition):
+def resplit_social(partition: Dict):
     # the partition needs to be aligned for both animals
     # for now, manually put exps as consecutive pairs,
     # i.e. [exp1_instance0, exp1_instance1, exp2_instance0, exp2_instance1, ...]
@@ -846,13 +833,11 @@ def align_social_data(X, X_grid, y, aux, n_animals=2):
     return X, X_grid, y, aux
 
 
-def remove_samples_npy(npydir, samples, params):
+def remove_samples_npy(npydir: Dict, samples: List, params: Dict):
     """
     Remove any samples from sample list if they do not have corresponding volumes in the image
         or grid directories
     """
-    # image_volumes
-    # grid_volumes
     samps = []
     for e in npydir.keys():
         imvol = os.path.join(npydir[e], "image_volumes")
@@ -883,7 +868,11 @@ def remove_samples_npy(npydir, samples, params):
     return np.array(samps)
 
 
-def reselect_training(partition, datadict_3d, frac, logger):
+def reselect_training(partition: Dict, datadict_3d: Dict, frac: Union[float, int]):
+    """
+    Resample the training set according to the specified fraction,
+    or by a certain number of samples.
+    """
     samples = partition["train_sampleIDs"]
     unlabeled_samples = []
     for samp in samples:
@@ -923,15 +912,18 @@ PRELOAD DATA INTO MEMORY
 
 
 def load_volumes_into_mem(
-    params,
-    logger,
-    partition,
-    n_cams,
-    generator,
-    train=True,
-    silhouette=False,
-    social=False,
+    params: Dict,
+    partition: Dict,
+    n_cams: int,
+    generator: torch.utils.data.Dataset,
+    train: bool = True,
+    silhouette: bool = False,
+    social: bool = False,
 ):
+    """
+    Generate and load the training/validation volume data into memory using the data generator.
+    This is different from directly reading from precached npy files.
+    """
     n_samples = (
         len(partition["train_sampleIDs"])
         if train
@@ -1009,6 +1001,71 @@ def load_volumes_into_mem(
     return X, X_grid, y
 
 
+def save_volumes_into_npy(
+    params: Dict,
+    npy_generator: torch.utils.data.Dataset,
+    missing_npydir: Dict,
+    samples: List,
+    silhouette=False
+):
+    """
+    Cache the training volumes into npy files for later use.
+    """
+    logger.info("Generating missing npy files ...")
+    pbar = tqdm(npy_generator.list_IDs)
+    for i, samp in enumerate(pbar):
+        fname = "0_{}.npy".format(samp.split("_")[1])
+        rr = npy_generator.__getitem__(i)
+        # print(i, end="\r")
+
+        if params["is_social_dataset"]:
+            for j in range(npy_generator.n_instances):
+                exp = int(samp.split("_")[0]) + j
+                save_root = missing_npydir[exp]
+
+                if not silhouette:
+                    X = rr[0][0][j].astype("uint8")
+                    X_grid, y = rr[0][1][j], rr[1][0][j]
+
+                    for savedir, data in zip(
+                        ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
+                    ):
+                        outdir = os.path.join(save_root, savedir, fname)
+                        if not os.path.exists(outdir):
+                            np.save(outdir, data)
+
+                    if params["downscale_occluded_view"]:
+                        np.save(
+                            os.path.join(save_root, "occlusion_scores", fname),
+                            rr[0][2][j],
+                        )
+                else:
+                    # sil = extract_3d_sil(rr[0][0][j].astype("uint8"))
+                    sil = rr[0][0][j].astype("uint8")[:, :, :, ::3]
+                    np.save(os.path.join(save_root, "visual_hulls", fname), sil)
+
+        else:
+            exp = int(samp.split("_")[0])
+            save_root = missing_npydir[exp]
+
+            X, X_grid, y = rr[0][0][0].astype("uint8"), rr[0][1][0], rr[1][0]
+
+            if not silhouette:
+                for savedir, data in zip(
+                    ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
+                ):
+                    outdir = os.path.join(save_root, savedir, fname)
+                    if not os.path.exists(outdir):
+                        np.save(outdir, data)
+            else:
+                # sil = extract_3d_sil(X)
+                sil = X[:, :, :, ::3]
+                np.save(os.path.join(save_root, "visual_hulls", fname), sil)
+
+    # samples = remove_samples_npy(npydir, samples, params)
+    logger.info("{} samples ready for npy training.".format(len(samples)))
+
+
 """
 DEBUG, VIS
 """
@@ -1078,65 +1135,16 @@ def write_debug(
         logger.error("Note: Cannot output debug information in COM multi-mode")
 
 
-def save_volumes_into_npy(
-    params, npy_generator, missing_npydir, samples, logger, silhouette=False
+def save_volumes_into_tif(
+    params: Dict,
+    tifdir: str,
+    X: np.ndarray,
+    sampleIDs: List,
+    n_cams: int,
 ):
-    logger.info("Generating missing npy files ...")
-    pbar = tqdm(npy_generator.list_IDs)
-    for i, samp in enumerate(pbar):
-        fname = "0_{}.npy".format(samp.split("_")[1])
-        rr = npy_generator.__getitem__(i)
-        # print(i, end="\r")
-
-        if params["is_social_dataset"]:
-            for j in range(npy_generator.n_instances):
-                exp = int(samp.split("_")[0]) + j
-                save_root = missing_npydir[exp]
-
-                if not silhouette:
-                    X = rr[0][0][j].astype("uint8")
-                    X_grid, y = rr[0][1][j], rr[1][0][j]
-
-                    for savedir, data in zip(
-                        ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
-                    ):
-                        outdir = os.path.join(save_root, savedir, fname)
-                        if not os.path.exists(outdir):
-                            np.save(outdir, data)
-
-                    if params["downscale_occluded_view"]:
-                        np.save(
-                            os.path.join(save_root, "occlusion_scores", fname),
-                            rr[0][2][j],
-                        )
-                else:
-                    # sil = extract_3d_sil(rr[0][0][j].astype("uint8"))
-                    sil = rr[0][0][j].astype("uint8")[:, :, :, ::3]
-                    np.save(os.path.join(save_root, "visual_hulls", fname), sil)
-
-        else:
-            exp = int(samp.split("_")[0])
-            save_root = missing_npydir[exp]
-
-            X, X_grid, y = rr[0][0][0].astype("uint8"), rr[0][1][0], rr[1][0]
-
-            if not silhouette:
-                for savedir, data in zip(
-                    ["image_volumes", "grid_volumes", "targets"], [X, X_grid, y]
-                ):
-                    outdir = os.path.join(save_root, savedir, fname)
-                    if not os.path.exists(outdir):
-                        np.save(outdir, data)
-            else:
-                # sil = extract_3d_sil(X)
-                sil = X[:, :, :, ::3]
-                np.save(os.path.join(save_root, "visual_hulls", fname), sil)
-
-    # samples = remove_samples_npy(npydir, samples, params)
-    logger.info("{} samples ready for npy training.".format(len(samples)))
-
-
-def save_volumes_into_tif(params, tifdir, X, sampleIDs, n_cams, logger):
+    """
+    Save a batch of 3D volumes into tif format so that they can be visualized.
+    """
     if not os.path.exists(tifdir):
         os.makedirs(tifdir)
     logger.info("Dump training volumes to {}".format(tifdir))
@@ -1151,7 +1159,14 @@ def save_volumes_into_tif(params, tifdir, X, sampleIDs, n_cams, logger):
             imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))
 
 
-def save_visual_hull(aux, sampleIDs, savedir="./visual_hull"):
+def generate_visual_hull(
+    aux: np.ndarray,
+    sampleIDs: List,
+    savedir: str = "./visual_hull",
+):
+    """
+    Generate visual hulls from the auxiliary data using marching cubes algorithm. 
+    """
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
@@ -1182,142 +1197,12 @@ def save_visual_hull(aux, sampleIDs, savedir="./visual_hull"):
         plt.close(fig)
 
 
-def save_train_volumes(params, tifdir, generator, n_cams):
-    if not os.path.exists(tifdir):
-        os.makedirs(tifdir)
-    for i in range(len(generator)):
-        X = generator.__getitem__(i)[0][0].permute(1, 2, 3, 0).numpy()
-        for j in range(n_cams):
-            im = X[..., j * params["chan_num"] : (j + 1) * params["chan_num"]]
-            im = norm_im(im) * 255
-            im = im.astype("uint8")
-            of = os.path.join(tifdir, f"{i}_cam{j}.tif")
-            imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))
-
-
-def save_train_images(savedir, X, y):
-    """
-    X: [n_samples, 6, 3, 512, 512]
-    y: [n_samples, 6, 2, n_joints]
-    """
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
-
-    for i in range(X.shape[0]):
-        pose2d = y[i].permute(1, 0).numpy()
-        im = X[i].permute(1, 2, 0).numpy().astype("uint8")
-        # im = norm_im(im) * 255
-        # im = im.astype("uint8")
-
-        fig, ax = plt.subplots(1, 1)
-        ax.imshow(im)
-        ax.scatter(pose2d[:, 0], pose2d[:, 1])
-
-        of = os.path.join(savedir, f"{i}.jpg")
-        fig.savefig(of)
-        plt.close(fig)
-
-
-def write_npy(uri, gen):
-    """
-    Creates a new image folder and grid folder at the uri and uses
-    the generator to generate samples and save them as npy files
-    """
-    imdir = os.path.join(uri, "image_volumes")
-    if not os.path.exists(imdir):
-        os.makedirs(imdir)
-
-    griddir = os.path.join(uri, "grid_volumes")
-    if not os.path.exists(griddir):
-        os.makedirs(griddir)
-
-    # Make sure rotation and shuffle are turned off
-    gen.channel_combo = None
-    gen.shuffle = False
-    gen.rotation = False
-    gen.expval = True
-
-    # Turn normalization off so that we can save as uint8
-    gen.norm_im = False
-
-    bs = gen.batch_size
-    for i in range(len(gen)):
-        if i % 1000 == 0:
-            print(i)
-        # Generate batch
-        bch = gen.__getitem__(i)
-        # loop over all examples in batch and save volume
-        for j in range(bs):
-            # get the frame name / unique ID
-            fname = gen.list_IDs[i * bs + j]
-
-            # and save
-            print(fname)
-            np.save(os.path.join(imdir, fname + ".npy"), bch[0][0][j].astype("uint8"))
-            np.save(os.path.join(griddir, fname + ".npy"), bch[0][1][j])
-
-
-def write_sil_npy(uri, gen):
-    """
-    Creates a new image folder and grid folder at the uri and uses
-    the generator to generate samples and save them as npy files
-    """
-    imdir = os.path.join(uri, "visual_hulls")
-    if not os.path.exists(imdir):
-        os.makedirs(imdir)
-
-    # Make sure rotation and shuffle are turned off
-    gen.channel_combo = None
-    gen.shuffle = False
-    gen.rotation = False
-    gen.expval = True
-
-    # Turn normalization off so that we can save as uint8
-    gen.norm_im = False
-
-    bs = gen.batch_size
-    for i in range(len(gen)):
-        if i % 1000 == 0:
-            print(i)
-        # Generate batch
-        bch = gen.__getitem__(i)
-        # loop over all examples in batch and save volume
-        for j in range(bs):
-            # get the frame name / unique ID
-            fname = gen.list_IDs[i * bs + j]
-            # and save
-            print(fname)
-            # extract visual hull
-            sil = np.squeeze(extract_3d_sil(bch[0][0][j], 18))
-            np.save(os.path.join(imdir, fname + ".npy"), sil)
-
-
 """
 SAVE TRAIN
 """
 
 
-def rename_weights(traindir, kkey, mon):
-    """
-    At the end of DANNCe or COM training, rename the best weights file with the epoch #
-        and value of the monitored quantity
-    """
-    # First load in the training.csv
-    r = np.genfromtxt(os.path.join(traindir, "training.csv"), delimiter=",", names=True)
-    e = r["epoch"]
-    q = r[mon]
-    minq = np.min(q)
-    if e.size == 1:
-        beste = e
-    else:
-        beste = e[np.argmin(q)]
-
-    newname = "weights." + str(int(beste)) + "-" + "{:.5f}".format(minq) + ".hdf5"
-
-    os.rename(os.path.join(traindir, kkey), os.path.join(traindir, newname))
-
-
-def save_params_pickle(params):
+def save_params_pickle(params: Dict):
     """
     save copy of params as pickle for reproducibility.
     """
@@ -1327,7 +1212,7 @@ def save_params_pickle(params):
     return True
 
 
-def save_params_yaml(params):
+def save_params_yaml(params: Dict):
     """Save copy of params as yaml.
 
     Args:
@@ -1340,13 +1225,12 @@ def save_params_yaml(params):
     yaml.dump(params_to_save, handle, default_flow_style=False, sort_keys=False)
 
 
-def prepare_save_metadata(params):
+def prepare_save_metadata(params: Dict):
     """
     To save metadata, i.e. the prediction param values associated with COM or DANNCE
         output, we need to convert loss and metrics and net into names, and remove
         the 'experiment' field
     """
-
     # Need to convert None to string but still want to conserve the metadat structure
     # format, so we don't want to convert the whole dict to a string
     meta = params.copy()

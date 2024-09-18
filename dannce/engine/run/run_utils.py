@@ -6,7 +6,7 @@ import os, random
 import pandas as pd
 import json
 from copy import deepcopy
-from typing import Dict, List, Literal, Text
+from typing import Dict, List, Literal
 import torch
 
 from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
@@ -59,7 +59,7 @@ def set_dataset(params: Dict):
     return dataset_preparer
 
 
-def make_folder(key: Text, params: Dict):
+def make_folder(key: str, params: Dict):
     """Make the prediction or training directories.
 
     Args:
@@ -120,7 +120,7 @@ def make_dataset(
         camnames,
         total_chunks,
         temporal_chunks,
-    ) = processing.load_all_exps(params, logger)
+    ) = processing.load_all_exps(params)
 
     # Additionally, to keep videos unique across experiments, need to add
     # experiment labels in other places. E.g. experiment 0 CameraE's "camname"
@@ -156,7 +156,7 @@ def make_dataset(
 
     if params["unlabeled_fraction"] != None:
         partition = processing.reselect_training(
-            partition, datadict_3d, params["unlabeled_fraction"], logger
+            partition, datadict_3d, params["unlabeled_fraction"],
         )
 
     if params.get("social_big_volume", False):
@@ -262,7 +262,6 @@ def make_dataset(
         pairs,
         tifdirs,
         vids,
-        logger,
     )
     logger.info(
         "***TRAIN:VALIDATION = {}:{}***".format(
@@ -348,8 +347,7 @@ def make_rat7m(
     shared_args,
     shared_args_train,
     shared_args_valid,
-    logger,
-    root="/media/mynewdrive/datasets/rat7m",
+    root="datasets/rat7m",
     annot="final_annotations_w_correct_clusterIDs.pkl",
     viddir="videos_concat",
     merge_pair=False,
@@ -491,7 +489,6 @@ def make_rat7m(
         pairs,
         tifdirs,
         vids,
-        logger,
         rat7m=True,
         rat7m_npy=[npydir, missing_npydir, missing_samples],
     )
@@ -584,7 +581,6 @@ def _make_data_npy(
     pairs,
     tifdirs,
     vids,
-    logger,
     rat7m=False,
     rat7m_npy=None,
 ):
@@ -660,7 +656,7 @@ def _make_data_npy(
             **valid_params,
         )
         processing.save_volumes_into_npy(
-            params, npy_generator, missing_npydir, samples, logger
+            params, npy_generator, missing_npydir, samples,
         )
 
     # generate segmentation masks if needed
@@ -693,7 +689,7 @@ def _make_data_npy(
                 **valid_params_sil,
             )
             processing.save_volumes_into_npy(
-                params, npy_generator, missing_npydir, samples, logger, silhouette=True
+                params, npy_generator, missing_npydir, samples, silhouette=True
             )
         else:
             logger.info("No missing aux npy files. Ready for training.")
@@ -748,22 +744,21 @@ def _make_data_npy(
 
 
 def _make_data_mem(
-    params,
-    base_params,
-    shared_args,
-    shared_args_train,
-    shared_args_valid,
-    datadict,
-    datadict_3d,
-    com3d_dict,
-    cameras,
-    camnames,
-    samples,
-    partition,
-    pairs,
-    tifdirs,
+    params: Dict,
+    base_params: Dict,
+    shared_args: Dict,
+    shared_args_train: Dict,
+    shared_args_valid: Dict,
+    datadict: Dict,
+    datadict_3d: Dict,
+    com3d_dict: Dict,
+    cameras: Dict,
+    camnames: List,
+    samples: List,
+    partition: Dict,
+    pairs: Dict,
+    tifdirs: List,
     vids,
-    logger,
 ):
     """
     Training samples are stored in the memory and deployed on the fly.
@@ -824,7 +819,6 @@ def _make_data_mem(
     # load everything into memory
     X_train, X_train_grid, y_train = processing.load_volumes_into_mem(
         params,
-        logger,
         partition,
         n_cams,
         train_generator,
@@ -833,7 +827,6 @@ def _make_data_mem(
     )
     X_valid, X_valid_grid, y_valid = processing.load_volumes_into_mem(
         params,
-        logger,
         partition,
         n_cams,
         valid_generator,
@@ -857,7 +850,6 @@ def _make_data_mem(
 
         _, _, y_train_aux = processing.load_volumes_into_mem(
             params,
-            logger,
             partition,
             n_cams,
             train_generator_sil,
@@ -867,7 +859,6 @@ def _make_data_mem(
         )
         _, _, y_valid_aux = processing.load_volumes_into_mem(
             params,
-            logger,
             partition,
             n_cams,
             valid_generator_sil,
@@ -1098,7 +1089,7 @@ def make_dataset_inference(params, valid_params):
     return predict_generator, predict_generator_sil, camnames, partition
 
 
-def make_data_com(params, train_params, valid_params, logger):
+def make_data_com(params, train_params, valid_params):
     if params["com_exp"] is not None:
         exps = params["com_exp"]
     else:
@@ -1422,7 +1413,7 @@ def make_pair(
     shared_args,
     shared_args_train,
     shared_args_valid,
-    root="/media/mynewdrive/datasets/PAIR/PAIR-R24M-Dataset",
+    root="datasets/PAIR/PAIR-R24M-Dataset",
     viddir="videos_merged",
     train=True,
     merge_pair=False,
@@ -1630,7 +1621,6 @@ def make_pair(
             pairs,
             tifdirs,
             vids,
-            logger,
             rat7m=True,
             rat7m_npy=[npydir, missing_npydir, missing_samples],
         )
@@ -1651,7 +1641,6 @@ def make_pair(
             pairs,
             tifdirs,
             vids,
-            logger,
         )
 
     train_dataloader, valid_dataloader = serve_data_DANNCE.setup_dataloaders(
