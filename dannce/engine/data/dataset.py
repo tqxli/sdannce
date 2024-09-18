@@ -1226,7 +1226,7 @@ class ImageDataset(torch.utils.data.Dataset):
 class RAT7MSeqDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        root="/media/mynewdrive/datasets/rat7m/annotations",
+        root="datasets/rat7m/annotations",
         seqlen=16,
         downsample=4,
         keep_joints=[10, 14, 8, 9, 17, 16, 12, 13, 3, 5, 4],
@@ -1358,7 +1358,7 @@ class RAT7MSeqDataset(torch.utils.data.Dataset):
 class RAT7MImageDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        root="/media/mynewdrive/datasets/rat7m",
+        root="datasets/rat7m",
         annot="final_annotations_w_correct_clusterIDs.pkl",
         imgdir="images_unpacked",
         train=True,
@@ -1528,7 +1528,7 @@ class RAT7MImageDataset(torch.utils.data.Dataset):
 class RAT7MNPYDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        root="/media/mynewdrive/datasets/rat7m",
+        root="datasets/rat7m",
         annot="final_annotations_w_correct_clusterIDs.pkl",
         train=False,
     ):
