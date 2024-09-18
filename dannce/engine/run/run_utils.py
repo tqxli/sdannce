@@ -76,17 +76,18 @@ def make_folder(key: str, params: Dict):
     else:
         raise ValueError(key + " must be defined.")
 
+    return params[key]
 
 def experiment_setup(
     params: Dict,
     mode: Literal["dannce_train", "dannce_predict", "com_train", "com_predict"],
 ):
     # Make the training directory if it does not exist.
-    make_folder(f"{mode}_dir", params)
+    expdir = make_folder(f"{mode}_dir", params)
 
     # setup logger
     logger.add(
-        f"stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}"
+        f"{expdir}/stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}"
     )
     # deploy GPU devices
     device = set_device(params)

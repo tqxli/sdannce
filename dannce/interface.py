@@ -1,9 +1,10 @@
-import os
+import numpy as np
 from typing import Dict
 import torch
 
 import dannce.config as config
 import dannce.engine.run.inference as inference
+import dannce.engine.data.processing as processing
 import dannce.engine.models.posegcn.nets as sdanncenets
 from dannce.engine.models.nets import (
     initialize_train,
@@ -11,7 +12,7 @@ from dannce.engine.models.nets import (
     initialize_com_train,
 )
 from dannce.engine.trainer import *
-from dannce.engine.run.run_utils import *
+from dannce.engine.run.run_utils import experiment_setup, set_dataset, make_dataset_inference, make_data_com, make_dataset_com_inference
 
 
 def _train_prep(params: Dict, model_type: str = "dannce"):
@@ -57,6 +58,7 @@ def _train_prep(params: Dict, model_type: str = "dannce"):
     logger.success("Ready for training!\n")
 
     return (
+        logger,
         device,
         params,
         train_dataloader,
@@ -92,7 +94,15 @@ def _predict_prep(params: Dict, model_type: str = "dannce"):
     )
 
     model = initialize_prediction(params, len(camnames[0]), device, model_type)
-    return device, params, sdannce_model_params, partition, predict_generator, model
+    return (
+        logger,
+        device,
+        params,
+        sdannce_model_params,
+        partition,
+        predict_generator,
+        model,
+    )
 
 
 def dannce_train(params: Dict):
@@ -105,6 +115,7 @@ def dannce_train(params: Dict):
         Exception: Error if training mode is invalid.
     """
     (
+        logger,
         device,
         params,
         train_dataloader,
@@ -137,7 +148,7 @@ def dannce_predict(params: Dict):
     Args:
         params (Dict): Paremeters dictionary.
     """
-    device, params, _, partition, predict_generator, model = _predict_prep(
+    logger, device, params, _, partition, predict_generator, model = _predict_prep(
         params, "dannce"
     )
 
@@ -154,6 +165,7 @@ def sdannce_train(params: Dict):
         Exception: Error if training mode is invalid.
     """
     (
+        logger,
         device,
         params,
         train_dataloader,
@@ -189,6 +201,7 @@ def sdannce_predict(params: Dict):
         params (Dict): Paremeters dictionary.
     """
     (
+        logger,
         device,
         params,
         custom_model_params,
