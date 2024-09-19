@@ -57,16 +57,17 @@ def _train_prep(params: Dict, model_type: str = "dannce"):
     logger.info(model)
     logger.success("Ready for training!\n")
 
-    return (
-        logger,
-        device,
-        params,
-        train_dataloader,
-        valid_dataloader,
-        model,
-        optimizer,
-        lr_scheduler,
-    )
+    return {
+        "params": params,
+        "model": model,
+        "train_dataloader": train_dataloader,
+        "valid_dataloader": valid_dataloader,
+        "optimizer": optimizer,
+        "lr_scheduler": lr_scheduler,
+        "device": device,
+        "logger": logger,
+        "visualize_batch": False,
+    }
 
 
 def _predict_prep(params: Dict, model_type: str = "dannce"):
@@ -114,30 +115,11 @@ def dannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
-    (
-        logger,
-        device,
-        params,
-        train_dataloader,
-        valid_dataloader,
-        model,
-        optimizer,
-        lr_scheduler,
-    ) = _train_prep(params, "dannce")
+    train_kwargs = _train_prep(params, "dannce")
 
     # set up trainer
     trainer_class = DannceTrainer
-    trainer = trainer_class(
-        params=params,
-        model=model,
-        train_dataloader=train_dataloader,
-        valid_dataloader=valid_dataloader,
-        optimizer=optimizer,
-        device=device,
-        logger=logger,
-        visualize_batch=False,
-        lr_scheduler=lr_scheduler,
-    )
+    trainer = trainer_class(**train_kwargs)
 
     trainer.train()
 
@@ -164,29 +146,12 @@ def sdannce_train(params: Dict):
     Raises:
         Exception: Error if training mode is invalid.
     """
-    (
-        logger,
-        device,
-        params,
-        train_dataloader,
-        valid_dataloader,
-        model,
-        optimizer,
-        lr_scheduler,
-    ) = _train_prep(params, "sdannce")
+    train_kwargs = _train_prep(params, "sdannce")
 
     # set up trainer
     sdannce_model_params = params["graph_cfg"]
     trainer = GCNTrainer(
-        params=params,
-        model=model,
-        train_dataloader=train_dataloader,
-        valid_dataloader=valid_dataloader,
-        optimizer=optimizer,
-        device=device,
-        logger=logger,
-        visualize_batch=False,
-        lr_scheduler=lr_scheduler,
+        **train_kwargs,
         predict_diff=sdannce_model_params.get("predict_diff", True),
         relpose=sdannce_model_params.get("relpose", True),
     )
