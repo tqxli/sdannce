@@ -51,73 +51,43 @@ class EncDec3D(nn.Module):
             _SDANNCE_ENCDEC_COMPRESSED if channel_compressed else _SDANNCE_ENCDEC
         )
 
-        self.encoder_res1 = conv_block(
-            in_channels, chan_configs[0][0][1], normalization, [input_shape] * 3
-        )
-        self.encoder_pool1 = Pool3DBlock(2)
-        self.encoder_res2 = conv_block(
-            chan_configs[0][1][0],
-            chan_configs[0][1][1],
-            normalization,
-            [input_shape // 2] * 3,
-        )
-        self.encoder_pool2 = Pool3DBlock(2)
-        self.encoder_res3 = conv_block(
-            chan_configs[0][2][0],
-            chan_configs[0][2][1],
-            normalization,
-            [input_shape // 4] * 3,
-        )
-        self.encoder_pool3 = Pool3DBlock(2)
-        self.encoder_res4 = conv_block(
-            chan_configs[0][3][0],
-            chan_configs[0][3][1],
-            normalization,
-            [input_shape // 8] * 3,
-        )
+        for idx, (chans_in, chans_out) in enumerate(chan_configs[0]):
+            if idx == 0 and chans_in is None:
+                chans_in = in_channels
+            setattr(
+                self,
+                f"encoder_res{idx+1}",
+                conv_block(
+                    chans_in, chans_out, normalization, [input_shape // 2 ** idx] * 3
+                ),
+            )
+            if idx != len(chan_configs[0]) - 1:
+                setattr(self, f"encoder_pool{idx+1}", Pool3DBlock(2))
 
-        self.decoder_res3 = conv_block(
-            chan_configs[1][0][0],
-            chan_configs[1][0][1],
-            normalization,
-            [input_shape // 4] * 3,
-        )
-        self.decoder_upsample3 = deconv_block(
-            chan_configs[1][0][0],
-            chan_configs[1][0][1],
-            2,
-            2,
-            normalization,
-            [input_shape // 4] * 3,
-        )
-        self.decoder_res2 = conv_block(
-            chan_configs[1][1][0],
-            chan_configs[1][1][1],
-            normalization,
-            [input_shape // 2] * 3,
-        )
-        self.decoder_upsample2 = deconv_block(
-            chan_configs[1][1][0],
-            chan_configs[1][1][1],
-            2,
-            2,
-            normalization,
-            [input_shape // 2] * 3,
-        )
-        self.decoder_res1 = conv_block(
-            chan_configs[1][2][0],
-            chan_configs[1][2][1],
-            normalization,
-            [input_shape] * 3,
-        )
-        self.decoder_upsample1 = deconv_block(
-            chan_configs[1][2][0],
-            chan_configs[1][2][1],
-            2,
-            2,
-            normalization,
-            [input_shape] * 3,
-        )
+        for idx, (chans_in, chans_out) in enumerate(chan_configs[1]):
+            name_idx = len(chan_configs[1]) - idx
+            setattr(
+                self,
+                f"decoder_res{name_idx}",
+                conv_block(
+                    chans_in,
+                    chans_out,
+                    normalization,
+                    [input_shape // 2 ** (name_idx - 1)] * 3,
+                ),
+            )
+            setattr(
+                self,
+                f"decoder_upsample{name_idx}",
+                deconv_block(
+                    chans_in,
+                    chans_out,
+                    2,
+                    2,
+                    normalization,
+                    [input_shape // 2 ** (name_idx - 1)] * 3,
+                ),
+            )
 
     def forward(self, x):
         skips, dec_feats = [], []
@@ -242,44 +212,51 @@ class COMNet(nn.Module):
         deconv_block = BasicUpSample2DBlock
 
         self.n_layers = n_layers
-        self._compute_input_dims(input_shape)
+        self._compute_dims(input_shape)
 
-        # construct layers
-        self.encoder_res1 = conv_block(
-            input_channels, 32, norm_method, self.input_dims[0]
-        )
-        self.encoder_pool1 = Pool2DBlock(2)
-        self.encoder_res2 = conv_block(32, 64, norm_method, self.input_dims[1])
-        self.encoder_pool2 = Pool2DBlock(2)
-        self.encoder_res3 = conv_block(64, 128, norm_method, self.input_dims[2])
-        self.encoder_pool3 = Pool2DBlock(2)
-        self.encoder_res4 = conv_block(128, 256, norm_method, self.input_dims[3])
-        self.encoder_pool4 = Pool2DBlock(2)
-        self.encoder_res5 = conv_block(256, 512, norm_method, self.input_dims[4])
+        for idx, (chans_in, chans_out) in enumerate(self.chan_config[0]):
+            if idx == 0 and chans_in is None:
+                chans_in = input_channels
+            setattr(
+                self,
+                f"encoder_res{idx+1}",
+                conv_block(chans_in, chans_out, norm_method, self.input_dims[idx]),
+            )
+            if idx != len(self.chan_config[0]) - 1:
+                setattr(self, f"encoder_pool{idx+1}", Pool2DBlock(2))
 
-        self.decoder_res4 = conv_block(512, 256, norm_method, self.input_dims[3])
-        self.decoder_upsample4 = deconv_block(
-            512, 256, 2, 2, norm_method, self.input_dims[3]
-        )
-        self.decoder_res3 = conv_block(256, 128, norm_method, self.input_dims[2])
-        self.decoder_upsample3 = deconv_block(
-            256, 128, 2, 2, norm_method, self.input_dims[2]
-        )
-        self.decoder_res2 = conv_block(128, 64, norm_method, self.input_dims[1])
-        self.decoder_upsample2 = deconv_block(
-            128, 64, 2, 2, norm_method, self.input_dims[1]
-        )
-        self.decoder_res1 = conv_block(64, 32, norm_method, self.input_dims[0])
-        self.decoder_upsample1 = deconv_block(
-            64, 32, 2, 2, norm_method, self.input_dims[0]
-        )
+        for idx, (chans_in, chans_out) in enumerate(self.chan_config[1]):
+            name_idx = len(self.chan_config[1]) - idx
+            setattr(
+                self,
+                f"decoder_res{name_idx}",
+                conv_block(
+                    chans_in, chans_out, norm_method, self.input_dims[name_idx - 1]
+                ),
+            )
+            setattr(
+                self,
+                f"decoder_upsample{name_idx}",
+                deconv_block(
+                    chans_in,
+                    chans_out,
+                    2,
+                    2,
+                    norm_method,
+                    self.input_dims[name_idx - 1],
+                ),
+            )
 
         self.output_layer = nn.Conv2d(32, output_channels, 1, 1, 0)
 
-    def _compute_input_dims(self, input_shape):
+    def _compute_dims(self, input_shape):
         self.input_dims = [
             (input_shape[0] // (2 ** i), input_shape[1] // (2 ** i))
             for i in range(self.n_layers + 1)
+        ]
+        self.chan_config = [
+            [(None, 32), (32, 64), (64, 128), (128, 256), (256, 512)],
+            [(512, 256), (256, 128), (128, 64), (64, 32)],
         ]
 
     def forward(self, x):
