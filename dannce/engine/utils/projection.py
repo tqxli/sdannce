@@ -102,4 +102,3 @@ def load_cameras(path):
         if len(cameras[camname]["t"].shape) == 1:
             cameras[camname]["t"] = cameras[camname]["t"][np.newaxis, ...]
     return cameras
-

@@ -46,13 +46,13 @@ _param_defaults_shared = {
     "use_npy": False,
     "data_split_seed": None,
     "valid_exp": None,
-    "norm_method":"layer",
+    "norm_method": "layer",
     "slurm_config": None,
     "save_period": 100,
     "predict_labeled_only": False,
     "training_fraction": None,
     "graph_cfg": None,
-    "label3d_index": 0
+    "label3d_index": 0,
 }
 _param_defaults_dannce = {
     "dataset": "label3d",
@@ -127,7 +127,7 @@ _param_defaults_dannce = {
     "replace_view": None,
     "COM_augmentation": None,
     "unlabeled_sampling": None,
-    "skeleton": "rat23"
+    "skeleton": "rat23",
 }
 _param_defaults_com = {
     "dsmode": "nn",

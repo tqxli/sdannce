@@ -367,9 +367,7 @@ def _initialize_sdannce(
 
 
 def _initialize_com(params: Dict, n_cams: int):
-    model = COMNet(
-        params["chan_num"], params["n_channels_out"], params["input_shape"]
-    )
+    model = COMNet(params["chan_num"], params["n_channels_out"], params["input_shape"])
     return model
 
 
@@ -549,10 +547,7 @@ def initialize_prediction(
 
 
 def load_pretrained_com_weights(
-    params: Dict,
-    model: nn.Module,
-    checkpoint_path: str,
-    skip_io_check: bool = False,
+    params: Dict, model: nn.Module, checkpoint_path: str, skip_io_check: bool = False,
 ):
     """
     Load pretrained weights for COM model.
@@ -566,7 +561,7 @@ def load_pretrained_com_weights(
     if skip_io_check:
         model.load_state_dict(state_dict, strict=False)
         return model
-    
+
     ckpt_channel_num = state_dict["output_layer.weight"].shape[0]
     if ckpt_channel_num != params["n_channels_out"]:
         state_dict.pop("output_layer.weight", None)
@@ -577,21 +572,17 @@ def load_pretrained_com_weights(
 
 
 def initialize_com_train(
-    params: Dict,
-    device: torch.device,
+    params: Dict, device: torch.device,
 ):
     """
     Initialize COM model and load pretrained weights if 'com_finetune_weights' is specified in config.
     """
     train_mode = params["train_mode"]
-    assert train_mode in [
-        "new",
-        "finetune",
-    ], f"Invalid training mode: {train_mode}"
-    
+    assert train_mode in ["new", "finetune",], f"Invalid training mode: {train_mode}"
+
     # initialize model
     model = initialize_model(params, -1, device, "com")
-    
+
     # load pretrained weights
     if train_mode == "finetune":
         checkpoint_path = params.get("com_finetune_weights", None)
@@ -604,7 +595,7 @@ def initialize_com_train(
         f"Total trainable parameters: {sum(p.numel() for p in model_params) / 1e6:.2f}M"
     )
     optimizer = torch.optim.Adam(model_params, lr=params["lr"], eps=1e-7)
-    
+
     lr_scheduler = None
     if params["lr_scheduler"] is not None:
         lr_scheduler_class = getattr(
@@ -617,4 +608,3 @@ def initialize_com_train(
             "Using learning rate scheduler: {}".format(params["lr_scheduler"]["type"])
         )
     return model, optimizer, lr_scheduler
-

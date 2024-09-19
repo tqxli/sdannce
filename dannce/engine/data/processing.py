@@ -204,9 +204,7 @@ def load_all_exps(params: Dict):
     for e, expdict in enumerate(pbar):
 
         # load basic exp info
-        exp = load_expdict(
-            params, e, expdict, _DEFAULT_VIDDIR,
-        )
+        exp = load_expdict(params, e, expdict, _DEFAULT_VIDDIR,)
 
         # load corresponding 2D & 3D labels, COMs
         (
@@ -1006,7 +1004,7 @@ def save_volumes_into_npy(
     npy_generator: torch.utils.data.Dataset,
     missing_npydir: Dict,
     samples: List,
-    silhouette=False
+    silhouette=False,
 ):
     """
     Cache the training volumes into npy files for later use.
@@ -1136,11 +1134,7 @@ def write_debug(
 
 
 def save_volumes_into_tif(
-    params: Dict,
-    tifdir: str,
-    X: np.ndarray,
-    sampleIDs: List,
-    n_cams: int,
+    params: Dict, tifdir: str, X: np.ndarray, sampleIDs: List, n_cams: int,
 ):
     """
     Save a batch of 3D volumes into tif format so that they can be visualized.
@@ -1160,9 +1154,7 @@ def save_volumes_into_tif(
 
 
 def generate_visual_hull(
-    aux: np.ndarray,
-    sampleIDs: List,
-    savedir: str = "./visual_hull",
+    aux: np.ndarray, sampleIDs: List, savedir: str = "./visual_hull",
 ):
     """
     Generate visual hulls from the auxiliary data using marching cubes algorithm. 

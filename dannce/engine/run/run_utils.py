@@ -78,6 +78,7 @@ def make_folder(key: str, params: Dict):
 
     return params[key]
 
+
 def experiment_setup(
     params: Dict,
     mode: Literal["dannce_train", "dannce_predict", "com_train", "com_predict"],
@@ -87,7 +88,8 @@ def experiment_setup(
 
     # setup logger
     logger.add(
-        f"{expdir}/stats_{mode}.log", format="{time:YYYY-MM-DD HH:mm} | {level} | {message}"
+        f"{expdir}/stats_{mode}.log",
+        format="{time:YYYY-MM-DD HH:mm} | {level} | {message}",
     )
     # deploy GPU devices
     device = set_device(params)
@@ -277,8 +279,7 @@ def make_dataset(
 
 
 def _convert_rat7m_to_label3d(
-    annot_dict: Dict,
-    all_exps: List[str],
+    annot_dict: Dict, all_exps: List[str],
 ):
     camnames = annot_dict["camera_names"]
 
@@ -510,11 +511,7 @@ def make_rat7m(
 
     if merge_label3d:
         train_generator_label3d, valid_generator_label3d, _ = make_dataset(
-            params,
-            base_params,
-            shared_args,
-            shared_args_train,
-            shared_args_valid,
+            params, base_params, shared_args, shared_args_train, shared_args_valid,
         )
         train_generator = torch.utils.data.ConcatDataset(
             [train_generator, train_generator_label3d.dataset]
