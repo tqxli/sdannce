@@ -148,7 +148,7 @@ def visualize_pose_predictions(
 
                 for ani in range(n_animals):
                     axes[i].scatter(
-                        *com[ani, :].T, marker=".", color=line_color[ani], linewidths=1,
+                        *com[ani, :].T, marker=".", color=marker_color[ani], linewidths=1,
                     )
                     for (index_from, index_to) in CONNECTIVITY:
                         xs, ys = [
