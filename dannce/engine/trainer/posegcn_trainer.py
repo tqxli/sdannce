@@ -2,13 +2,13 @@ import torch
 import os, csv
 from tqdm import tqdm
 
-from dannce.engine.trainer.dannce_trainer import DannceTrainer
+from dannce.engine.trainer.dannce_trainer import DANNCETrainer
 from dannce.engine.trainer.train_utils import prepare_batch
 import dannce.engine.models.loss as custom_losses
 from dannce.engine.run.inference import form_batch
 
 
-class GCNTrainer(DannceTrainer):
+class SDANNCETrainer(DANNCETrainer):
     def __init__(self, predict_diff=True, relpose=True, **kwargs):
         super().__init__(**kwargs)
 

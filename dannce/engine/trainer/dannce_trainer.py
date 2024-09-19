@@ -10,7 +10,7 @@ import dannce.engine.data.processing as processing
 from dannce.engine.run.inference import form_batch
 
 
-class DannceTrainer(BaseTrainer):
+class DANNCETrainer(BaseTrainer):
     """
     Trainer class for DANNCE base networks.
     """

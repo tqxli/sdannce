@@ -5,14 +5,23 @@ import torch
 import dannce.config as config
 import dannce.engine.run.inference as inference
 import dannce.engine.data.processing as processing
-import dannce.engine.models.posegcn.nets as sdanncenets
 from dannce.engine.models.nets import (
     initialize_train,
     initialize_prediction,
     initialize_com_train,
 )
-from dannce.engine.trainer import *
-from dannce.engine.run.run_utils import experiment_setup, set_dataset, make_dataset_inference, make_data_com, make_dataset_com_inference
+from dannce.engine.trainer import (
+    DANNCETrainer,
+    SDANNCETrainer,
+    COMTrainer,
+)
+from dannce.engine.run.run_utils import (
+    experiment_setup,
+    set_dataset,
+    make_dataset_inference,
+    make_data_com,
+    make_dataset_com_inference,
+)
 
 
 def _train_prep(params: Dict, model_type: str = "dannce"):
@@ -42,7 +51,7 @@ def _train_prep(params: Dict, model_type: str = "dannce"):
         shared_args,
         shared_args_train,
         shared_args_valid,
-        **spec_args
+        **spec_args,
     )
 
     if model_type == "sdannce":
@@ -116,10 +125,7 @@ def dannce_train(params: Dict):
         Exception: Error if training mode is invalid.
     """
     train_kwargs = _train_prep(params, "dannce")
-
-    # set up trainer
-    trainer_class = DannceTrainer
-    trainer = trainer_class(**train_kwargs)
+    trainer = DANNCETrainer(**train_kwargs)
 
     trainer.train()
 
@@ -150,7 +156,7 @@ def sdannce_train(params: Dict):
 
     # set up trainer
     sdannce_model_params = params["graph_cfg"]
-    trainer = GCNTrainer(
+    trainer = SDANNCETrainer(
         **train_kwargs,
         predict_diff=sdannce_model_params.get("predict_diff", True),
         relpose=sdannce_model_params.get("relpose", True),

@@ -2,10 +2,10 @@ import torch
 import csv, os
 from tqdm import tqdm
 
-from dannce.engine.trainer.dannce_trainer import DannceTrainer
+from dannce.engine.trainer.dannce_trainer import DANNCETrainer
 
 
-class COMTrainer(DannceTrainer):
+class COMTrainer(DANNCETrainer):
     """
     Trainer class for COM localization networks.
     """
