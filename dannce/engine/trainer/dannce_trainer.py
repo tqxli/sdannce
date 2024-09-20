@@ -7,7 +7,7 @@ from tqdm import tqdm
 from dannce.engine.trainer.base_trainer import BaseTrainer
 from dannce.engine.trainer.train_utils import prepare_batch, LossHelper, MetricHelper
 from dannce.engine.utils.image import norm_im
-from dannce.engine.run.inference import form_batch
+from dannce.engine.utils.augmentation import construct_augmented_batch
 
 
 class DANNCETrainer(BaseTrainer):
@@ -105,7 +105,7 @@ class DANNCETrainer(BaseTrainer):
             return
 
         if train and self.form_batch:
-            volumes, grid_centers, aux = form_batch(
+            volumes, grid_centers, aux = construct_augmented_batch(
                 volumes.permute(0, 2, 3, 4, 1),
                 grid_centers,
                 # batch_size=self.form_bs,

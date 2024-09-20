@@ -5,7 +5,7 @@ from tqdm import tqdm
 from dannce.engine.trainer.dannce_trainer import DANNCETrainer
 from dannce.engine.trainer.train_utils import prepare_batch
 import dannce.engine.models.loss as custom_losses
-from dannce.engine.run.inference import form_batch
+from dannce.engine.utils.augmentation import construct_augmented_batch
 
 
 class SDANNCETrainer(DANNCETrainer):
@@ -37,7 +37,7 @@ class SDANNCETrainer(DANNCETrainer):
 
         # form training batch with augmented samples
         if train and self.form_batch:
-            volumes, grid_centers, aux = form_batch(
+            volumes, grid_centers, aux = construct_augmented_batch(
                 volumes.permute(0, 2, 3, 4, 1),
                 grid_centers,
                 aux=aux if aux is None else aux.permute(0, 2, 3, 4, 1),

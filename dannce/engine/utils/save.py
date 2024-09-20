@@ -78,6 +78,24 @@ def save_COM_dannce_mat(params, com3d, sampleID):
     os.remove(params["label3d_file"] + ".temp")
 
 
+def trim_COM_pickle(fpath, start_sample, end_sample, opath=None):
+    """Trim dictionary entries to the range [start_sample, end_sample].
+
+    spath is the output path for saving the trimmed COM dictionary, if desired
+    """
+    with open(fpath, "rb") as f:
+        save_data = cPickle.load(f)
+    sd = {}
+
+    for key in save_data:
+        if key >= start_sample and key <= end_sample:
+            sd[key] = save_data[key]
+
+    with open(opath, "wb") as f:
+        cPickle.dump(sd, f)
+    return sd
+
+
 def save_COM_checkpoint(
     save_data, results_dir, datadict_, cameras, params, file_name="com3d"
 ):

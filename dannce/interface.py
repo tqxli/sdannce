@@ -14,7 +14,7 @@ from dannce.engine.trainer import (
     SDANNCETrainer,
     COMTrainer,
 )
-from dannce.engine.run.run_utils import (
+from dannce.engine.run.data import (
     experiment_setup,
     set_dataset,
     make_dataset_inference,

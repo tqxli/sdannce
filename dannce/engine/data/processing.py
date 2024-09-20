@@ -494,24 +494,6 @@ def check_COM_load(c3dfile: Dict, kkey: Text, win_size: int):
     return com3d_dict
 
 
-def trim_COM_pickle(fpath, start_sample, end_sample, opath=None):
-    """Trim dictionary entries to the range [start_sample, end_sample].
-
-    spath is the output path for saving the trimmed COM dictionary, if desired
-    """
-    with open(fpath, "rb") as f:
-        save_data = cPickle.load(f)
-    sd = {}
-
-    for key in save_data:
-        if key >= start_sample and key <= end_sample:
-            sd[key] = save_data[key]
-
-    with open(opath, "wb") as f:
-        cPickle.dump(sd, f)
-    return sd
-
-
 """
 DATA SPLITS
 """
