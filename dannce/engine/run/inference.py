@@ -10,7 +10,7 @@ from typing import List, Dict, Text, Tuple, Union
 import torch
 import torch.nn as nn
 import matplotlib
-from dannce.engine.data.processing import savedata_tomat, savedata_expval
+from dannce.engine.utils.save import savedata_tomat, savedata_expval
 from dannce.engine.utils.debug import debug_com
 
 matplotlib.use("Agg")
@@ -600,8 +600,7 @@ def infer_com(
 
 
 def infer_dannce_inference_range(
-    params: Dict,
-    generator: torch.utils.data.Dataset,
+    params: Dict, generator: torch.utils.data.Dataset,
 ):
     n_frames = len(generator)
     bs = params["batch_size"]
@@ -759,10 +758,7 @@ def infer_dannce(
 
 
 def save_inference_checkpoint(
-    params: Dict,
-    save_data: Dict,
-    num_markers: int,
-    savename: str,
+    params: Dict, save_data: Dict, num_markers: int, savename: str,
 ):
     p_n = savedata_expval(
         params["dannce_predict_dir"] + "/{}".format(savename),

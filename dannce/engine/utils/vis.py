@@ -12,8 +12,7 @@ import tqdm
 from matplotlib.animation import FFMpegWriter
 
 from dannce.engine.skeletons.utils import load_body_profile
-from dannce.engine.utils.projection import (distortPoints, load_cameras,
-                                            project_to_2d)
+from dannce.engine.utils.projection import distortPoints, load_cameras, project_to_2d
 
 matplotlib.use("Agg")
 

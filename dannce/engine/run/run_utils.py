@@ -2,7 +2,7 @@
 High-level wrapper functions for interface
 """
 import numpy as np
-import os, random
+import os
 import pandas as pd
 import json
 from copy import deepcopy
@@ -12,72 +12,16 @@ import torch
 from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
 from dannce.engine.models.segmentation import get_instance_segmentation_model
 from dannce.engine.utils.debug import write_debug
+from dannce.engine.utils.experiment import set_random_seed, set_device, make_folder
+from dannce.engine.utils.save import (
+    save_params_pickle,
+    save_params_yaml,
+    write_com_file,
+)
 from dannce.config import _DEFAULT_SEG_MODEL
 
 from tqdm import tqdm
 from loguru import logger
-
-
-def set_random_seed(seed: int):
-    """
-    Fix numpy and torch random seed generation.
-    """
-    random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-
-
-def set_device(params: Dict):
-    """
-    Set proper device for torch.
-    """
-    assert torch.cuda.is_available(), "No available GPU device."
-
-    if params.get("multi_gpu_train", False):
-        params["gpu_id"] = list(range(torch.cuda.device_count()))
-        device = torch.device("cuda")  # use all available GPUs
-    else:
-        params["gpu_id"] = [0]
-        device = torch.device("cuda")
-    logger.info("***Use {} GPU for training.***".format(params["gpu_id"]))
-    return device
-
-
-def set_dataset(params: Dict):
-    if params["dataset"] == "rat7m":
-        dataset_preparer = make_rat7m
-    elif params["dataset"] == "rat7m+pair":
-        dataset_preparer = make_rat7m
-        spec_args = {**spec_args, "merge_pair": True}
-    elif params["dataset"] == "pair":
-        dataset_preparer = make_pair
-    else:
-        dataset_preparer = make_dataset
-
-    return dataset_preparer
-
-
-def make_folder(key: str, params: Dict):
-    """Make the prediction or training directories.
-
-    Args:
-        key (Text): Folder descriptor.
-        params (Dict): Parameters dictionary.
-
-    Raises:
-        ValueError: Error if key is not defined.
-    """
-    # Make the prediction directory if it does not exist.
-    if params[key] is not None:
-        if not os.path.exists(params[key]):
-            os.makedirs(params[key])
-    else:
-        raise ValueError(key + " must be defined.")
-
-    return params[key]
 
 
 def experiment_setup(
@@ -101,6 +45,20 @@ def experiment_setup(
         logger.info("***Fix random seed as {}***".format(params["random_seed"]))
 
     return logger, device
+
+
+def set_dataset(params: Dict):
+    if params["dataset"] == "rat7m":
+        dataset_preparer = make_rat7m
+    elif params["dataset"] == "rat7m+pair":
+        dataset_preparer = make_rat7m
+        spec_args = {**spec_args, "merge_pair": True}
+    elif params["dataset"] == "pair":
+        dataset_preparer = make_pair
+    else:
+        dataset_preparer = make_dataset
+
+    return dataset_preparer
 
 
 def make_dataset(
@@ -226,9 +184,9 @@ def make_dataset(
         params["is_social_dataset"] = False
 
     # Dump the params into file for reproducibility
-    processing.save_params_pickle(params)
+    save_params_pickle(params)
     # Save a yaml copy for direct check
-    processing.save_params_yaml(params)
+    save_params_yaml(params)
 
     # Setup additional variables for later use
     tifdirs = []  # Training from single images not yet supported in this demo
@@ -420,7 +378,7 @@ def make_rat7m(
         )
 
     # Dump the params into file for reproducibility
-    processing.save_params_pickle(params)
+    save_params_pickle(params)
 
     # Setup additional variables for later use
     tifdirs = []  # Training from single images not yet supported in this demo
@@ -981,7 +939,7 @@ def make_dataset_inference(params, valid_params):
         # Write 3D COM to file. This might be different from the input com3d file
         # if arena thresholding was applied.
         if e == 0:
-            processing.write_com_file(params, samples_, com3d_dict_)
+            write_com_file(params, samples_, com3d_dict_)
 
         (
             samples,
@@ -1549,7 +1507,7 @@ def make_pair(
     camnames = new_camnames
 
     # Dump the params into file for reproducibility
-    processing.save_params_pickle(params)
+    save_params_pickle(params)
     # Setup additional variables for later use
     tifdirs = []  # Training from single images not yet supported in this demo
     base_params = {

@@ -1,10 +1,9 @@
-import numpy as np
 from typing import Dict
 import torch
 
 import dannce.config as config
 import dannce.engine.run.inference as inference
-import dannce.engine.data.processing as processing
+from dannce.engine.utils.save import save_COM_checkpoint
 from dannce.engine.models.nets import (
     initialize_train,
     initialize_prediction,
@@ -260,7 +259,7 @@ def com_predict(params: Dict):
     )
 
     # save inference results
-    processing.save_COM_checkpoint(
+    save_COM_checkpoint(
         save_data=save_data,
         results_dir=params["com_predict_dir"],
         datadict_=datadict,
