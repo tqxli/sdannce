@@ -22,6 +22,7 @@ TEST_SDANNCE_CONFIG = os.path.join(SDANNCE_FOLDER, "configs", "sdannce_rat_confi
 
 def test_main(args: list):
     with patch("sys.argv", args):
+        print("Testing with args:", " ".join(args))
         cli.main()
 
 
@@ -82,6 +83,7 @@ class TestSdannceTrain(unittest.TestCase):
             TEST_SDANNCE_CONFIG,
             "--epochs=2",
             "--train-mode=finetune",
+            "--dannce-train-dir=./SDANNCE/train_test",
             "--dannce-finetune-weights=../weights/DANNCE_comp_pretrained_single+r7m.pth",
             "--net-type=compressed_dannce",
             "--use-npy=True",
@@ -131,6 +133,7 @@ class TestDannceTrain(unittest.TestCase):
             TEST_DANNCE_CONFIG,
             "--epochs=2",
             "--train-mode=finetune",
+            "--dannce-train-dir=./DANNCE/train_test",
             "--dannce-finetune-weights=../weights/DANNCE_comp_pretrained_single+r7m.pth",
             "--net-type=compressed_dannce",
             "--use-npy=True",
