@@ -5,7 +5,6 @@ import pickle
 import yaml
 from loguru import logger
 import scipy.io as sio
-from six.moves import cPickle
 
 from dannce.config import make_none_safe
 from dannce.engine.data import serve_data_DANNCE
@@ -84,7 +83,7 @@ def trim_COM_pickle(fpath, start_sample, end_sample, opath=None):
     spath is the output path for saving the trimmed COM dictionary, if desired
     """
     with open(fpath, "rb") as f:
-        save_data = cPickle.load(f)
+        save_data = pickle.load(f)
     sd = {}
 
     for key in save_data:
@@ -92,7 +91,7 @@ def trim_COM_pickle(fpath, start_sample, end_sample, opath=None):
             sd[key] = save_data[key]
 
     with open(opath, "wb") as f:
-        cPickle.dump(sd, f)
+        pickle.dump(sd, f)
     return sd
 
 
@@ -105,7 +104,7 @@ def save_COM_checkpoint(
     """
     # Save undistorted 2D COMs and their 3D triangulations
     f = open(os.path.join(results_dir, file_name + ".pickle"), "wb")
-    cPickle.dump(save_data, f)
+    pickle.dump(save_data, f)
     f.close()
 
     # We need to remove the eID in front of all the keys in datadict
@@ -195,7 +194,7 @@ def savedata_expval(
     """Save the expected values."""
     if data is None:
         f = open(fname, "rb")
-        data = cPickle.load(f)
+        data = pickle.load(f)
         f.close()
 
     d_coords = np.zeros((len(list(data.keys())), num_instances, 3, num_markers))
@@ -251,7 +250,7 @@ def savedata_tomat(
     """
     if data is None:
         f = open(fname, "rb")
-        data = cPickle.load(f)
+        data = pickle.load(f)
         f.close()
 
     d_coords = np.zeros((list(data.keys())[-1] + 1, 3, num_markers))

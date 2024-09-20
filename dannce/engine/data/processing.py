@@ -3,7 +3,6 @@ import numpy as np
 import imageio
 import os
 
-from six.moves import cPickle
 from typing import Dict, List, Text, Union
 import pickle
 import torch
@@ -114,7 +113,7 @@ def generate_readers(
             out[mp4files_scrub[i]] = os.path.join(viddir, mp4files[i])
         else:
             logger.warning(
-                "NOTE: Ignoring {} files numbered above {}".format(extensions, maxopt)
+                "NOTE: Ignoring {} files numbered above {}".format(extension, maxopt)
             )
             out[mp4files_scrub[i]] = imageio.get_reader(
                 os.path.join(viddir, mp4files[i]),
@@ -610,7 +609,7 @@ def make_data_splits(
             with open(
                 os.path.join(params["load_valid"], "val_samples.pickle"), "rb"
             ) as f:
-                partition["valid_sampleIDs"] = cPickle.load(f)
+                partition["valid_sampleIDs"] = pickle.load(f)
             partition["train_sampleIDs"] = [
                 f for f in samples if f not in partition["valid_sampleIDs"]
             ]
@@ -627,10 +626,10 @@ def make_data_splits(
         # breakpoint()
         # Save train/val inds
         with open(os.path.join(results_dir, "val_samples.pickle"), "wb") as f:
-            cPickle.dump(partition["valid_sampleIDs"], f)
+            pickle.dump(partition["valid_sampleIDs"], f)
 
         with open(os.path.join(results_dir, "train_samples.pickle"), "wb") as f:
-            cPickle.dump(partition["train_sampleIDs"], f)
+            pickle.dump(partition["train_sampleIDs"], f)
         return partition
 
     if params["load_valid"] is None:
@@ -736,16 +735,16 @@ def make_data_splits(
     else:
         # Load validation samples from elsewhere
         with open(os.path.join(params["load_valid"], "val_samples.pickle"), "rb",) as f:
-            partition["valid_sampleIDs"] = cPickle.load(f)
+            partition["valid_sampleIDs"] = pickle.load(f)
         partition["train_sampleIDs"] = [
             f for f in samples if f not in partition["valid_sampleIDs"]
         ]
     # Save train/val inds
     with open(os.path.join(results_dir, "val_samples.pickle"), "wb") as f:
-        cPickle.dump(partition["valid_sampleIDs"], f)
+        pickle.dump(partition["valid_sampleIDs"], f)
 
     with open(os.path.join(results_dir, "train_samples.pickle"), "wb") as f:
-        cPickle.dump(partition["train_sampleIDs"], f)
+        pickle.dump(partition["train_sampleIDs"], f)
 
     # Reset any seeding so that future batch shuffling, etc. are not tied to this seed
     if params["data_split_seed"] is not None:
