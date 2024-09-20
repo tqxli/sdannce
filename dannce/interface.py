@@ -183,7 +183,12 @@ def sdannce_predict(params: Dict):
 
     # inference
     inference.infer_sdannce(
-        predict_generator, params, custom_model_params, model, partition, device
+        generator=predict_generator,
+        params=params,
+        custom_model_params=custom_model_params,
+        model=model,
+        partition=partition,
+        device=device,
     )
 
 
@@ -221,7 +226,8 @@ def com_train(params: Dict):
 
 
 def com_predict(params: Dict):
-    """Predict with COM network
+    """
+    Predict with COM network over a single experiment
     """
     logger, device = experiment_setup(params, "com_predict")
     params, predict_params = config.setup_com_predict(params)
@@ -239,42 +245,26 @@ def com_predict(params: Dict):
     model.load_state_dict(torch.load(params["com_predict_weights"])["state_dict"])
     model.eval()
 
-    # do inference frame by frame
+    # perform inference
     save_data = {}
-    endIdx = (
-        np.min(
-            [
-                params["start_sample"] + params["max_num_samples"],
-                len(predict_generator),
-            ]
-        )
-        if params["max_num_samples"] != "max"
-        else len(predict_generator)
-    )
-
     save_data = inference.infer_com(
-        params["start_sample"],
-        endIdx,
-        predict_generator,
-        params,
-        model,
-        partition,
-        save_data,
-        camera_mats,
-        cameras,
-        device,
+        **inference.infer_com_inference_range(params, predict_generator),
+        generator=predict_generator,
+        params=params,
+        model=model,
+        partition=partition,
+        save_data=save_data,
+        camera_mats=camera_mats,
+        cameras=cameras,
+        device=device,
     )
 
-    filename = (
-        "com3d"
-        if params["max_num_samples"] == "max"
-        else "com3d%d" % (params["start_sample"])
-    )
+    # save inference results
     processing.save_COM_checkpoint(
-        save_data,
-        params["com_predict_dir"],
-        datadict,
-        cameras,
-        params,
-        file_name=filename,
+        save_data=save_data,
+        results_dir=params["com_predict_dir"],
+        datadict_=datadict,
+        cameras=cameras,
+        params=params,
+        file_name=inference.determine_com_save_filename(params),
     )

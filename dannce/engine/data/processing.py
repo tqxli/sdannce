@@ -1265,7 +1265,7 @@ def save_COM_checkpoint(
     """
     Saves COM pickle and matfiles
 
-    """
+    """    
     # Save undistorted 2D COMs and their 3D triangulations
     f = open(os.path.join(results_dir, file_name + ".pickle"), "wb")
     cPickle.dump(save_data, f)

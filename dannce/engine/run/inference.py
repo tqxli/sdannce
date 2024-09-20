@@ -8,6 +8,7 @@ from dannce.engine.data import ops
 from dannce.config import print_and_set
 from typing import List, Dict, Text, Tuple, Union
 import torch
+import torch.nn as nn
 import matplotlib
 from dannce.engine.data.processing import savedata_tomat, savedata_expval
 
@@ -535,17 +536,50 @@ def triangulate_multi_instance_single_channel(
     return save_data
 
 
+def determine_com_save_filename(params: Dict):
+    """Determine the filename for saving COM predictions.
+
+    Args:
+        params (Dict): Parameters dictionary.
+
+    Returns:
+        Text: Save filename.
+    """
+    if params["max_num_samples"] == "max":
+        save_filename = "com3d"
+    else:
+        save_filename = "com3d%d" % (params["start_sample"])
+    return save_filename
+
+
+def infer_com_inference_range(
+    params: Dict, predict_generator: torch.utils.data.Dataset,
+):
+    start_ind = params["start_sample"]
+    end_ind = (
+        np.min(
+            [
+                params["start_sample"] + params["max_num_samples"],
+                len(predict_generator),
+            ]
+        )
+        if params["max_num_samples"] != "max"
+        else len(predict_generator)
+    )
+    return {"start_ind": start_ind, "end_ind": end_ind}
+
+
 def infer_com(
     start_ind: int,
     end_ind: int,
-    generator,
+    generator: torch.utils.data.Dataset,
     params: Dict,
-    model,
+    model: nn.Module,
     partition: Dict,
     save_data: Dict,
     camera_mats: Dict,
     cameras: Dict,
-    device,
+    device: torch.device,
     sample_save: int = 100,
 ):
     """Perform COM detection over a set of frames.
@@ -553,7 +587,7 @@ def infer_com(
     Args:
         start_ind (int): Starting frame index
         end_ind (int): Ending frame index
-        generator (keras.utils.Sequence): Keras data generator
+        generator (torch.utils.data.Dataset): Data generator
         params (Dict): Parameters dictionary.
         model (Model): Inference model.
         partition (Dict): Partition dictionary
@@ -562,11 +596,7 @@ def infer_com(
         cameras (Dict): Camera dictionary.
         sample_save (int, optional): Number of samples to use in fps estimation.
     """
-    end_time = time.time()
     for n_frame in tqdm(range(start_ind, end_ind)):
-        # end_time = print_checkpoint(
-        #    n_frame, start_ind, end_time, sample_save=sample_save
-        # )
         pred_batch = predict_batch(model, generator, n_frame, params, device)
         n_batches = pred_batch.shape[0]
 
@@ -629,13 +659,12 @@ def infer_com(
 
 
 def infer_dannce(
-    generator,
+    generator: torch.utils.data.Dataset,
     params: Dict,
-    model,
+    model: nn.Module,
     partition: Dict,
     device: Text,
     n_chn: int,
-    sil_generator=None,
     save_heatmaps=False,
 ):
     """Perform dannce detection over a set of frames.
@@ -675,11 +704,6 @@ def infer_dannce(
 
     pbar = tqdm(range(start_ind, end_ind))
     for idx, i in enumerate(pbar):
-        # print("Predicting on batch {}".format(i), flush=True)
-        # if (i - start_ind) % 10 == 0 and i != start_ind:
-        # print(i)
-        # print("10 batches took {} seconds".format(time.time() - end_time))
-        # end_time = time.time()
 
         if (i - start_ind) % 1000 == 0 and i != start_ind:
             print("Saving checkpoint at {}th batch".format(i))
@@ -800,10 +824,10 @@ def save_inference_checkpoint(params, save_data, num_markers, savename):
 
 
 def infer_sdannce(
-    generator,
+    generator: torch.utils.data.Dataset,
     params: Dict,
     custom_model_params: Dict,
-    model,
+    model: nn.Module,
     partition: Dict,
     device: Text,
 ):
