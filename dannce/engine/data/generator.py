@@ -1,26 +1,25 @@
 """Generator module for dannce training.
 """
 import os
-from copy import deepcopy
-import numpy as np
-
-from dannce.engine.data import ops
-from dannce.engine.data.video import LoadVideoFrame
-from dannce.engine.data.ops import Camera
-import dannce.engine.utils.image as image_utils
-import dannce.engine.utils.segmentation as seg_utils
-import warnings
 import time
+import warnings
+from copy import deepcopy
 from multiprocessing.dummy import Pool as ThreadPool
-from typing import List, Dict, Tuple, Text
+from typing import Dict, List, Text, Tuple
+
 import cv2
 import imageio
-
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torchvision
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import dannce.engine.utils.image as image_utils
+import dannce.engine.utils.segmentation as seg_utils
+from dannce.engine.data import ops
+from dannce.engine.data.ops import Camera
+from dannce.engine.data.video import LoadVideoFrame
 
 _DEFAULT_CAM_NAMES = [
     "CameraR",

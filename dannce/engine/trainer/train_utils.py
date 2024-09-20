@@ -1,6 +1,7 @@
+import numpy as np
+
 import dannce.engine.models.loss as custom_losses
 import dannce.engine.models.metrics as custom_metrics
-import numpy as np
 
 
 def prepare_batch(batch, device):

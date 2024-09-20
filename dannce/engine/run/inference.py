@@ -1,27 +1,24 @@
-"""Handle inference procedures for dannce and com networks.
+"""Handle inference for dannce and com networks.
 """
-import numpy as np
 import os
 import time
-import dannce.engine.utils.image as image_utils
+from typing import Dict, List, Text, Tuple, Union
 
-from dannce.config import print_and_set
-from dannce.engine.utils.triangulation import (
-    extract_multi_instance_single_channel,
-    extract_multi_instance_multi_channel,
-    extract_single_instance,
-    triangulate_multi_instance_single_channel,
-    triangulate_multi_instance_multi_channel,
-    triangulate_single_instance,
-)
-from dannce.engine.utils.augmentation import construct_augmented_batch
-from typing import List, Dict, Text, Tuple, Union
+import imageio
+import numpy as np
 import torch
 import torch.nn as nn
-from dannce.engine.utils.save import savedata_tomat, savedata_expval
-import imageio
-
 from tqdm import tqdm
+
+import dannce.engine.utils.image as image_utils
+from dannce.config import print_and_set
+from dannce.engine.utils.augmentation import construct_augmented_batch
+from dannce.engine.utils.save import savedata_expval, savedata_tomat
+from dannce.engine.utils.triangulation import (
+    extract_multi_instance_multi_channel,
+    extract_multi_instance_single_channel, extract_single_instance,
+    triangulate_multi_instance_multi_channel,
+    triangulate_multi_instance_single_channel, triangulate_single_instance)
 
 
 def print_checkpoint(

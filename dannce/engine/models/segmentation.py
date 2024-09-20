@@ -3,8 +3,6 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
-# from tqdm import tqdm
-
 
 def get_instance_segmentation_model(num_classes):
     model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)

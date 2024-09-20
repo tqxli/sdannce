@@ -1,9 +1,10 @@
+import math
 from inspect import Parameter
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
-import math
 
 from dannce.engine.models.posegcn.normalization import get_normalization
 

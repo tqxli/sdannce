@@ -1,6 +1,7 @@
+import mat73
 import numpy as np
 import scipy.io as sio
-import mat73
+
 
 # helper functions
 def project_to_2d(

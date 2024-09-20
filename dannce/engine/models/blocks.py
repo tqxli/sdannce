@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from .normalization import LayerNormalization
+
+from dannce.engine.models.normalization import LayerNormalization
 
 NORMALIZATION_MODES = {
     "batch": nn.BatchNorm3d,

@@ -1,12 +1,13 @@
-from typing import Dict, Literal
 import os
+from typing import Dict, Literal
+
 import torch
 import torch.nn as nn
 from loguru import logger
-from dannce.engine.models.posegcn.nets import PoseGCN
-from dannce.engine.models.blocks import *
-from dannce.engine.utils.image import spatial_softmax, expected_value_3d
 
+from dannce.engine.models.blocks import *
+from dannce.engine.models.posegcn.nets import PoseGCN
+from dannce.engine.utils.image import expected_value_3d, spatial_softmax
 
 _SDANNCE_ENCDEC = [
     [(None, 64), (64, 128), (128, 256), (256, 512)],

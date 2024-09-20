@@ -1,14 +1,16 @@
+import os
 from abc import abstractmethod
-import imageio, os
 
+import imageio
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dannce.engine.skeletons.utils import SYMMETRY, load_body_profile
-from dannce.engine.utils.vis import draw_voxels
-from dannce.engine.utils.image import spatial_softmax
+
 import dannce.engine.utils.image as image_utils
+from dannce.engine.skeletons.utils import SYMMETRY, load_body_profile
+from dannce.engine.utils.image import spatial_softmax
+from dannce.engine.utils.vis import draw_voxels
 
 ##################################################################################################
 # UTIL_FUNCTIONS

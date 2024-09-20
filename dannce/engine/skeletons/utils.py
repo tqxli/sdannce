@@ -1,5 +1,6 @@
-from logging import RootLogger
 import os
+from logging import RootLogger
+
 import scipy.io as sio
 
 ROOT = os.path.abspath(os.path.dirname(__file__))

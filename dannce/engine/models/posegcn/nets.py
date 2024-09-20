@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
-from dannce.engine.models.posegcn.gcn_blocks import (
-    _ResGraphConv,
-    SemGraphConv,
-    _GraphConv,
-)
+
+from dannce.engine.models.posegcn.gcn_blocks import (SemGraphConv, _GraphConv,
+                                                     _ResGraphConv)
 from dannce.engine.models.posegcn.utils import *
-from dannce.engine.utils.image import max_coord_3d
 from dannce.engine.skeletons.utils import load_body_profile
+from dannce.engine.utils.image import max_coord_3d
 
 NODES_GROUP = [[i] for i in range(23)]
 TEMPORAL_FLOW = np.array(

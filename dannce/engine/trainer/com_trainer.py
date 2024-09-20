@@ -1,5 +1,7 @@
+import csv
+import os
+
 import torch
-import csv, os
 from tqdm import tqdm
 
 from dannce.engine.trainer.dannce_trainer import DANNCETrainer

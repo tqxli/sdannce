@@ -1,15 +1,17 @@
 """Define routines for reading/structuring input data for DANNCE."""
+import os
+import pickle
+import warnings
+from copy import deepcopy
+
 import numpy as np
 import scipy.io as sio
 import torch
+from scipy.ndimage import median_filter
+from scipy.special import comb
+
 from dannce.engine.data import ops as ops
 from dannce.engine.data.io import load_camera_params, load_labels, load_sync
-import os
-from scipy.special import comb
-from scipy.ndimage import median_filter
-import warnings
-from copy import deepcopy
-import pickle
 
 
 def prepare_data(

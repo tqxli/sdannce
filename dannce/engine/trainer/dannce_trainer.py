@@ -1,13 +1,16 @@
+import csv
+import os
+
+import imageio
 import numpy as np
 import torch
-import csv, os
-import imageio
 from tqdm import tqdm
 
 from dannce.engine.trainer.base_trainer import BaseTrainer
-from dannce.engine.trainer.train_utils import prepare_batch, LossHelper, MetricHelper
-from dannce.engine.utils.image import norm_im
+from dannce.engine.trainer.train_utils import (LossHelper, MetricHelper,
+                                               prepare_batch)
 from dannce.engine.utils.augmentation import construct_augmented_batch
+from dannce.engine.utils.image import norm_im
 
 
 class DANNCETrainer(BaseTrainer):

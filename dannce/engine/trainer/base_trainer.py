@@ -1,7 +1,8 @@
-import torch
-from abc import abstractmethod
-from torch.utils.tensorboard import SummaryWriter
 import os
+from abc import abstractmethod
+
+import torch
+from torch.utils.tensorboard import SummaryWriter
 
 
 class BaseTrainer:

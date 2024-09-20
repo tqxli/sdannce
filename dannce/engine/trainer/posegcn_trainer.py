@@ -1,10 +1,12 @@
+import csv
+import os
+
 import torch
-import os, csv
 from tqdm import tqdm
 
+import dannce.engine.models.loss as custom_losses
 from dannce.engine.trainer.dannce_trainer import DANNCETrainer
 from dannce.engine.trainer.train_utils import prepare_batch
-import dannce.engine.models.loss as custom_losses
 from dannce.engine.utils.augmentation import construct_augmented_batch
 
 

@@ -1,18 +1,19 @@
-from copy import deepcopy
-import numpy as np
-import imageio
-import os, shutil
-import yaml
-from typing import Dict, Text
+import os
 import warnings
+from copy import deepcopy
+from typing import Dict, Text
 
-from dannce.engine.data import io
+import imageio
+import numpy as np
+import yaml
+from loguru import logger
+
 from dannce import (
+    _param_defaults_com,
     _param_defaults_dannce,
     _param_defaults_shared,
-    _param_defaults_com,
 )
-from loguru import logger
+from dannce.engine.data import io
 
 _DEFAULT_VIDDIR = "videos"
 _DEFAULT_VIDDIR_SIL = "videos_sil"

@@ -1,4 +1,13 @@
 """Entrypoints for dannce training and prediction."""
+import os
+import sys
+import ast
+import argparse
+import yaml
+from loguru import logger
+from typing import Dict, Text
+import subprocess
+from cluster.multi_gpu import MultiGpuHandler
 from dannce.interface import (
     com_predict,
     com_train,
@@ -13,15 +22,6 @@ from dannce import (
     _param_defaults_shared,
     _param_defaults_com,
 )
-import os
-import sys
-import ast
-import argparse
-import yaml
-from loguru import logger
-from typing import Dict, Text
-import subprocess
-from cluster.multi_gpu import MultiGpuHandler
 
 
 def load_params(param_path: Text) -> Dict:

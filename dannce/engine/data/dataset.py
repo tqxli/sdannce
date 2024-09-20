@@ -1,16 +1,15 @@
 import os
 import random
+import warnings
+
 import cv2
 import numpy as np
-import warnings
 import scipy.io as sio
-
 import torch
-import torchvision.transforms.functional as TF
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
 
 import dannce.engine.utils.image as image_utils
-
 
 MISSING_KEYPOINTS_MSG = (
     "If mirror augmentation is used, the right_keypoints indices and left_keypoints "

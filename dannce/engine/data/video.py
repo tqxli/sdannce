@@ -1,13 +1,14 @@
 """ Video reading and writing interfaces for different formats. """
-from copy import Error
-import os
-import cv2
-import numpy as np
-import attr
 import multiprocessing
-import imageio
+import os
 import time
-from typing import List, Dict, Tuple, Text
+from copy import Error
+from typing import Dict, List, Text, Tuple
+
+import attr
+import cv2
+import imageio
+import numpy as np
 from loguru import logger
 
 

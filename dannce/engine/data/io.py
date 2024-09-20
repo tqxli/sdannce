@@ -1,8 +1,9 @@
 """Label3D data loading and saving operations."""
+from typing import Dict, List, Text, Union
+
+import mat73
 import numpy as np
 import scipy.io as sio
-from typing import List, Dict, Text, Union
-import mat73
 
 
 def load_label3d_data(path: Text, key: Text):

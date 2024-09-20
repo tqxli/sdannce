@@ -1,8 +1,9 @@
 """Operations for dannce."""
-import numpy as np
-import cv2
 import time
 from typing import Text
+
+import cv2
+import numpy as np
 import torch
 import torch.nn.functional as F
 

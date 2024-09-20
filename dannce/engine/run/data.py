@@ -1,27 +1,26 @@
 """
-High-level wrapper functions for interface
+High-level wrapper functions for setting up the dataset and dataloaders.
 """
-import numpy as np
-import os
-import pandas as pd
 import json
+import os
 from copy import deepcopy
 from typing import Dict, List, Literal
-import torch
 
-from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
+import numpy as np
+import pandas as pd
+import torch
+from loguru import logger
+from tqdm import tqdm
+
+from dannce.config import _DEFAULT_SEG_MODEL
+from dannce.engine.data import (dataset, generator, processing,
+                                serve_data_DANNCE)
 from dannce.engine.models.segmentation import get_instance_segmentation_model
 from dannce.engine.utils.debug import write_debug
-from dannce.engine.utils.experiment import set_random_seed, set_device, make_folder
-from dannce.engine.utils.save import (
-    save_params_pickle,
-    save_params_yaml,
-    write_com_file,
-)
-from dannce.config import _DEFAULT_SEG_MODEL
-
-from tqdm import tqdm
-from loguru import logger
+from dannce.engine.utils.experiment import (make_folder, set_device,
+                                            set_random_seed)
+from dannce.engine.utils.save import (save_params_pickle, save_params_yaml,
+                                      write_com_file)
 
 
 def experiment_setup(

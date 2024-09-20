@@ -1,6 +1,7 @@
-from typing import Dict, Literal
 import os
 import random
+from typing import Dict, Literal
+
 import numpy as np
 import torch
 from loguru import logger

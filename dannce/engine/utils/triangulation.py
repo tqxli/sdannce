@@ -1,8 +1,9 @@
 from typing import Dict, Text
+
 import numpy as np
 
-from dannce.engine.data import ops
 import dannce.engine.utils.image as image_utils
+from dannce.engine.data import ops
 from dannce.engine.utils.debug import debug_com
 
 
