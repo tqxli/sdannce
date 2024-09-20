@@ -17,6 +17,7 @@ def save_params_pickle(params: Dict):
     """
     handle = open(os.path.join(params["dannce_train_dir"], "params.pickle"), "wb")
     pickle.dump(params, handle)
+    handle.close()
 
     return True
 
@@ -32,6 +33,7 @@ def save_params_yaml(params: Dict):
     params_to_save = {k: v for k, v in params.items() if k not in _exclude}
     handle = open(os.path.join(params["dannce_train_dir"], "params.yaml"), "w")
     yaml.dump(params_to_save, handle, default_flow_style=False, sort_keys=False)
+    handle.close()
 
 
 def prepare_save_metadata(params: Dict):

@@ -615,6 +615,8 @@ def _make_data_npy(
         processing.save_volumes_into_npy(
             params, npy_generator, missing_npydir, samples,
         )
+        
+        npy_generator.close_all_readers()
 
     # generate segmentation masks if needed
     segmentation_model, valid_params_sil = get_segmentation_model(
@@ -1146,6 +1148,9 @@ def make_data_com(params, train_params, valid_params):
         y_valid[i * ncams : (i + 1) * ncams] = ims[1]
 
     write_debug(params, ims_train, ims_valid, y_train)
+
+    train_generator.close_all_readers()
+    valid_generator.close_all_readers()
 
     train_generator = dataset.COMDatasetFromMem(
         np.arange(ims_train.shape[0]),

@@ -140,6 +140,7 @@ def dannce_predict(params: Dict):
     )
 
     inference.infer_sdannce(predict_generator, params, {}, model, partition, device)
+    predict_generator.close_all_readers()
 
 
 def sdannce_train(params: Dict):
@@ -189,6 +190,7 @@ def sdannce_predict(params: Dict):
         partition=partition,
         device=device,
     )
+    predict_generator.close_all_readers()
 
 
 def com_train(params: Dict):
@@ -257,6 +259,7 @@ def com_predict(params: Dict):
         cameras=cameras,
         device=device,
     )
+    predict_generator.close_all_readers()
 
     # save inference results
     save_COM_checkpoint(

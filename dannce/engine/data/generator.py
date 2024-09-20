@@ -300,6 +300,13 @@ class DataGenerator_3Dconv(DataGenerator):
 
         self.pj_method = self.pj_grid_mirror if self.mirror else self.pj_grid
 
+    def close_all_readers(self):
+        self.threadpool.close()
+        
+        for vid in self.load_frame.currvideo.values():
+            if isinstance(vid, imageio.core.Format.Reader):
+                vid.close()
+
     def __getitem__(self, index: int):
         """Generate one batch of data.
 
@@ -1572,6 +1579,11 @@ class DataGenerator_COM(torch.utils.data.Dataset):
         self.load_frame = LoadVideoFrame(
             self._N_VIDEO_FRAMES, self.vidreaders, self.camnames, self.predict_flag
         )
+
+    def close_all_readers(self):
+        for vid in self.load_frame.currvideo.values():
+            if isinstance(vid, imageio.core.Format.Reader):
+                vid.close()
 
     def __len__(self):
         """Denote the number of batches per epoch."""

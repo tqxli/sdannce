@@ -188,6 +188,10 @@ def visualize_pose_predictions(
     end = time.time()
     print(f"Visualization of n={n_frames} took {end-start} sec.")
 
+    # close videos
+    for vid in vids:
+        vid.close()
+
 
 def draw_voxels(voxels, ax, shape=(8, 8, 8), norm=True, alpha=0.1):
     # resize for visualization
