@@ -248,11 +248,3 @@ def load_body_profile(name):
         name in _JOINT_NAMES
     ), f"{name} not a valid skeleton profile"
     return {"limbs": _BODY_CONNECTIVITY[name], "joint_names": _JOINT_NAMES[name]}
-
-
-# if __name__ == "__main__":
-#     profile = load_body_profile("rat16")
-#     # print(profile["names"])
-
-#     for limb in profile["limbs"]:
-#         print(f"[{limb[0]}, {limb[1]}],")

@@ -646,7 +646,6 @@ class PoseDatasetNPY(PoseDatasetFromMem):
             unoccluded, len(occluded), replace=(len(unoccluded) <= len(occluded))
         )
         X[:, :, :, occluded, :] = X[:, :, :, alternatives, :]
-        # print(f"Replace view {occluded} with {alternatives}")
 
         X = np.reshape(X, (*X.shape[:3], -1))
 
@@ -1210,7 +1209,6 @@ class ImageDataset(torch.utils.data.Dataset):
                     if rot != 0:
                         im = TF.rotate(im, rot)
                         targets = TF.rotate(targets, rot)
-        # breakpoint()
         # self._vis_heatmap(im[0], targets[0])
 
         if self.return_3d:

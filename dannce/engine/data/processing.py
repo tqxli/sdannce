@@ -431,15 +431,6 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
         c3dfile = io.load_com(exp["com_file"])
         com3d_dict_ = check_COM_load(c3dfile, "com3d", params["medfilt_window"])
 
-    # print("Experiment {} using com3d: {}".format(e, exp["com_file"]))
-
-    # if params["medfilt_window"] is not None:
-    #     print(
-    #         "Median filtering COM trace with window size {}".format(
-    #             params["medfilt_window"]
-    #         )
-    #     )
-
     # Remove any 3D COMs that are beyond the confines off the 3D arena
     do_cthresh = True if exp["cthresh"] is not None else False
 
@@ -447,8 +438,6 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
     samples_ = serve_data_DANNCE.remove_samples_com(
         samples_, com3d_dict_, rmc=do_cthresh, cthresh=exp["cthresh"],
     )
-    # msg = "Removed {} samples from the dataset because they either had COM positions over cthresh, or did not have matching sampleIDs in the COM file"
-    # print(msg.format(pre - len(samples_)))
 
     return (
         exp,
@@ -478,7 +467,7 @@ def check_COM_load(c3dfile: Dict, kkey: Text, win_size: int):
     if win_size is not None:
         if win_size % 2 == 0:
             win_size += 1
-            # print("medfilt_window was not odd, changing to: {}".format(win_size))
+            logger.warning("medfilt_window was not odd, changing to: {}".format(win_size))
 
         from scipy.signal import medfilt
 
@@ -718,8 +707,6 @@ def make_data_splits(
                     for i in range(len(train_samples))
                     if int(train_samples[i].split("_")[0]) == e
                 ]
-                # print(e)
-                # print(len(tinds))
                 train_inds = train_inds + list(
                     np.random.choice(
                         tinds, (params["num_train_per_exp"],), replace=False
@@ -985,7 +972,6 @@ def save_volumes_into_npy(
     for i, samp in enumerate(pbar):
         fname = "0_{}.npy".format(samp.split("_")[1])
         rr = npy_generator.__getitem__(i)
-        # print(i, end="\r")
 
         if params["is_social_dataset"]:
             for j in range(npy_generator.n_instances):
@@ -1105,7 +1091,7 @@ def mask_coords_outside_volume(vmin, vmax, pose3d, anchor, n_chan):
     new_pose3d = np.where(in_vol, pose3d, nan_pose)
 
     if np.isnan(new_pose3d[:, n_chan:]).sum() == n_chan * 3:
-        print("The other animal not in volume, repeat the primary.")
+        logger.warning("The other animal not in volume, repeat the primary.")
         new_pose3d[:, n_chan:] = new_pose3d[:, :n_chan]
 
     return new_pose3d

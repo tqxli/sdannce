@@ -264,7 +264,6 @@ class DataGenerator_3Dconv(DataGenerator):
         self.interp = interp
         self.depth = depth
         self.channel_combo = channel_combo
-        print(self.channel_combo)
         self.gpu_id = gpu_id
         self.mode = mode
         self.immode = immode
@@ -285,7 +284,6 @@ class DataGenerator_3Dconv(DataGenerator):
         self.threadpool = ThreadPool(len(self.camnames[0]))
         self.segmentation_model = segmentation_model
 
-        ts = time.time()
         for experimentID in self.camnames.keys():
             for camname in self.camnames[experimentID]:
                 # M only needs to be computed once for each camera
@@ -294,8 +292,6 @@ class DataGenerator_3Dconv(DataGenerator):
                 t = self.camera_params[experimentID][camname]["t"]
                 M = torch.as_tensor(ops.camera_matrix(K, R, t), dtype=torch.float32)
                 self.camera_params[experimentID][camname]["M"] = M
-
-        print("Init took {} sec.".format(time.time() - ts))
 
         self.pj_method = self.pj_grid_mirror if self.mirror else self.pj_grid
 

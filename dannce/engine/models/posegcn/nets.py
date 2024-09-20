@@ -178,11 +178,3 @@ class PoseGCN(nn.Module):
         final_poses = x
         return final_poses
 
-
-if __name__ == "__main__":
-    model = PoseGCN()
-
-    input = torch.randn(5, 23, 3)
-    print("Input: ", input.shape)
-    output = model(input)
-    print("Output: ", output.shape)

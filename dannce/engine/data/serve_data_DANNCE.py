@@ -2,13 +2,12 @@
 import os
 import pickle
 import warnings
-from copy import deepcopy
 
 import numpy as np
 import scipy.io as sio
 import torch
-from scipy.ndimage import median_filter
 from scipy.special import comb
+from loguru import logger
 
 from dannce.engine.data import ops as ops
 from dannce.engine.data.io import load_camera_params, load_labels, load_sync
@@ -57,7 +56,6 @@ def prepare_data(
             labels[i]["data_3d"] = np.zeros((nFrames, 3 * nKeypoints))
             labels[i]["data_2d"] = np.zeros((nFrames, 2 * nKeypoints))
     else:
-        # print(params["label3d_file"])
         labels = load_labels(params["label3d_file"])
 
     samples = np.squeeze(labels[0]["data_sampleID"])
@@ -125,7 +123,7 @@ def prepare_data(
             data[:, 1] = params["raw_im_h"] - data[:, 1] - 1
 
         if params["multi_mode"]:
-            print("Entering multi-mode with {} + 1 targets".format(data.shape[-1]))
+            logger.info("Entering multi-mode with {} + 1 targets".format(data.shape[-1]))
             if nanflag:
                 dcom = np.mean(data, axis=2, keepdims=True)
             else:
@@ -154,7 +152,7 @@ def prepare_data(
 
     # If specific markers are set to be excluded, set them to NaN here.
     if params["drop_landmark"] is not None and not prediction:
-        print(
+        logger.info(
             "Setting landmarks {} to NaN. These landmarks will not be included in loss or metric evaluations".format(
                 params["drop_landmark"]
             )
@@ -240,7 +238,7 @@ def prepare_temporal_seqs(
             replace=False,
         )
         samples_test_inds = sorted(list(samples_test_inds))
-        print(
+        logger.info(
             "For unsupervised training, load in {} unlabeled chunks from the valid/test recording.".format(
                 params["n_support_chunks"]
             )
@@ -257,7 +255,7 @@ def prepare_temporal_seqs(
             )
             # n_unlabeled_temp = int(params["unlabeled_temp"])
             n_unlabeled_temp = int(np.ceil(len(samples) * params["unlabeled_temp"]))
-            print(
+            logger.info(
                 "Load in {} unlabeled temporal chunks, in addition to {} labels.".format(
                     n_unlabeled_temp, len(samples)
                 )
@@ -420,10 +418,10 @@ def prepare_COM(
     com3d_dict = {}
 
     if method == "mean":
-        print("using mean to get 3D COM")
+        logger.info("using mean to get 3D COM")
 
     elif method == "median":
-        print("using median to get 3D COM")
+        logger.info("using median to get 3D COM")
 
     firstkey = list(com.keys())[0]
 
@@ -566,7 +564,7 @@ def remove_samples(s, d3d, mode="clean", auxmode=None):
                 sample_mask[i] = 0
 
     if auxmode == "JDM52d2":
-        print("removing bad JDM52d2 frames")
+        logger.info("removing bad JDM52d2 frames")
         for i in range(len(s)):
             if s[i] >= 20000 and s[i] <= 32000:
                 sample_mask[i] = 0
@@ -667,8 +665,6 @@ def prepend_experiment(
         params["experiment"][e]["camnames"] = camnames[e]
 
         for n_cam, name in enumerate(camnames[e]):
-            # print(name)
-            # print(params["experiment"][e]["chunks"][name])
             if dannce_prediction:
                 try:
                     new_chunks[name] = params["experiment"][e]["chunks"][
@@ -751,7 +747,7 @@ def setup_dataloaders(train_dataset, valid_dataset, params):
 
     if params["multi_gpu_train"] and len(params["gpu_id"]) > 1:
         valid_batch_size = valid_batch_size * len(params["gpu_id"])
-        print(f"Use batch size of {valid_batch_size} for multiple GPUs.")
+        logger.info(f"Use batch size of {valid_batch_size} for multiple GPUs.")
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
