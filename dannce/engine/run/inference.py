@@ -658,6 +658,28 @@ def infer_com(
     return save_data
 
 
+def infer_dannce_inference_range(
+    params: Dict,
+    generator: torch.utils.data.Dataset,
+):
+    n_frames = len(generator)
+    bs = params["batch_size"]
+    generator_maxbatch = np.ceil(n_frames / bs)
+
+    if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
+        print(
+            "Maxbatch was set to a larger number of matches than exist in the video. Truncating."
+        )
+        print_and_set(params, "maxbatch", generator_maxbatch)
+
+    if params["maxbatch"] == "max":
+        print_and_set(params, "maxbatch", generator_maxbatch)
+
+    start_ind = int(params["start_batch"])
+    end_ind = int(params["maxbatch"])
+    return start_ind, end_ind, bs
+
+
 def infer_dannce(
     generator: torch.utils.data.Dataset,
     params: Dict,
@@ -679,23 +701,8 @@ def infer_dannce(
         device (Text): Gpu device name
         n_chn (int): Number of output channels
     """
-    n_frames = len(generator)
-    bs = params["batch_size"]
-    generator_maxbatch = np.ceil(n_frames / bs)
-
-    if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
-        print(
-            "Maxbatch was set to a larger number of matches than exist in the video. Truncating."
-        )
-        print_and_set(params, "maxbatch", generator_maxbatch)
-
-    if params["maxbatch"] == "max":
-        print_and_set(params, "maxbatch", generator_maxbatch)
-
-    end_time = time.time()
+    start_ind, end_ind, bs = infer_dannce_inference_range(params, generator)
     save_data = {}
-    start_ind = int(params["start_batch"])
-    end_ind = int(params["maxbatch"])
 
     if save_heatmaps:
         save_path = os.path.join(params["dannce_predict_dir"], "heatmaps")
@@ -810,7 +817,12 @@ def infer_dannce(
     return save_data
 
 
-def save_inference_checkpoint(params, save_data, num_markers, savename):
+def save_inference_checkpoint(
+    params: Dict,
+    save_data: Dict,
+    num_markers: int,
+    savename: str,
+):
     p_n = savedata_expval(
         params["dannce_predict_dir"] + "/{}".format(savename),
         params,
