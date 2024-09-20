@@ -4,9 +4,11 @@ import os
 from copy import deepcopy
 import numpy as np
 
-from dannce.engine.data import processing, ops
+from dannce.engine.data import ops
 from dannce.engine.data.video import LoadVideoFrame
 from dannce.engine.data.ops import Camera
+import dannce.engine.utils.image as image_utils
+import dannce.engine.utils.segmentation as seg_utils
 import warnings
 import time
 from multiprocessing.dummy import Pool as ThreadPool
@@ -416,7 +418,7 @@ class DataGenerator_3Dconv(DataGenerator):
                     device=self.device,
                 )
             else:
-                thisim, _ = processing.cropcom(thisim, com, size=self.dim_in[0])
+                thisim, _ = image_utils.cropcom(thisim, com, size=self.dim_in[0])
         # print('Frame loading took {} sec.'.format(time.time() - ts))
 
         if self.segmentation_model is not None:
@@ -615,7 +617,7 @@ class DataGenerator_3Dconv(DataGenerator):
 
     def _finalize_samples(self, X, y_3d, X_grid):
         if self.var_reg or self.norm_im:
-            X = processing.preprocess_3d(X)
+            X = image_utils.preprocess_3d(X)
 
         inputs, targets = [X, X_grid], [y_3d]
 
@@ -981,7 +983,7 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
                         device=self.device,
                     )
                 else:
-                    thisims[i] = processing.cropcom(
+                    thisims[i] = image_utils.cropcom(
                         thisims[i], coms[i], size=self.dim_in[0]
                     )[0]
         # print('Frame loading took {} sec.'.format(time.time() - ts))
@@ -1022,7 +1024,7 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
             (self.n_instances)
         )  # the foreground animal is not occluded
         # check overlap region
-        occlusion_scores[instance_back] = processing.bbox_iou(bb1, bb2)
+        occlusion_scores[instance_back] = seg_utils.bbox_iou(bb1, bb2)
 
         # self.visualize_2d(thisims[0], IDs, camnames, com_3ds_cam, bb1, bb2, occlusion_scores)
 
@@ -1061,7 +1063,7 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
                 msg = "No mask predicted."
 
             elif len(raw_masks) < self.n_instances:
-                counts = processing.compute_support(com_2ds_pix, masks_unordered[0])
+                counts = seg_utils.compute_support(com_2ds_pix, masks_unordered[0])
                 assignment = np.argmax(counts)
                 masks[assignment] = masks_unordered[0]
 
@@ -1077,8 +1079,8 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
                 # mask_intersect = processing.mask_intersection(masks_unordered[0], masks_unordered[1])
                 # masks_unordered = [mask-mask_intersect for mask in masks_unordered]
 
-                counts0 = processing.compute_support(com_2ds_pix, masks_unordered[0])
-                counts1 = processing.compute_support(com_2ds_pix, masks_unordered[1])
+                counts0 = seg_utils.compute_support(com_2ds_pix, masks_unordered[0])
+                counts1 = seg_utils.compute_support(com_2ds_pix, masks_unordered[1])
 
                 assignment0 = np.argmax(counts0)
                 assignment1 = np.argmax(counts1)
@@ -1260,7 +1262,7 @@ class DataGenerator_3Dconv_social(DataGenerator_3Dconv):
 
     def _finalize_samples(self, X, y_3d, X_grid, occlusion_scores):
         if self.var_reg or self.norm_im:
-            X = processing.preprocess_3d(X)
+            X = image_utils.preprocess_3d(X)
 
         inputs, targets = [X], [y_3d]
 
@@ -1405,7 +1407,7 @@ class MultiviewImageGenerator(DataGenerator_3Dconv):
 
         if self.crop:
             # crop images due to memory constraints
-            im, cropdim = processing.cropcom(im, com_precrop, size=self.crop_size)
+            im, cropdim = image_utils.cropcom(im, com_precrop, size=self.crop_size)
             bbox = self._get_bbox(com_precrop)
             cam.update_after_crop(bbox)
             new_y[0, :] -= cropdim[2]
@@ -1418,7 +1420,7 @@ class MultiviewImageGenerator(DataGenerator_3Dconv):
             # cam.update_after_resize((old_height, old_width), (self.image_size, self.image_size))
             # new_y[1, :] *= (im.shape[0] / old_height) # y
             # new_y[0, :] *= (im.shape[1] / old_width)  # x
-            im = processing.downsample_batch(im[np.newaxis, ...], fac=self.ds_fac)
+            im = image_utils.downsample_batch(im[np.newaxis, ...], fac=self.ds_fac)
             im = np.squeeze(im)
             new_y /= self.ds_fac
 
@@ -1721,9 +1723,9 @@ class DataGenerator_COM(torch.utils.data.Dataset):
             y = np.transpose(y, [0, 2, 1])
 
         if self.downsample > 1:
-            X = processing.downsample_batch(X, fac=self.downsample, method=self.dsmode)
+            X = image_utils.downsample_batch(X, fac=self.downsample, method=self.dsmode)
             if self.labelmode == "prob":
-                y = processing.downsample_batch(
+                y = image_utils.downsample_batch(
                     y, fac=self.downsample, method=self.dsmode
                 )
                 y /= np.max(np.max(y, axis=1), axis=1)[:, np.newaxis, np.newaxis, :]
@@ -1740,6 +1742,6 @@ class DataGenerator_COM(torch.utils.data.Dataset):
             # get to vgg19 normalization
             X -= 114.67
         else:
-            X = processing._preprocess_numpy_input(X)
+            X = image_utils._preprocess_numpy_input(X)
         X = X.astype("float32", copy=False)
         return X, y

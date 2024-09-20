@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from dannce.engine.trainer.base_trainer import BaseTrainer
 from dannce.engine.trainer.train_utils import prepare_batch, LossHelper, MetricHelper
-import dannce.engine.data.processing as processing
+from dannce.engine.utils.image import norm_im
 from dannce.engine.run.inference import form_batch
 
 
@@ -281,7 +281,7 @@ class DANNCETrainer(BaseTrainer):
                     :,
                     j * self.params["chan_num"] : (j + 1) * self.params["chan_num"],
                 ]
-                im = processing.norm_im(im) * 255
+                im = norm_im(im) * 255
                 im = im.astype("uint8")
                 of = os.path.join(tifdir, f"sample{i}" + "_cam" + str(j) + ".tif",)
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))

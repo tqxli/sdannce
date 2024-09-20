@@ -5,7 +5,7 @@ import torch.nn as nn
 from loguru import logger
 from dannce.engine.models.posegcn.nets import PoseGCN
 from dannce.engine.models.blocks import *
-from dannce.engine.data.ops import spatial_softmax, expected_value_3d
+from dannce.engine.utils.image import spatial_softmax, expected_value_3d
 
 
 _SDANNCE_ENCDEC = [

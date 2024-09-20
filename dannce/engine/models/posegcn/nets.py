@@ -6,7 +6,7 @@ from dannce.engine.models.posegcn.gcn_blocks import (
     _GraphConv,
 )
 from dannce.engine.models.posegcn.utils import *
-import dannce.engine.data.ops as ops
+from dannce.engine.utils.image import max_coord_3d
 from dannce.engine.skeletons.utils import load_body_profile
 
 NODES_GROUP = [[i] for i in range(23)]
@@ -120,7 +120,7 @@ class PoseGCN(nn.Module):
 
     def inference(self, init_poses, grid_centers, heatmaps=None, inter_features=None):
         coord_grids = (
-            ops.max_coord_3d(heatmaps).unsqueeze(2).unsqueeze(2)
+            max_coord_3d(heatmaps).unsqueeze(2).unsqueeze(2)
         )  # [B, 23, 1, 1, 3]
 
         # normalize the absolute 3D coordinates to relative voxel coordinates

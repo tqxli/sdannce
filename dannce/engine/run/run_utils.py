@@ -11,6 +11,7 @@ import torch
 
 from dannce.engine.data import serve_data_DANNCE, dataset, generator, processing
 from dannce.engine.models.segmentation import get_instance_segmentation_model
+from dannce.engine.utils.debug import write_debug
 from dannce.config import _DEFAULT_SEG_MODEL
 
 from tqdm import tqdm
@@ -1186,7 +1187,7 @@ def make_data_com(params, train_params, valid_params):
         ims_valid[i * ncams : (i + 1) * ncams] = ims[0]
         y_valid[i * ncams : (i + 1) * ncams] = ims[1]
 
-    processing.write_debug(params, ims_train, ims_valid, y_train)
+    write_debug(params, ims_train, ims_valid, y_train)
 
     train_generator = dataset.COMDatasetFromMem(
         np.arange(ims_train.shape[0]),

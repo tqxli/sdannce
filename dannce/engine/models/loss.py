@@ -6,8 +6,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dannce.engine.skeletons.utils import SYMMETRY, load_body_profile
-from dannce.engine.models.vis import draw_voxels
-from dannce.engine.data import ops, processing
+from dannce.engine.utils.vis import draw_voxels
+from dannce.engine.utils.image import spatial_softmax
+import dannce.engine.utils.image as image_utils
 
 ##################################################################################################
 # UTIL_FUNCTIONS
@@ -448,14 +449,14 @@ class GaussianRegLoss(BaseLoss):
 
         for i in range(heatmaps.shape[0]):
             for j in range(heatmaps.shape[1]):
-                im = processing.norm_im(heatmaps[i, j]) * 255
+                im = image_utils.norm_im(heatmaps[i, j]) * 255
                 im = im.astype("uint8")
                 of = os.path.join(savedir, f"{i}_{j}.tif")
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1]))
 
         for i in range(heatmap_target.shape[0]):
             for j in range(heatmap_target.shape[1]):
-                im = processing.norm_im(heatmap_target[i, j]) * 255
+                im = image_utils.norm_im(heatmap_target[i, j]) * 255
                 im = im.astype("uint8")
                 of = os.path.join(savedir, f"{i}_{j}_target.tif")
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1]))
@@ -595,7 +596,7 @@ class SilhouetteLoss(BaseLoss):
         vh, heatmaps: [bs, n_joints, H, W, D]
         Heatmap is not softmaxed.
         """
-        prob = ops.spatial_softmax(heatmaps)
+        prob = spatial_softmax(heatmaps)
 
         sil = torch.sum(vh * prob, axis=self.reduction_axes)
         sil = torch.mean(-(sil + 1e-12).log())
@@ -614,7 +615,7 @@ class SilhouetteLoss2D(BaseLoss):
         vh: [bs, n_cams, H, W, D]
         heatmaps: [bs, n_joints, H, W, D]. Heatmap is not softmaxed.
         """
-        prob = ops.spatial_softmax(heatmaps).unsqueeze(1)  # [bs, 1, n_joints, H, W, D]
+        prob = spatial_softmax(heatmaps).unsqueeze(1)  # [bs, 1, n_joints, H, W, D]
         sils = sils.unsqueeze(2)  # [bs, n_cams, 1, H, W, D]
         sils = torch.sum(sils * prob, axis=[3, 4, 5])  # [bs, n_cams, n_joints, H, W, D]
         sils = torch.mean(-(sils + 1e-12).log())
@@ -634,7 +635,7 @@ class VarianceLoss(BaseLoss):
         grid: [bs, h*w*d, 3]
         kpts_pred: [bs, 3, n_joints]
         """
-        prob = ops.spatial_softmax(heatmaps)
+        prob = spatial_softmax(heatmaps)
 
         gridsize = prob.shape[2:]
         grids = grids.reshape(grids.shape[0], 1, *gridsize, 3)  # [bs, 1, h, w, d, 3]

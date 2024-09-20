@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import time
-import dannce.engine.data.processing as processing
+import dannce.engine.utils.image as image_utils
 from dannce.engine.data import ops
 from dannce.config import print_and_set
 from typing import List, Dict, Text, Tuple, Union
@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 import matplotlib
 from dannce.engine.data.processing import savedata_tomat, savedata_expval
+from dannce.engine.utils.debug import debug_com
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -69,66 +70,6 @@ def predict_batch(model, generator, n_frame: int, params: Dict, device) -> np.nd
     return pred
 
 
-def debug_com(
-    params: Dict,
-    pred: np.ndarray,
-    pred_batch: np.ndarray,
-    generator,
-    ind: np.ndarray,
-    n_frame: int,
-    n_batch: int,
-    n_cam: int,
-    n_instance=None,
-):
-    """Print useful figures for COM debugging.
-
-    Args:
-        params (Dict): Parameters dictionary.
-        pred (np.ndarray): Reformatted batch predictions.
-        pred_batch (np.ndarray): Batch prediction.
-        generator (keras.utils.Sequence): DataGenerator
-        ind (np.ndarray): Prediction in image indices
-        n_frame (int): Frame number
-        n_batch (int): Batch number
-        n_cam (int): Camera number
-    """
-    com_predict_dir = params["com_predict_dir"]
-    cmapdir = os.path.join(com_predict_dir, "cmap")
-    overlaydir = os.path.join(com_predict_dir, "overlay")
-    if not os.path.exists(cmapdir):
-        os.makedirs(cmapdir)
-    if not os.path.exists(overlaydir):
-        os.makedirs(overlaydir)
-    print("Writing " + params["com_debug"] + " confidence maps to " + cmapdir)
-    print("Writing " + params["com_debug"] + "COM-image overlays to " + overlaydir)
-
-    batch_size = pred_batch.shape[0]
-    # Write preds
-    plt.figure(0)
-    plt.cla()
-    pred_to_plot = np.squeeze(pred[n_cam])
-    fname = os.path.join(
-        cmapdir, params["com_debug"] + str(n_frame * batch_size + n_batch) + ".png",
-    )
-    if n_instance is not None:
-        pred_to_plot = pred_to_plot[..., n_instance]
-        fname = fname.replace(".png", "_0{}.png".format(n_instance))
-    plt.imshow(pred_to_plot)
-    plt.savefig(fname)
-
-    plt.figure(1)
-    plt.cla()
-    im = generator.__getitem__(n_frame * batch_size + n_batch)
-    plt.imshow(processing.norm_im(im[0][n_cam]))
-    plt.plot(
-        (ind[0] - params["crop_width"][0]) / params["downfac"],
-        (ind[1] - params["crop_height"][0]) / params["downfac"],
-        "or",
-    )
-    fname = fname.replace(cmapdir, overlaydir)
-    plt.savefig(fname)
-
-
 def extract_multi_instance_single_channel(
     pred: np.ndarray,
     pred_batch: np.ndarray,
@@ -161,7 +102,7 @@ def extract_multi_instance_single_channel(
     pred_max = np.max(np.squeeze(pred[n_cam]))
     ind = (
         np.array(
-            processing.get_peak_inds_multi_instance(
+            image_utils.get_peak_inds_multi_instance(
                 np.squeeze(pred[n_cam]), params["n_instances"], window_size=3,
             )
         )
@@ -243,7 +184,7 @@ def extract_multi_instance_multi_channel(
     for instance in range(params["n_instances"]):
         pred_max = np.max(np.squeeze(pred[n_cam, :, :, instance]))
         ind = (
-            np.array(processing.get_peak_inds(np.squeeze(pred[n_cam, :, :, instance])))
+            np.array(image_utils.get_peak_inds(np.squeeze(pred[n_cam, :, :, instance])))
             * params["downfac"]
         )
         ind[0] += params["crop_height"][0]
@@ -318,7 +259,7 @@ def extract_single_instance(
     """
     pred_max = np.max(np.squeeze(pred[n_cam]))
     ind = (
-        np.array(processing.get_peak_inds(np.squeeze(pred[n_cam]))) * params["downfac"]
+        np.array(image_utils.get_peak_inds(np.squeeze(pred[n_cam]))) * params["downfac"]
     )
     ind[0] += params["crop_height"][0]
     ind[1] += params["crop_width"][0]
@@ -791,7 +732,7 @@ def infer_dannce(
                 preds = pred[j].permute(1, 2, 3, 0).detach()
                 pred_max = preds.max(0).values.max(0).values.max(0).values
                 pred_total = preds.sum((0, 1, 2))
-                (xcoord, ycoord, zcoord,) = processing.plot_markers_3d_torch(preds)
+                (xcoord, ycoord, zcoord,) = image_utils.plot_markers_3d_torch(preds)
                 coord = torch.stack([xcoord, ycoord, zcoord])
                 pred_log = pred_max.log() - pred_total.log()
                 sampleID = partition["valid_sampleIDs"][i * bs + j]
@@ -809,7 +750,7 @@ def infer_dannce(
                 if not os.path.exists(savedir):
                     os.makedirs(savedir)
                 for i in range(preds.shape[-1]):
-                    im = processing.norm_im(preds[..., i].cpu().numpy()) * 255
+                    im = image_utils.norm_im(preds[..., i].cpu().numpy()) * 255
                     im = im.astype("uint8")
                     of = os.path.join(savedir, f"{sampleID}_{i}.tif")
                     imageio.mimwrite(of, np.transpose(im, [2, 0, 1]))

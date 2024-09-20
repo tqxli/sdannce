@@ -2,13 +2,15 @@ import os
 import random
 import cv2
 import numpy as np
-from dannce.engine.data import processing
 import warnings
 import scipy.io as sio
 
 import torch
 import torchvision.transforms.functional as TF
 import torchvision.transforms as transforms
+
+import dannce.engine.utils.image as image_utils
+
 
 MISSING_KEYPOINTS_MSG = (
     "If mirror augmentation is used, the right_keypoints indices and left_keypoints "
@@ -659,7 +661,7 @@ class PoseDatasetNPY(PoseDatasetFromMem):
 
         for i in range(y_3d.shape[0]):
             for j in range(y_3d.shape[-1]):
-                im = processing.norm_im(y_3d[i, :, :, :, j]) * 255
+                im = image_utils.norm_im(y_3d[i, :, :, :, j]) * 255
                 im = im.astype("uint8")
                 of = os.path.join(savedir, f"{listIDs[i]}_{j}.tif")
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1]))
@@ -675,7 +677,7 @@ class PoseDatasetNPY(PoseDatasetFromMem):
                 im = X[
                     i, :, :, :, j * 3 : (j + 1) * 3,
                 ]
-                im = processing.norm_im(im) * 255
+                im = image_utils.norm_im(im) * 255
                 im = im.astype("uint8")
                 of = os.path.join(savedir, listIDs[i] + "_cam" + str(j) + ".tif",)
                 imageio.mimwrite(of, np.transpose(im, [2, 0, 1, 3]))
@@ -805,7 +807,7 @@ class PoseDatasetNPY(PoseDatasetFromMem):
             else:
                 y_3d = np.tile(y_3d, [ncam, 1, 1, 1, 1])
 
-        X = processing.preprocess_3d(X)
+        X = image_utils.preprocess_3d(X)
 
         return self._convert_numpy_to_tensor(X, X_grid, y_3d, aux)
 
@@ -986,7 +988,7 @@ class MultiViewImageDataset(torch.utils.data.Dataset):
         return len(self.cameras)
 
     def __getitem__(self, idx):
-        X = processing.preprocess_3d(self.images[idx])
+        X = image_utils.preprocess_3d(self.images[idx])
         X_grid = self.grids[idx]
         y_3d = self.labels_3d[idx]
         camera = self.cameras[idx]
@@ -1427,7 +1429,7 @@ class RAT7MImageDataset(torch.utils.data.Dataset):
         self.cameras = cameras
 
     def _crop_im(self, im, com, labels):
-        im, cropdim = processing.cropcom(im, com, size=self.dim_crop[0])
+        im, cropdim = image_utils.cropcom(im, com, size=self.dim_crop[0])
         labels[0, :] -= cropdim[2]
         labels[1, :] -= cropdim[0]
 
@@ -1466,7 +1468,7 @@ class RAT7MImageDataset(torch.utils.data.Dataset):
         com = self.coms[idx]
         im, labels = self._crop_im(im, com, labels)
 
-        im = processing.downsample_batch(im[np.newaxis, ...], fac=self.ds_fac)
+        im = image_utils.downsample_batch(im[np.newaxis, ...], fac=self.ds_fac)
         im = np.squeeze(im)
         labels /= self.ds_fac
 
@@ -1514,7 +1516,7 @@ class RAT7MImageDataset(torch.utils.data.Dataset):
                 if rot != 0:
                     im = TF.rotate(im, rot)
                     targets = TF.rotate(targets, rot)
-        # im = processing._preprocess_numpy_input(im)
+        # im = image_utils._preprocess_numpy_input(im)
         # im, targets = torch.from_numpy(im).permute(2, 0, 1).float(),
 
         # apply transformations
@@ -1579,7 +1581,7 @@ class RAT7MNPYDataset(torch.utils.data.Dataset):
         X = np.load(self.vol_paths[idx], allow_pickle=True).astype("float32")
         X_grid = np.load(self.grid_paths[idx], allow_pickle=True)
 
-        X = processing.preprocess_3d(X)
+        X = image_utils.preprocess_3d(X)
         X = X[np.newaxis, :, :, :, :]
         X_grid = X_grid[np.newaxis, :, :]
 

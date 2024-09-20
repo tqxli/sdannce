@@ -1,4 +1,4 @@
-"""Data loading and saving operations."""
+"""Label3D data loading and saving operations."""
 import numpy as np
 import scipy.io as sio
 from typing import List, Dict, Text, Union
