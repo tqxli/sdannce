@@ -1,154 +1,234 @@
-"""Dannce module and default parameters"""
-# Default parameters, which can be superseded by CL arguments or
-# config files
-_param_defaults_shared = {
-    "random_seed": None,
-    "immode": "vid",
-    "verbose": 1,
-    "gpu_id": "0",
-    "loss": "L1Loss",
-    "start_batch": 0,
-    "exp": None,
-    "viddir": "videos",
-    "io_config": None,
-    "crop_height": None,
-    "crop_width": None,
-    "n_channels_in": None,
-    "camnames": None,
-    "extension": None,
-    "n_views": 6,
-    "batch_size": None,
-    "epochs": None,
-    "vid_dir_flag": None,
-    "num_validation_per_exp": None,
-    "num_train_per_exp": None,
-    "chunks": None,
-    "lockfirst": None,
-    "load_valid": None,
-    "mono": False,
-    "augment_hue": False,
-    "augment_brightness": False,
-    "augment_hue_val": 0.05,
-    "augment_bright_val": 0.05,
-    "augment_rotation_val": 5,
-    "mirror_augmentation": False,
-    "right_keypoints": None,
-    "left_keypoints": None,
-    "drop_landmark": None,
-    "raw_im_h": None,
-    "raw_im_w": None,
-    "mirror": False,
-    "max_num_samples": None,
-    "n_instances": 1,
-    "start_sample": 0,
-    "write_npy": None,
-    "write_visual_hull": None,
-    "use_npy": False,
-    "data_split_seed": None,
-    "valid_exp": None,
-    "norm_method": "layer",
-    "slurm_config": None,
-    "save_period": 100,
-    "predict_labeled_only": False,
-    "training_fraction": None,
-    "graph_cfg": None,
-    "label3d_index": 0,
-}
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Any, Literal
+
+
+@dataclass
+class ConfigBase:
+    # Config file paths
+    base_config: str | None = None
+    io_config: str | None = None
+    slurm_config: str | None = None
+
+    # Experiment
+    sbatch: bool = False
+    random_seed: int | None = None
+    gpu_id: str = "0"
+    multi_gpu_train: bool = False
+
+    # Videos
+    viddir: str = "videos"
+    viddir_flag: bool = False
+    immode: Literal["vid", "img"] = "vid"
+    chunks: Any | None = None
+    lockfirst: bool = False
+    camnames: list | None = None
+    extension: str | None = ".mp4"
+    n_views: int | None = 6
+    mono: bool = False
+    mirror: bool = False
+
+    # Images
+    n_channels_in: int | None = 3
+    raw_im_h: int | None = None
+    raw_im_w: int | None = None
+    crop_height: int | None = None
+    crop_width: int | None = None
+    downfac: int | None = None
+
+    # Dataset
+    n_instances: int = 1
+    use_npy: bool = True
+
+    # Model
+    net: str = ""
+    net_type: str = "compressed_dannce"
+    batch_size: int = 4
+
+    # Debug
+    write_npy: bool = False
+    write_visual_hull: bool | None = None
+    debug_volume_tifdir: str | None = None
+    debug_train_volume_tifdir: str | None = None
+
+
+@dataclass
+class ConfigBaseTrain:
+    # Experiments included for training
+    exp: Any | None = None
+
+    # Dataset, data split
+    data_split_seed: int = 42
+    training_fraction: float | None = None
+    load_valid: str | None = None
+    valid_exp: list | None = None
+    num_validation_per_exp: int | None = 4
+    num_train_per_exp: int | None = None
+
+    drop_landmark: list | None = None
+
+    augment_hue: bool = False
+    augment_brightness: bool = False
+    augment_hue_val: float = 0.05
+    augment_bright_val: float = 0.05
+    augment_rotation_val: int = 5
+
+    # Training
+    train_mode: Literal["new", "finetune", "continued"] = "new"
+    epochs: int = 50
+    save_period: int = 10
+    lr: float = 1e-4
+    lr_scheduler: str | None = None
+    loss: str = "L1Loss"
+    metric: str | None = None
+    norm_method: Literal["layer", "instance", "batch"] = "layer"
+    graph_cfg: dict | None = None
+
+
+@dataclass
+class ConfigBasePredict:
+    # Prediction range
+    max_num_samples: int | str = "max"
+    start_sample: int = 0
+    start_batch: int = 0
+
+    predict_labeled_only: bool = False
+    label3d_index: int = 0
+
+
+@dataclass
+class DANNCEDataset:
+    # Basic information
+    dataset: str = "label3d"
+    dataset_args: Any | None = None
+    skeleton: str = "rat23"
+    is_social_dataset: bool = False
+
+    # Preprocessing for center of mass (COM)
+    comthresh: int = 0
+    weighted: bool = False
+    com_method: Literal["median", "mean"] = "median"
+    com_fromlabels: bool = False
+    cthresh: int | None = None
+    medfilt_window: int | None = None
+
+    # Preprocessing for 3D volumes
+    depth: bool = False
+    channel_combo: list | None = None
+    cam3_train: bool = False
+
+    use_silhouette: bool = False
+    use_silhouette_in_volume: bool = False
+    downscale_occluded_view: bool = False
+
+    # Construction of 3D volumes from multi-view images
+    vmin: int | float | None = -120
+    vmax: int | float | None = 120
+    nvox: int | None = 80
+    vol_size: int | float | None = None
+    expval: bool = True
+    sigma: int = 10
+    interp: Literal["nearest", "bilinear"] = "nearest"
+
+    # Dataset augmentation
+    use_temporal: bool = False
+    support_exp: list | None = None
+    n_support_chunks: int | None = None
+    unlabeled_temp: int = 0
+
+
+@dataclass
+class ConfigDANNCEBase(ConfigBase, DANNCEDataset):
+    n_channels_out: int = 20
+    new_n_channels_out: int | None = None
+
+
+@dataclass
+class ConfigDANNCETrain(ConfigDANNCEBase, ConfigBaseTrain):
+    # Basic information
+    dannce_train_dir: str = "DANNCE/train"
+    dannce_finetune_weights: str | None = None
+
+    # Volume augmentation
+    augment_continuous_rotation: bool = False
+    mirror_augmentation: bool = False
+    right_keypoints: list | None = None
+    left_keypoints: list | None = None
+    rand_view_replace: bool = False
+    allow_valid_replace: bool = False
+    n_rand_views: int = 0
+    rotate: bool = True
+    heatmap_reg: bool = False
+    heatmap_reg_coeff: float = 0.01
+
+    replace_view: int | None = None
+
+    COM_augmentation: dict | None = None
+    unlabeled_sampling: Any = "equal"
+    form_batch: bool = False
+    form_bs: int | None = None
+
+    # TO BE DEPRECATED
+    unlabeled_fraction: float | None = None
+
+
+@dataclass
+class ConfigDANNCEPredict(ConfigDANNCEBase, ConfigBasePredict):
+    com_file: str | None = None
+    dannce_predict_dir: str = "DANNCE/predict"
+    dannce_predict_model: str | None = None
+
+
+@dataclass
+class ConfigCOMBase(ConfigBase):
+    # Experiments included for training
+    com_exp: Any | None = None
+
+    # Target creation
+    dsmode: Literal["dsm", "nn"] = "nn"
+    sigma: int = 30
+
+    debug: bool = False
+    com_debug: bool | None = None
+
+
+@dataclass
+class COMAugmentation:
+    augment_rotation: bool = False
+    augment_shear: bool = False
+    augment_zoom: bool = False
+    augment_shear_val: int = 5
+    augment_zoom_val: float = 0.05
+    augment_shift_val: float = 0.05
+
+
+@dataclass
+class ConfigCOMTrain(ConfigBaseTrain, ConfigCOMBase, COMAugmentation):
+    # Basic information
+    com_train_dir: str = "COM/train"
+    com_finetune_weights: str | None = None
+
+    # Training
+    lr: float = 5e-5
+    lr_scheduler: str | None = None
+    net: str = "unet2d_fullbn"
+    n_channels_out: int = 1
+
+
+@dataclass
+class ConfigCOMPredict(ConfigBasePredict, ConfigCOMBase):
+    com_predict_dir: str = "COM/predict"
+    com_predict_weights: str | None = None
+
+
+_param_defaults_shared = ConfigBase().__dict__
+
 _param_defaults_dannce = {
-    "dataset": "label3d",
-    "dataset_args": None,
-    "metric": ["euclidean_distance_3D"],
-    "sigma": 10,
-    "lr": 1e-3,
-    "n_layers_locked": 2,
-    "interp": "nearest",
-    "depth": False,
-    "rotate": True,
-    "comthresh": 0,
-    "weighted": False,
-    "com_method": "median",
-    "channel_combo": None,
-    "n_channels_out": 20,
-    "cthresh": None,
-    "medfilt_window": None,
-    "com_fromlabels": False,
-    "augment_continuous_rotation": False,
-    "dannce_train_dir": None,
-    "dannce_predict_dir": None,
-    "dannce_predict_model": None,
-    "dannce_finetune_weights": None,
-    "com_file": None,
-    "vmin": None,
-    "vmax": None,
-    "nvox": None,
-    "expval": None,
-    "com_thresh": None,
-    "start_sample": None,
-    "max_num_samples": None,
-    "new_n_channels_out": None,
-    "cam3_train": None,
-    "debug_volume_tifdir": None,
-    "debug_train_volume_tifdir": None,
-    "vol_size": None,
-    "train_mode": None,
-    "downfac": None,
-    "net_type": None,
-    "net": None,
-    "lr_scheduler": None,
-    "from_weights": None,
-    "dannce_predict_vol_tifdir": None,
-    "n_rand_views": 0,
-    "rand_view_replace": True,
-    "multi_gpu_train": False,
-    "heatmap_reg": False,
-    "heatmap_reg_coeff": 0.01,
-    "save_pred_targets": False,
-    ## changes made to temporal
-    "support_exp": None,
-    "n_support_chunks": None,
-    "unlabeled_temp": 0,
-    "use_temporal": False,
-    "use_silhouette": False,
-    "use_silhouette_in_volume": False,
-    ## social
-    "is_social_dataset": False,
-    "downscale_occluded_view": False,
-    "social_joint_training": False,
-    "social_big_volume": False,
-    ## test time training
-    "inference_ttt": None,
-    ## augmentation
-    "form_batch": False,
-    "form_bs": None,
-    ## unsupervised training
-    "unlabeled_fraction": None,
-    ## error fixing
-    "allow_valid_replace": False,
-    "replace_view": None,
-    "COM_augmentation": None,
-    "unlabeled_sampling": None,
-    "skeleton": "rat23",
+    **ConfigDANNCEPredict().__dict__,
+    **ConfigDANNCETrain().__dict__,
 }
+
 _param_defaults_com = {
-    "dsmode": "nn",
-    "sigma": 30,
-    "debug": False,
-    "lr": 5e-5,
-    "lr_scheduler": None,
-    "net": "unet2d_fullbn",
-    "n_channels_out": 1,
-    "com_train_dir": None,
-    "com_predict_dir": None,
-    "com_finetune_weights": None,
-    "com_predict_weights": None,
-    "com_debug": None,
-    "com_exp": None,
-    "n_channels_out": 1,
-    "augment_rotation": False,
-    "augment_shear": False,
-    "augment_zoom": False,
-    "augment_shift": False,
-    "augment_shear_val": 5,
-    "augment_zoom_val": 0.05,
-    "augment_shift_val": 0.05,
+    **ConfigCOMPredict().__dict__,
+    **ConfigCOMTrain().__dict__,
 }
