@@ -349,67 +349,16 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
             c3dfile = sio.loadmat(exp["com_file"])
             com3d_dict_ = check_COM_load(c3dfile, "com", params["medfilt_window"])
 
-            # unlabeled frames sampling
-            # currently assume that all training com files are named `instance%ncom3d.mat`
-            # and there are exactly two instances
+            # add unlabeled samples to the training set
             if (
                 training
                 and (params["unlabeled_sampling"] is not None)
                 and ("instance" in exp["com_file"].split("/")[-1])
+                and params.get("n_instances", 1) == 2
             ):
-                unlabeled_sampling = params["unlabeled_sampling"]
-                sampling_num = unlabeled_sampling
-                if not isinstance(unlabeled_sampling, int):
-                    assert unlabeled_sampling in ["equal"]
-                    sampling_num = len(samples_)
-
-                # read com
-                if "instance0" in exp["com_file"]:
-                    pair_com_file = exp["com_file"].replace("instance0", "instance1")
-                else:
-                    pair_com_file = exp["com_file"].replace("instance1", "instance0")
-
-                selected_samples = []
-                if params.get("valid_exp") is not None and e in params["valid_exp"]:
-                    selected_samples = []
-                elif os.path.exists(pair_com_file):
-                    comfile = sio.loadmat(pair_com_file)
-                    c3d = comfile["com"]
-                    sampleIDs = np.squeeze(comfile["sampleID"])
-                    com_dist = np.sum((c3d - c3dfile["com"]) ** 2, axis=1)
-                    com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
-                    # only sample from close interaction? hard coded distance threshold for now
-                    indices_below_thres = np.where(com_dist < 120)[0]
-                    indices_existing = [
-                        i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_
-                    ]
-                    indices_below_thres = list(
-                        set(indices_below_thres) - set(indices_existing)
-                    )
-                    sampling_num = min(sampling_num, len(indices_below_thres))
-                    selected_indices = np.random.choice(
-                        indices_below_thres, size=sampling_num, replace=False
-                    )
-                    selected_samples = sampleIDs[selected_indices]
-
-                logger.info(
-                    "Unlabeled sampling: EXP {} added {} samples".format(
-                        e, len(selected_samples)
-                    )
+                samples_, datadict_, datadict_3d_ = add_unlabeled_to_train(
+                    params, exp, e, samples_, datadict_, datadict_3d_, c3dfile
                 )
-                samples_ = list(samples_) + list(selected_samples)
-                samples_ = sorted(samples_)
-                samples_ = np.array(samples_)
-
-                nKeypoints = params["n_channels_out"]
-                for i in range(len(selected_samples)):
-                    samp = selected_samples[i]
-                    data, frames = {}, {}
-                    for j in range(len(params["camnames"])):
-                        frames[params["camnames"][j]] = samp
-                        data[params["camnames"][j]] = np.nan * np.ones((2, nKeypoints))
-                    datadict_[samp] = {"data": data, "frames": frames}
-                    datadict_3d_[samp] = np.nan * np.ones((3, nKeypoints))
 
         elif ".pickle" in exp["com_file"]:
             datadict_, com3d_dict_ = serve_data_DANNCE.prepare_COM(
@@ -827,7 +776,89 @@ def remove_samples_npy(npydir: Dict, samples: List, params: Dict):
     return np.array(samps)
 
 
-def reselect_training(partition: Dict, datadict_3d: Dict, frac: Union[float, int]):
+def add_unlabeled_to_train(
+    params: Dict,
+    exp: Dict,
+    e: int,
+    samples_: List,
+    datadict_: Dict,
+    datadict_3d_: Dict,
+    c3dfile: Dict,
+    distance_threshold: int = 120,
+):
+    """Automatically add unlabeled samples to the training set."""
+
+    # Determine the number of unlabeled samples to add
+    unlabeled_sampling = params["unlabeled_sampling"]
+    sampling_num = unlabeled_sampling
+    if isinstance(unlabeled_sampling, str):
+        assert unlabeled_sampling == "equal"
+        sampling_num = len(samples_)
+    elif isinstance(unlabeled_sampling, float):
+        assert (unlabeled_sampling <= 1) & (unlabeled_sampling > 0)
+        sampling_num = int(unlabeled_sampling / (1 - unlabeled_sampling) * len(samples_))
+    elif isinstance(unlabeled_sampling, int):
+        sampling_num = unlabeled_sampling
+    else:
+        raise Exception("Invalid parameter for unlabeled_sampling")
+
+    if params.get("valid_exp") is not None and e in params["valid_exp"]:
+        return samples_, datadict_, datadict_3d_
+
+    # read com file (`instancexcom3d.mat`) for the other animal
+    # to determine the inter-animal distance in dyads
+    # and sample from the close interactions
+    if "instance0" in exp["com_file"]:
+        pair_com_file = exp["com_file"].replace("instance0", "instance1")
+    else:
+        pair_com_file = exp["com_file"].replace("instance1", "instance0")
+
+    selected_samples = []
+    if os.path.exists(pair_com_file):
+        comfile = sio.loadmat(pair_com_file)
+        c3d = comfile["com"]
+        sampleIDs = np.squeeze(comfile["sampleID"])
+        com_dist = np.sum((c3d - c3dfile["com"]) ** 2, axis=1)
+        com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
+
+        # sample from frames with close interactions
+        indices_below_thres = np.where(com_dist < distance_threshold)[0]
+        indices_existing = [
+            i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_
+        ]
+        indices_below_thres = list(
+            set(indices_below_thres) - set(indices_existing)
+        )
+        sampling_num = min(sampling_num, len(indices_below_thres))
+        selected_indices = np.random.choice(
+            indices_below_thres, size=sampling_num, replace=False
+        )
+        selected_samples = sampleIDs[selected_indices]
+
+    logger.info(
+        "Unlabeled sampling: EXP {} added {} unlabeled (labeled = {})".format(
+            e, len(selected_samples), len(samples_)
+        )
+    )
+    samples_ = list(samples_) + list(selected_samples)
+    samples_ = sorted(samples_)
+    samples_ = np.array(samples_)
+
+    # add the samples to the datadict, with all keypoints set to NaN
+    nKeypoints = params["n_channels_out"]
+    for i in range(len(selected_samples)):
+        samp = selected_samples[i]
+        data, frames = {}, {}
+        for j in range(len(params["camnames"])):
+            frames[params["camnames"][j]] = samp
+            data[params["camnames"][j]] = np.nan * np.ones((2, nKeypoints))
+        datadict_[samp] = {"data": data, "frames": frames}
+        datadict_3d_[samp] = np.nan * np.ones((3, nKeypoints))
+    
+    return samples_, datadict_, datadict_3d_
+
+
+def reselect_unlabeled_in_train(partition: Dict, datadict_3d: Dict, frac: Union[float, int]):
     """
     Resample the training set according to the specified fraction,
     or by a certain number of samples.
@@ -844,11 +875,14 @@ def reselect_training(partition: Dict, datadict_3d: Dict, frac: Union[float, int
 
     # the fraction number can either be a float <= 1 or an explicit integer
     if isinstance(frac, float):
+        assert (frac <= 1) & (frac > 0)
         n_selected = np.minimum(
             int(frac * n_labeled), n_unlabeled
-        )  # int(n_unlabeled*frac)
+        )
+    elif isinstance(frac, int):
+        n_selected = frac
     else:
-        n_selected = int(frac)
+        raise Exception("When resampling unlabeled samples in the training data, specify a float fraction between 0 and 1 or an integer number")
 
     unlabeled_samples = list(
         np.random.choice(unlabeled_samples, n_selected, replace=False)
@@ -857,7 +891,7 @@ def reselect_training(partition: Dict, datadict_3d: Dict, frac: Union[float, int
     partition["train_sampleIDs"] = sorted(unlabeled_samples + labeled_samples)
 
     logger.info(
-        "***LABELED: UNLABELED = {}:{}".format(
+        "After sampling --> LABELED: UNLABELED = {}:{}".format(
             len(labeled_samples), len(unlabeled_samples)
         )
     )

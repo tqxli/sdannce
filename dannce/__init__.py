@@ -163,13 +163,12 @@ class ConfigDANNCETrain(ConfigDANNCEBase, ConfigBaseTrain):
 
     replace_view: int | None = None
 
-    COM_augmentation: dict | None = None
-    unlabeled_sampling: Any = "equal"
-    form_batch: bool = False
-    form_bs: int | None = None
+    # automatic sampling of unlabeled data for semi-supervised training
+    unlabeled_sampling: str | int | float = "equal"
 
-    # TO BE DEPRECATED
-    unlabeled_fraction: float | None = None
+    # for dataset already with unlabeled samples (marked as NaN),
+    # adjust post hoc the fraction of unlabeled samples, relative to total samples
+    unlabeled_fraction: int | float | None = None
 
 
 @dataclass

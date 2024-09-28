@@ -103,20 +103,19 @@ def make_dataset(
     if params["is_social_dataset"]:
         partition, pairs = processing.resplit_social(partition)
 
-    # check all nan inputs
-    if params["unlabeled_sampling"] is not None:
-        samples = partition["train_sampleIDs"]
-        unlabeled_samples = []
-        for samp in samples:
-            if np.isnan(datadict_3d[samp]).all():
-                unlabeled_samples.append(samp)
-        labeled_samples = list(set(samples) - set(unlabeled_samples))
-        n_unlabeled = len(unlabeled_samples)
-        n_labeled = len(labeled_samples)
-        logger.info("***LABELED: UNLABELED = {}:{}".format(n_labeled, n_unlabeled))
+    # Check if there are any unlabeled samples
+    samples = partition["train_sampleIDs"]
+    unlabeled_samples = []
+    for samp in samples:
+        if np.isnan(datadict_3d[samp]).all():
+            unlabeled_samples.append(samp)
+    labeled_samples = list(set(samples) - set(unlabeled_samples))
+    n_unlabeled = len(unlabeled_samples)
+    n_labeled = len(labeled_samples)
+    logger.info("***Train LABELED: UNLABELED = {}:{}***".format(n_labeled, n_unlabeled))
 
     if params["unlabeled_fraction"] != None:
-        partition = processing.reselect_training(
+        partition = processing.reselect_unlabeled_in_train(
             partition, datadict_3d, params["unlabeled_fraction"],
         )
 
@@ -483,10 +482,16 @@ def make_rat7m(
 
 
 def sample_COM_augmentation(
-    comaug_params, datadict, datadict_3d, com3d_dict, partition,
+    datadict: Dict,
+    datadict_3d: Dict,
+    com3d_dict: Dict,
+    partition: Dict,
+    perturb_radius: int = 20,
+    aug_iters: int = 1,
 ):
-    perturb_radius = comaug_params.get("perturb_radius", 20)
-    aug_iters = comaug_params.get("aug_iters", 2)
+    """Create augmented volumes by perturbing positions of the center of mass (COM)/anchors. 
+    This is only performed over labeled samples in the training set.
+    """
 
     train_samples = list(partition["train_sampleIDs"])
     valid_samples = list(partition["valid_sampleIDs"])
@@ -515,7 +520,7 @@ def sample_COM_augmentation(
             datadict_3d[sample_new] = datadict_3d[sample]
             datadict[sample_new] = datadict[sample]
 
-    print("Added {} COM augmented samples.".format(len(train_samples_new)))
+    logger.info("Added {} COM augmented samples.".format(len(train_samples_new)))
     partition["train_sampleIDs"] = np.array(sorted(train_samples + train_samples_new))
     samples = np.array(sorted(train_samples + train_samples_new + valid_samples))
     return samples, datadict, datadict_3d, com3d_dict, partition
@@ -551,19 +556,20 @@ def _make_data_npy(
         missing_samples = np.array(sorted(missing_samples))
     else:
         # Populate with COM augmented samples if needed
-        if params["COM_augmentation"] is not None:
+        if params["COM_augmentation"]:
             (
-                samples,
+            samples,
                 datadict,
                 datadict_3d,
                 com3d_dict,
                 partition,
             ) = sample_COM_augmentation(
-                params["COM_augmentation"],
                 datadict,
                 datadict_3d,
                 com3d_dict,
                 partition,
+                perturb_radius=params["COM_aug_radius"],
+                aug_iters=params["COM_aug_iters"],
             )
 
         # Examine through experiments for missing npy data files
@@ -730,7 +736,7 @@ def _make_data_mem(
     )
 
     # Populate with COM augmented samples if needed
-    if params["COM_augmentation"] is not None:
+    if params["COM_augmentation"]:
         (
             samples,
             datadict,
@@ -738,7 +744,9 @@ def _make_data_mem(
             com3d_dict,
             partition,
         ) = sample_COM_augmentation(
-            params["COM_augmentation"], datadict, datadict_3d, com3d_dict, partition,
+            datadict, datadict_3d, com3d_dict, partition,
+            perturb_radius=params["COM_aug_radius"],
+            aug_iters=params["COM_aug_iters"],
         )
 
     # Used to initialize arrays for mono, and also in *frommem (the final generator)
