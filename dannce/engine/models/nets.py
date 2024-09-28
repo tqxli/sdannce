@@ -436,9 +436,9 @@ def load_pretrained_weights(
 
     # load weights
     if is_sdannce_weights == is_sdannce_model:
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
     elif is_sdannce_model and not is_sdannce_weights:
-        model.pose_generator.load_state_dict(state_dict, strict=True)
+        model.pose_generator.load_state_dict(state_dict, strict=False)
     elif not is_sdannce_model and is_sdannce_weights:
         logger.warning(
             "Loading weights from SDANNCE to DANNCE! Check if this is intended."
@@ -446,7 +446,7 @@ def load_pretrained_weights(
         state_dict = {
             k.replace("pose_generator.", ""): v for k, v in state_dict.items()
         }
-        model.load_state_dict(state_dict, strict=True)
+        model.load_state_dict(state_dict, strict=False)
 
     return model
 
