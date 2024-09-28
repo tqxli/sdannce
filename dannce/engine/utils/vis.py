@@ -41,6 +41,8 @@ def visualize_pose_predictions(
     animal: str = "rat23",
     n_animals: int = 2,
     vid_name: str = "0.mp4",
+    zoom_in: bool = False,
+    zoom_window_size: int = 400,
 ):
     LABEL3D_FILE = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
     CAMERAS = ["Camera{}".format(int(i)) for i in cameras.split(",")]
@@ -176,12 +178,17 @@ def visualize_pose_predictions(
                             markersize=2,
                         )
                         del xs, ys
-
+                
+                if zoom_in:
+                    center = com.mean(axis=0)[0]
+                    axes[i].set_xlim(xmin=center[0] - zoom_window_size, xmax=center[0] + zoom_window_size)
+                    axes[i].set_ylim(ymax=center[1] - zoom_window_size, ymin=center[1] + zoom_window_size)
+                
                 axes[i].set_title(CAMERAS[i])
                 axes[i].axis("off")
 
             fig.suptitle("Frame: {}".format(curr_frame))
-            fig.tight_layout()
+            # fig.tight_layout()
 
             writer.grab_frame()
             for i in range(len(CAMERAS)):
@@ -271,6 +278,8 @@ if __name__ == "__main__":
     parser.add_argument("--fps", default=50, type=int)
     parser.add_argument("--dpi", default=300, type=int)
     parser.add_argument("--cameras", type=str, default="1", help="camera(s) to plot")
+    parser.add_argument("--zoom_in", action="store_true")
+    parser.add_argument("--zoom_window_size", type=int, default=400)
 
     args = parser.parse_args()
     visualize_pose_predictions(
@@ -282,4 +291,6 @@ if __name__ == "__main__":
         cameras=args.cameras,
         animal=args.skeleton,
         n_animals=args.n_animals,
+        zoom_in=args.zoom_in,
+        zoom_window_size=args.zoom_window_size,
     )
