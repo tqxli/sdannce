@@ -315,6 +315,13 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
     Raises:
         Exception: Exception when invalid com file format.
     """
+    # Load labels and camera information
+    if not training:
+        stage = "predict"
+    else:
+        is_validation_exp = params["valid_exp"] is not None and e in params["valid_exp"]
+        stage = "train" if not is_validation_exp else "valid"
+
     (
         samples_,
         datadict_,
@@ -323,16 +330,10 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
         temporal_chunks,
     ) = serve_data_DANNCE.prepare_data(
         exp,
-        prediction=not training,
+        stage=stage,
         predict_labeled_only=params["predict_labeled_only"],
-        valid=(e in params["valid_exp"]) if params["valid_exp"] is not None else False,
-        support=(e in params["support_exp"])
-        if params["support_exp"] is not None
-        else False,
-        downsample=params["downsample"],
-        return_full2d=params["return_full2d"]
-        if "return_full2d" in params.keys()
-        else False,
+        return_full2d=params.get("return_full2d", False),
+        support=(params["support_exp"] is not None) and (e in params["support_exp"]),
     )
 
     # If there is "clean" data (full marker set), can take the
@@ -467,7 +468,9 @@ def check_COM_load(c3dfile: Dict, kkey: Text, win_size: int):
     if win_size is not None:
         if win_size % 2 == 0:
             win_size += 1
-            logger.warning("medfilt_window was not odd, changing to: {}".format(win_size))
+            logger.warning(
+                "medfilt_window was not odd, changing to: {}".format(win_size)
+            )
 
         from scipy.signal import medfilt
 

@@ -1210,7 +1210,7 @@ def make_dataset_com_inference(params, predict_params):
         datadict_3d,
         cameras,
         camera_mats,
-    ) = serve_data_DANNCE.prepare_data(params, prediction=True, return_cammat=True,)
+    ) = serve_data_DANNCE.prepare_data(params, stage="predict", return_cammat=True,)
 
     # Zero any negative frames
     for key in datadict.keys():

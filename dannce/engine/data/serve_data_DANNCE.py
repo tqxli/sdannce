@@ -1,6 +1,7 @@
 """Define routines for reading/structuring input data for DANNCE."""
 import os
 import pickle
+from typing import Dict, List, Literal
 import warnings
 
 import numpy as np
@@ -13,61 +14,58 @@ from dannce.engine.data import ops as ops
 from dannce.engine.data.io import load_camera_params, load_labels, load_sync
 
 
-def prepare_data(
-    params,
-    com_flag=True,
-    nanflag=False,
-    prediction=False,
-    predict_labeled_only=False,
-    predict_smoothed_labels=False,
-    valid=False,
-    support=False,
-    downsample=1,
-    return_cammat=False,
-    return_full2d=False,
+def prepare_labels(
+    params: Dict, predict: bool = False, predict_labeled_only: bool = False,
 ):
-    """Assemble necessary data structures given a set of config params.
-
-    Given a set of config params, assemble necessary data structures and
-    return them -- tailored to center of mass finding
-    That is, we are refactoring to get rid of unneeded data structures
-    (i.e. data 3d)
-
-    multimode: when this True, we output all 2D markers AND their 2D COM
+    """ 
+    Args:
+        params (Dict): config parameters
+        predict (bool): whether is for inference
+        predict_labeled_only (bool, optional): only make predictions on labeled frames (from an existing label3d file), for easier metric evaluation. Defaults to False.
     """
-    if prediction:
-        # allow predictions only on labeled frames for easier metric evaluation
-        labels = (
-            load_labels(params["label3d_file"])
-            if predict_labeled_only
-            else load_sync(params["label3d_file"])
-        )
-        nFrames = np.max(labels[0]["data_frame"].shape)
+    # if not for prediction, i.e., training, just load the gorund truth poses
+    if not predict:
+        return load_labels(params["label3d_file"])
 
-        if predict_smoothed_labels:
-            nFrames *= 10
+    # prepare necessary data structures for consistency
+    labels = (
+        load_labels(params["label3d_file"])
+        if predict_labeled_only
+        else load_sync(params["label3d_file"])
+    )
+    nFrames = np.max(labels[0]["data_frame"].shape)
 
-        nKeypoints = params["n_channels_out"]
-        if "new_n_channels_out" in params.keys():
-            if params["new_n_channels_out"] is not None:
-                nKeypoints = params["new_n_channels_out"]
+    nKeypoints = params["n_channels_out"]
+    if "new_n_channels_out" in params.keys():
+        if params["new_n_channels_out"] is not None:
+            nKeypoints = params["new_n_channels_out"]
 
-        for i in range(len(labels)):
-            labels[i]["data_3d"] = np.zeros((nFrames, 3 * nKeypoints))
-            labels[i]["data_2d"] = np.zeros((nFrames, 2 * nKeypoints))
-    else:
-        labels = load_labels(params["label3d_file"])
+    for i in range(len(labels)):
+        labels[i]["data_3d"] = np.zeros((nFrames, 3 * nKeypoints))
+        labels[i]["data_2d"] = np.zeros((nFrames, 2 * nKeypoints))
 
+    return labels
+
+
+def prepare_data(
+    params: Dict,
+    com_flag: bool = True,
+    nanflag: bool = False,
+    stage: Literal["train", "valid", "predict"] = "train",
+    predict_labeled_only: bool = False,
+    return_cammat: bool = False,
+    return_full2d: bool = False,
+    support: bool = False,
+):
+    # load labels for training, or prepare for prediction
+    labels = prepare_labels(
+        params=params,
+        predict=(stage == "predict"),
+        predict_labeled_only=predict_labeled_only,
+    )
+
+    # sampleIDs are unique identifiers for each acquired time point
     samples = np.squeeze(labels[0]["data_sampleID"])
-    if predict_smoothed_labels:
-        sampleIDs_labeled = np.squeeze(
-            load_labels(params["label3d_file"])[0]["data_sampleID"]
-        )
-        sample_inds = [np.where(samples == samp)[0][0] for samp in sampleIDs_labeled]
-        expanded_sample_inds = np.concatenate(
-            [np.arange(sample_ind - 5, sample_ind + 5) for sample_ind in sample_inds]
-        )
-        samples = samples[expanded_sample_inds]
 
     # load camera parameters
     camera_params = load_camera_params(params["label3d_file"])
@@ -82,16 +80,17 @@ def prepare_data(
             "network set to run in mirror mode, but cannot find mirror (m) field in camera params"
         )
 
-    # enable temporal training
-    TEMPORAL_FLAG = (not prediction) and (
-        params.get("use_temporal", False)
-    )  # and (not valid)
-    chunk_list = None
-    if TEMPORAL_FLAG:
-        samples, labels, chunk_list = prepare_temporal_seqs(
-            params, samples, labels, downsample, valid, support
-        )
+    # optional: enable temporal training if specified
+    samples, labels, chunk_list = prepare_temporal_training(
+        params=params,
+        samples=samples,
+        labels=labels,
+        stage=stage,
+        use_temporal=params.get("use_temporal", False),
+        support=support,
+    )
 
+    # check format for sampleIDs and labels
     if labels[0]["data_sampleID"].shape == (1, 1):
         # Then the squeezed value is just a number, so we add to to a list so
         # that is can be iterated over downstream
@@ -104,6 +103,7 @@ def prepare_data(
     if len(params["camnames"]) != len(labels):
         raise Exception("need an entry in label3d_file for every camera")
 
+    # Parse all data labels into acceptable format
     framedict = {}
     ddict = {}
 
@@ -123,7 +123,9 @@ def prepare_data(
             data[:, 1] = params["raw_im_h"] - data[:, 1] - 1
 
         if params["multi_mode"]:
-            logger.info("Entering multi-mode with {} + 1 targets".format(data.shape[-1]))
+            logger.info(
+                "Entering multi-mode with {} + 1 targets".format(data.shape[-1])
+            )
             if nanflag:
                 dcom = np.mean(data, axis=2, keepdims=True)
             else:
@@ -151,7 +153,7 @@ def prepare_data(
         )
 
     # If specific markers are set to be excluded, set them to NaN here.
-    if params["drop_landmark"] is not None and not prediction:
+    if params["drop_landmark"] is not None and (stage != "predict"):
         logger.info(
             "Setting landmarks {} to NaN. These landmarks will not be included in loss or metric evaluations".format(
                 params["drop_landmark"]
@@ -180,7 +182,7 @@ def prepare_data(
     return samples, datadict, datadict_3d, cameras, chunk_list
 
 
-def get_seq_bounds(seqlen):
+def get_seq_bounds(seqlen: int):
     left_bound = -int(seqlen // 2)
     right_bound = (
         int(np.round(seqlen / 2)) if seqlen % 2 == 0 else int(np.round(seqlen / 2)) + 1
@@ -188,7 +190,13 @@ def get_seq_bounds(seqlen):
     return left_bound, right_bound
 
 
-def get_chunks(sample_inds, left_bound, right_bound, maxlen, downsample):
+def get_chunks(
+    sample_inds: List,
+    left_bound: int,
+    right_bound: int,
+    maxlen: int,
+    downsample: int = 1,
+):
     chunk_ind_list = []
     for sample_ind in sample_inds:
         # check chunk validity
@@ -209,9 +217,7 @@ def get_chunks(sample_inds, left_bound, right_bound, maxlen, downsample):
     return all_samples_inds
 
 
-def prepare_temporal_seqs(
-    params, samples, labels, downsample=1, valid=False, support=False
-):
+def prepare_temporal_seqs(params, samples, labels, valid=False, support=False):
     """
     For temporal training, prepare samples in form of consecutive chunks.
     """
@@ -270,7 +276,11 @@ def prepare_temporal_seqs(
 
     # generate chunks
     all_samples_inds = get_chunks(
-        sample_inds, left_bound, right_bound, len(samples_extra), downsample
+        sample_inds,
+        left_bound,
+        right_bound,
+        len(samples_extra),
+        downsample=params.get("downsample", 1),
     )
 
     # there can be repetitive sampleIDs,
@@ -305,6 +315,29 @@ def prepare_temporal_seqs(
                 label[k] = temp_data
 
     return samples, labels, chunk_list
+
+
+def prepare_temporal_training(
+    params: Dict,
+    samples: np.ndarray,
+    labels: Dict,
+    stage: Literal["train", "valid", "predict"] = "train",
+    use_temporal: bool = False,
+    support: bool = False,
+):
+    """Loading temporally continguos frames for training.
+    Args:
+        params (Dict): config parameters
+    """
+    temporal_flag = (stage != "predict") and use_temporal
+    chunk_list = None
+
+    if not temporal_flag:
+        return samples, labels, chunk_list
+
+    return prepare_temporal_seqs(
+        params, samples, labels, valid=(stage == "valid"), support=support
+    )
 
 
 def prepare_COM_multi_instance(
@@ -773,7 +806,12 @@ NPY_SOCIAL_DIRNAMES = ["occlusion_scores"]
 AUX_NPY_DIRNAMES = ["visual_hulls"]
 
 
-def examine_npy_training(params, samples, aux=False):
+def examine_npy_training(
+    params: Dict, samples: np.ndarray, aux: bool = False,
+):
+    """Check whether all npy files of 3D volumes have been precached and saved.
+    If not, return the missing samples.
+    """
     TO_BE_EXAMINED = AUX_NPY_DIRNAMES if aux else NPY_DIRNAMES
     if params["is_social_dataset"] and params["downscale_occluded_view"]:
         TO_BE_EXAMINED = TO_BE_EXAMINED + NPY_SOCIAL_DIRNAMES
@@ -781,7 +819,8 @@ def examine_npy_training(params, samples, aux=False):
     npydir, missing_npydir = {}, {}
 
     for e in range(len(params["exp"])):
-        # for social, cannot use the same default npy volume dir for both animals
+        # for social, cannot use the same default npy volume dir for different animals
+        # append the label3d_name as the unique identifier
         label3d_name = os.path.basename(params["experiment"][e]["label3d_file"]).split(
             ".mat"
         )[0]
