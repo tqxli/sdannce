@@ -1,3 +1,4 @@
+from typing import Dict
 import torch
 import torch.nn as nn
 
@@ -15,7 +16,10 @@ TEMPORAL_FLOW = np.array(
 
 class PoseGCN(nn.Module):
     def __init__(
-        self, params, model_params, pose_generator,
+        self,
+        params: Dict,
+        model_params: Dict,
+        pose_generator: nn.Module,
     ):
         super(PoseGCN, self).__init__()
 

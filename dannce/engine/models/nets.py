@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Literal
+from typing import Dict, List, Literal
 
 import torch
 import torch.nn as nn
@@ -35,12 +35,12 @@ class EncDec3D(nn.Module):
     def __init__(
         self,
         in_channels: int,
-        normalization: str,
-        input_shape,
-        residual=False,
-        norm_upsampling=False,
-        return_enc_feats=False,
-        channel_compressed=True,
+        normalization: Literal["batch", "instance", "layer"],
+        input_shape: int,
+        residual: bool = False,
+        norm_upsampling: bool = False,
+        return_enc_feats: bool = False,
+        channel_compressed: bool = True,
     ):
         super().__init__()
 
@@ -130,15 +130,15 @@ class EncDec3D(nn.Module):
 class DANNCE(nn.Module):
     def __init__(
         self,
-        input_channels,
-        output_channels,
-        input_shape,
-        norm_method="layer",
-        residual=False,
-        norm_upsampling=False,
-        return_features=False,
-        compressed=False,
-        return_enc_feats=False,
+        input_channels: int,
+        output_channels: int,
+        input_shape: int,
+        norm_method: Literal["batch", "instance", "layer"] = "layer",
+        residual: bool = False,
+        norm_upsampling: bool = False,
+        return_features: bool = False,
+        compressed: bool = False,
+        return_enc_feats: bool = False,
     ):
         super().__init__()
 
@@ -197,12 +197,12 @@ class DANNCE(nn.Module):
 class COMNet(nn.Module):
     def __init__(
         self,
-        input_channels,
-        output_channels,
-        input_shape,
-        n_layers=4,
-        hidden_dims=[32, 64, 128, 256, 512],
-        norm_method="layer",
+        input_channels: int,
+        output_channels: int,
+        input_shape: int,
+        n_layers: int = 4,
+        hidden_dims: List[int] = [32, 64, 128, 256, 512],
+        norm_method: Literal["batch", "instance", "layer"] = "layer",
     ):
         super().__init__()
 
