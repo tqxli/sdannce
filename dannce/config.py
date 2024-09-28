@@ -416,9 +416,9 @@ def adjust_loss_params(params):
         )
         params["loss"]["ConsistencyLoss"]["copies_per_sample"] = copies_per_sample
         # do not exceed the specified batch size to avoid OOM
-        params["form_batch"] = True
+        params["batch_augmentation"] = True
         n_samples_unique = params["batch_size"] // copies_per_sample
-        params["form_bs"] = params["batch_size"]
+        params["batch_aug_size"] = params["batch_size"]
         # adjust batch size to the number of unique samples
         # populate with augmented samples on the fly during training
         params["batch_size"] = n_samples_unique

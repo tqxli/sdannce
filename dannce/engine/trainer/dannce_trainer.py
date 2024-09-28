@@ -41,8 +41,8 @@ class DANNCETrainer(BaseTrainer):
         self.split = False  # self.params.get("social_joint_training", False)
 
         # whether each batch only contains transformed versions of one single instance
-        self.form_batch = self.params.get("form_batch", False)
-        self.form_bs = self.params.get("form_bs", None)
+        self.aug_batch = self.params.get("batch_augmentation", False)
+        self.aug_bs = self.params.get("batch_aug_size", None)
         self.per_batch_sample = self.params["batch_size"]
 
         # set up csv file for tracking training and validation stats
@@ -107,18 +107,16 @@ class DANNCETrainer(BaseTrainer):
             self.visualize(epoch, volumes)
             return
 
-        if train and self.form_batch:
+        if train and self.aug_batch:
             volumes, grid_centers, aux = construct_augmented_batch(
                 volumes.permute(0, 2, 3, 4, 1),
                 grid_centers,
-                # batch_size=self.form_bs,
                 aux=aux if aux is None else aux.permute(0, 2, 3, 4, 1),
-                # n_sample=self.per_batch_sample
-                copies_per_sample=self.form_bs // self.per_batch_sample,
+                copies_per_sample=self.aug_bs // self.per_batch_sample,
             )
             volumes = volumes.permute(0, 4, 1, 2, 3)
             aux = aux if aux is None else aux.permute(0, 4, 1, 2, 3)
-            keypoints_3d_gt = keypoints_3d_gt.repeat(self.form_bs, 1, 1)
+            keypoints_3d_gt = keypoints_3d_gt.repeat(self.aug_bs, 1, 1)
 
         keypoints_3d_pred, heatmaps, _ = self.model(volumes, grid_centers)
 

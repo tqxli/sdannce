@@ -163,6 +163,14 @@ class ConfigDANNCETrain(ConfigDANNCEBase, ConfigBaseTrain):
 
     replace_view: int | None = None
 
+    # volume augmentation via slight perturbation of center position
+    COM_augmentation: bool = False
+    COM_aug_radius: int = 20
+    COM_aug_iters: int = 1
+
+    batch_augmentation: bool = False
+    batch_aug_size: int | None = None
+
     # automatic sampling of unlabeled data for semi-supervised training
     unlabeled_sampling: str | int | float = "equal"
 
@@ -210,7 +218,6 @@ class ConfigCOMTrain(ConfigBaseTrain, ConfigCOMBase, COMAugmentation):
     # Training
     lr: float = 5e-5
     lr_scheduler: str | None = None
-    net: str = "unet2d_fullbn"
     n_channels_out: int = 1
 
 

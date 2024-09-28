@@ -38,19 +38,19 @@ class SDANNCETrainer(DANNCETrainer):
             return
 
         # form training batch with augmented samples
-        if train and self.form_batch:
+        if train and self.aug_batch:
             volumes, grid_centers, aux = construct_augmented_batch(
                 volumes.permute(0, 2, 3, 4, 1),
                 grid_centers,
                 aux=aux if aux is None else aux.permute(0, 2, 3, 4, 1),
-                copies_per_sample=self.form_bs // self.per_batch_sample,
+                copies_per_sample=self.aug_bs // self.per_batch_sample,
             )
             volumes = volumes.permute(0, 4, 1, 2, 3)
             aux = aux if aux is None else aux.permute(0, 4, 1, 2, 3)
 
             # update ground truth
             keypoints_3d_gt = (
-                keypoints_3d_gt.repeat(self.form_bs // self.per_batch_sample, 1, 1, 1)
+                keypoints_3d_gt.repeat(self.aug_bs // self.per_batch_sample, 1, 1, 1)
                 .transpose(1, 0)
                 .flatten(0, 1)
             )

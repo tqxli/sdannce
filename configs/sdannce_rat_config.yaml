@@ -15,7 +15,7 @@ nvox: 80
 interp: nearest
 
 unlabeled_sampling: equal
-COM_augmentation: {'aug_iters': 1}
+COM_augmentation: True
 
 ### train ###
 batch_size: 4
