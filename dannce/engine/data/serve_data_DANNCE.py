@@ -161,9 +161,24 @@ def prepare_data(
         )
         data_3d[:, :, params["drop_landmark"]] = np.nan
 
+    valid_sample_length = min(
+        len(samples),
+        len(data_3d),
+        *(len(framedict[camname]) for camname in params["camnames"]),
+        *(len(ddict[camname]) for camname in params["camnames"])
+    )
+    if valid_sample_length < len(samples):
+        # rarely, data files could have inconsistent number of data sampleIDs with synchronized data frames
+        # in that case, truncate sampleIDs to the minimum length
+        # this is not recommended, only as workaround
+        logger.warning(
+            "Valid frames < data sampleID size. Truncating to {} samples. Check data files before proceed!".format(valid_sample_length)
+        )
+        samples = samples[:valid_sample_length]
+
     datadict = {}
     datadict_3d = {}
-    for i in range(len(samples)):
+    for i in range(valid_sample_length):
         frames = {}
         data = {}
         for j in range(len(params["camnames"])):
