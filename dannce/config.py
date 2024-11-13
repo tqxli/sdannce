@@ -1,6 +1,7 @@
 import os
 import warnings
 from copy import deepcopy
+from pathlib import Path
 from typing import Dict, Text
 
 import imageio
@@ -22,23 +23,20 @@ _DEFAULT_COMFILENAME = "com3d.mat"
 _DEFAULT_SEG_MODEL = "../weights/maskrcnn.pth"
 
 
-def grab_predict_label3d_file(defaultdir="", index=0):
+def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
     """
     Finds the paths to the training experiment yaml files.
+
+    Returns a string filename.
     """
-    def_ep = os.path.join(".", defaultdir)
-    label3d_files = os.listdir(def_ep)
-    label3d_files = [
-        os.path.join(def_ep, f) for f in label3d_files if "dannce.mat" in f
-    ]
+    default_exp_path = Path('.', default_dir)
+    label3d_files = list(default_exp_path.glob("*dannce.mat"))
     label3d_files = sorted(label3d_files)
 
-    if len(label3d_files) == 0:
-        raise Exception("Did not find any *dannce.mat file in {}".format(def_ep))
-    logger.info(
-        "Using the following *dannce.mat files: {}".format(label3d_files[index])
-    )
-    return label3d_files[index]
+    if not label3d_files:
+        raise Exception(f"Did not find any *dannce.mat file in {default_exp_path}")
+    logger.info(f"Using the following *dannce.mat files: {label3d_files[index]}")
+    return str(label3d_files[index])
 
 
 def infer_params(params, dannce_net, prediction):
@@ -195,13 +193,14 @@ def infer_params(params, dannce_net, prediction):
     return params
 
 
-def print_and_set(params, varname, value):
+def print_and_set(params: dict, varname: str, value: any):
+"""Updates params dict and logs the value"""
     # Should add new values to params in place, no need to return
     params[varname] = value
     logger.warning("Setting {} to {}.".format(varname, params[varname]))
 
 
-def check_config(params, dannce_net, prediction):
+def check_config(params: dict, dannce_net: bool, prediction: bool):
     """
     Add parameter checks and restrictions here.
     """
