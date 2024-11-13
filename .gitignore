@@ -26,6 +26,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# vscode settings
+.vscode/
+
 tests/2021_07_05_M4_M7/*
 tests/2021_07_06_M3_M6/*
 tests/2021_07_07_M5_M1/*
@@ -168,18 +171,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-dannce/__pycache__
-dannce/engine/data/__pycache__
-dannce/engine/skeletons/__pycache__
-dannce/engine/logging/__pycache__
-dannce/engine/models/__pycache__
-dannce/engine/models/posegcn/__pycache__
-dannce/engine/trainer/__pycache__
-dannce/engine/run/__pycache__
-dannce/engine/utils/__pycache__
-sdannce.egg-info
-demo/2021_07_05_M4_M7
-demo/2021_07_06_M3_M6
-demo/2021_07_07_M5_M1
-demo/weights
-demo/visualization/__pycache__
+# DANNCE Demo Data
+/demo/2021_07_05_M4_M7
+/demo/2021_07_06_M3_M6
+/demo/2021_07_07_M5_M1
+/demo/markerless_mouse_1
+/demo/markerless_mouse_2
+/demo/weights
