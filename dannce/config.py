@@ -2,7 +2,8 @@ import os
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Text
+from typing import  Union
+import itertools
 
 import imageio
 import numpy as np
@@ -16,6 +17,7 @@ from dannce import (
 )
 from dannce.engine.data import io
 
+# imported from other files
 _DEFAULT_VIDDIR = "videos"
 _DEFAULT_VIDDIR_SIL = "videos_sil"
 _DEFAULT_COMSTRING = "COM"
@@ -39,73 +41,100 @@ def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
     return str(label3d_files[index])
 
 
-def infer_params(params, dannce_net, prediction):
+def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     """
     Some parameters that were previously specified in configs can just be inferred
-        from others, thus relieving config bloat
+        from other params + context, thus relieving config bloat.
+
+    Infer the following parameters (might be skipped in some cases)
+    1. camnames
+    2. vid_dir_flag
+    3. extension
+    4. chunks
+    5. n_channels_in
+    6. raw_im_h
+    7. raw_im_w
+    8. crop_height
+    9. crop_width
+    10. maxbatch
+    11. start_batch
+    12. vmin
+    13. vmax
+    14. n_rand_views
     """
+
+# 1. cmanames
+    ################################
     # Grab the camnames from *dannce.mat if not in config
     if params["camnames"] is None:
-        f = grab_predict_label3d_file()
-        params["camnames"] = io.load_camnames(f)
-        if params["camnames"] is None:
+        label3d_filename = grab_predict_label3d_file()
+        _camnames = io.load_camnames(label3d_filename)
+        if _camnames is None:
             raise Exception("No camnames in config or in *dannce.mat")
-
-    # Infer vid_dir_flag and extension and n_channels_in and chunks
-    # from the videos and video folder organization.
-    # Look into the video directory / camnames[0]. Is there a video file?
-    # If so, vid_dir_flag = True
-    viddir = os.path.join(params["viddir"], params["camnames"][0])
-    video_files = os.listdir(viddir)
-
-    if any([".mp4" in file for file in video_files]) or any(
-        [".avi" in file for file in video_files]
-    ):
-
+print_and_set(params, "camnames", _camnames)
+        
+    # 2: vid_dir_flag
+    ################################
+    # check if the first camera folder contains a valid video file (mp4 or avi)
+    # then set vid_dir_flag True (meaning viddir directly contains video files)
+    cam1_dir = Path(params["viddir"], params["camnames"][0])
+    first_video_file = get_first_video_file(cam1_dir)
+    if first_video_file is not None:
         print_and_set(params, "vid_dir_flag", True)
     else:
+try:
+            # look for a subfolder containing video files
+            inner_dir = next(cam1_dir.glob("*/"))
+        except StopIteration:
+            raise Exception(
+                f"No .mp4 or .avi file found in viddir and viddir does not contain an inner directory. Checked dir: {cam1_dir}"
+            )
+        first_video_file = get_first_video_file(inner_dir)
         print_and_set(params, "vid_dir_flag", False)
-        viddir = os.path.join(viddir, video_files[0])
-        video_files = os.listdir(viddir)
-
-    extension = ".mp4" if any([".mp4" in file for file in video_files]) else ".avi"
-    print_and_set(params, "extension", extension)
-    video_files = [file for file in video_files if extension in file]
-
+        
+    # 3: extension
+    ################################
+    if first_video_file.suffix == ".mp4":
+        print_and_set('extension', '.mp4')
+    elif first_video_file.suffix == '.avi':
+        print_and_set('extension', '.avi')
+    else:
+        raise Exception("Invalid file extension: {fist_video_file}")
+    
+    # 4: chunks
+    ################################
     # Use the camnames to find the chunks for each video
     chunks = {}
-    for name in params["camnames"]:
+    for camname in params["camnames"]:
         if params["vid_dir_flag"]:
-            camdir = os.path.join(params["viddir"], name)
+            camdir = Path(params["viddir"], camname)
         else:
-            camdir = os.path.join(params["viddir"], name)
-            intermediate_folder = os.listdir(camdir)
-            camdir = os.path.join(camdir, intermediate_folder[0])
-        video_files = os.listdir(camdir)
-        video_files = [f for f in video_files if extension in f]
-        video_files = sorted(video_files, key=lambda x: int(x.split(".")[0]))
-        chunks[name] = np.sort([int(x.split(".")[0]) for x in video_files])
+            # first folder in camera folder
+            camdir = next(Path(params["viddir"], camname).glob("*/"))
+        video_files = list(camdir.glob("*" + params["extension"]))
+        video_files = sorted(video_files, key=lambda vf: int(vf.stem))
+        chunks[camname] = np.sort([int(vf.stem) for vf in video_files])
 
     print_and_set(params, "chunks", chunks)
 
-    firstvid = str(chunks[params["camnames"][0]][0]) + params["extension"]
-    camf = os.path.join(viddir, firstvid)
 
-    # Infer n_channels_in from the video info
-    v = imageio.get_reader(camf)
+    # 5,6,7: n_channels_in, raw_im_h, raw_im_w
+    ###########################################
+    # read first frame of video to get metadata
+    v = imageio.get_reader(first_video_file)
     im = v.get_data(0)
     v.close()
     print_and_set(params, "n_channels_in", im.shape[-1])
-
-    # set the raw im height and width
     print_and_set(params, "raw_im_h", im.shape[0])
     print_and_set(params, "raw_im_w", im.shape[1])
 
+# Check dannce_type and "net" validity
+    ######################################
     if dannce_net and params["net"] is None:
         # Here we assume that if the network and expval are specified by the user
         # then there is no reason to infer anything. net + expval compatibility
         # are subsequently verified during check_config()
-        #
+        
         # If both the net and expval are unspecified, then we use the simpler
         # 'net_type' + 'train_mode' to select the correct network and set expval.
         # During prediction, the train_mode might be missing, and in any case only the
@@ -116,71 +145,75 @@ def infer_params(params, dannce_net, prediction):
         if not prediction and params["train_mode"] is None:
             raise Exception("Need to specific train_mode for DANNCE training")
 
-    # print_and_set(params, "expval", True)
+    # ignore for COMs
     if dannce_net:
-        # infer crop_height and crop_width if None. Just use max dims of video, as
-        # DANNCE does not need to crop.
+        # 8,9: crop_height, crop_width
+        ###########################################
+        # DANNCE does not need to crop like COM net, so we can use the full video dimension
         if params["crop_height"] is None or params["crop_width"] is None:
-            im_h = []
-            im_w = []
-            for i in range(len(params["camnames"])):
-                viddir = os.path.join(params["viddir"], params["camnames"][i])
+            max_h = -1
+            max_w = -1
+            for camname in params["camnames"]:
+viddir = Path(params["viddir", camname])
                 if not params["vid_dir_flag"]:
-                    # add intermediate directory to path
-                    viddir = os.path.join(
-                        params["viddir"], params["camnames"][i], os.listdir(viddir)[0]
-                    )
+                    # set viddir to inner folder
+                    viddir = next(viddir.glob("*/"))
+
                 video_files = sorted(os.listdir(viddir))
-                camf = os.path.join(viddir, video_files[0])
+                camf = video_files[0]
                 v = imageio.get_reader(camf)
                 im = v.get_data(0)
                 v.close()
-                im_h.append(im.shape[0])
-                im_w.append(im.shape[1])
+                this_h = im.shape[0]
+                this_w = im.shape[1]
+                max_h = max(this_h, max_h)
+                max_w = max(this_w, max_w)
 
             if params["crop_height"] is None:
-                print_and_set(params, "crop_height", [0, np.max(im_h)])
+                print_and_set(params, "crop_height", [0, max_h])
             if params["crop_width"] is None:
-                print_and_set(params, "crop_width", [0, np.max(im_w)])
+                print_and_set(params, "crop_width", [0, max_w])
 
-        if params["max_num_samples"] is not None:
-            if params["max_num_samples"] == "max":
-                print_and_set(params, "maxbatch", "max")
-            elif isinstance(params["max_num_samples"], (int, np.integer)):
-                print_and_set(
-                    params,
-                    "maxbatch",
-                    int(np.ceil(params["max_num_samples"] / params["batch_size"])),
-                )
-            else:
-                raise TypeError("max_num_samples must be an int or 'max'")
-        else:
+        # 10: maxbatch
+        ###########################################
+            if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
             print_and_set(params, "maxbatch", "max")
-
-        if params["start_sample"] is not None:
-            if isinstance(params["start_sample"], (int, np.integer)):
-                print_and_set(
-                    params,
-                    "start_batch",
-                    int(params["start_sample"] // params["batch_size"]),
-                )
-            else:
-                raise TypeError("start_sample must be an int.")
+elif isinstance(params["max_num_samples"], (int, np.integer)):
+            maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
+            print_and_set(params,"maxbatch",maxbatch)
         else:
-            print_and_set(params, "start_batch", 0)
+raise TypeError("max_num_samples must be an int or 'max'")
 
+        # 11: start_batch
+        ###########################################
+        if params["start_sample"] is None:
+            print_and_set(params, "start_batch", 0)
+elif isinstance(params["start_sample"], (int, np.integer)):
+            start_batch = int(params["start_sample"] // params["batch_size"])
+            print_and_set(params,"start_batch",start_batch)
+        else:
+            raise TypeError("start_sample must be an int.")
+
+# 12,13: vmin,vmax
+        ###########################################
         if params["vol_size"] is not None:
             print_and_set(params, "vmin", -1 * params["vol_size"] / 2)
             print_and_set(params, "vmax", params["vol_size"] / 2)
 
+# verify heatmap regeulariziation
+        ###########################################
         if params["heatmap_reg"] and not params["expval"]:
             raise Exception(
                 "Heatmap regularization enabled only for AVG networks -- you are using MAX"
             )
 
+# 14: n_rand_views
+        ###########################################
         if params["n_rand_views"] == "None":
             print_and_set(params, "n_rand_views", None)
 
+
+    ##################################
     # There will be strange behavior if using a mirror acquisition system and are cropping images
     if params["mirror"] and params["crop_height"][-1] != params["raw_im_h"]:
         msg = "Note: You are using a mirror acquisition system with image cropping."
@@ -197,7 +230,7 @@ def print_and_set(params: dict, varname: str, value: any):
 """Updates params dict and logs the value"""
     # Should add new values to params in place, no need to return
     params[varname] = value
-    logger.warning("Setting {} to {}.".format(varname, params[varname]))
+    logger.warning(f"Setting {varname} to {params[varname]}.")
 
 
 def check_config(params: dict, dannce_net: bool, prediction: bool):
@@ -743,3 +776,16 @@ def setup_com_predict(params):
     }
 
     return params, predict_params
+
+def get_first_video_file(p: Path)-> Union[Path, None]:
+    """
+    Given a folder, return a Path object of the first video file (avi or mp4) within.
+    If muliple files, return the first video file sorted alphabetically.
+
+    Otherwise return None.
+    """
+    video_files = list(itertools.chain([p.glob("*.mp4"), p.glob("*.avi")]))
+    video_files = sorted(video_files)
+    if not video_files:
+        return None
+    return video_files[0]
