@@ -95,9 +95,9 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     # 3: extension
     ################################
     if first_video_file.suffix == ".mp4":
-        print_and_set("extension", ".mp4")
+        print_and_set(params, "extension", ".mp4")
     elif first_video_file.suffix == ".avi":
-        print_and_set("extension", ".avi")
+        print_and_set(params, "extension", ".avi")
     else:
         raise Exception("Invalid file extension: {fist_video_file}")
 
@@ -607,7 +607,7 @@ def setup_predict(params: dict):
         params["base_exp_folder"] = os.path.dirname(params["label3d_file"])
     params["multi_mode"] = False
 
-    logger.info(f"Using camnames: {params["camnames"]}")
+    logger.info(f"Using camnames: {params['camnames']}")
     # Also add parent params under the 'experiment' key for compatibility
     # with DANNCE's video loading function
     if (params["use_silhouette_in_volume"]) or (
@@ -730,7 +730,7 @@ def setup_com_predict(params: dict):
     # Grab the input file for prediction
     params["label3d_file"] = grab_predict_label3d_file(index=params["label3d_index"])
 
-    logger.info(f"Using camnames: {params["camnames"]}")
+    logger.info(f"Using camnames: {params['camnames']}")
 
     params["experiment"] = {}
     params["experiment"][0] = params
@@ -783,7 +783,7 @@ def get_first_video_file(p: Path) -> Union[Path, None]:
 
     Otherwise return None.
     """
-    video_files = list(itertools.chain([p.glob("*.mp4"), p.glob("*.avi")]))
+    video_files = list(itertools.chain(p.glob("*.mp4"), p.glob("*.avi")))
     video_files = sorted(video_files)
     if not video_files:
         return None
