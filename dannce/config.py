@@ -2,7 +2,7 @@ import os
 import warnings
 from copy import deepcopy
 from pathlib import Path
-from typing import  Union
+from typing import Union
 import itertools
 
 import imageio
@@ -31,7 +31,7 @@ def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
 
     Returns a string filename.
     """
-    default_exp_path = Path('.', default_dir)
+    default_exp_path = Path(".", default_dir)
     label3d_files = list(default_exp_path.glob("*dannce.mat"))
     label3d_files = sorted(label3d_files)
 
@@ -63,7 +63,7 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     14. n_rand_views
     """
 
-# 1. cmanames
+    # 1. cmanames
     ################################
     # Grab the camnames from *dannce.mat if not in config
     if params["camnames"] is None:
@@ -71,8 +71,8 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
         _camnames = io.load_camnames(label3d_filename)
         if _camnames is None:
             raise Exception("No camnames in config or in *dannce.mat")
-print_and_set(params, "camnames", _camnames)
-        
+        print_and_set(params, "camnames", _camnames)
+
     # 2: vid_dir_flag
     ################################
     # check if the first camera folder contains a valid video file (mp4 or avi)
@@ -82,7 +82,7 @@ print_and_set(params, "camnames", _camnames)
     if first_video_file is not None:
         print_and_set(params, "vid_dir_flag", True)
     else:
-try:
+        try:
             # look for a subfolder containing video files
             inner_dir = next(cam1_dir.glob("*/"))
         except StopIteration:
@@ -91,16 +91,16 @@ try:
             )
         first_video_file = get_first_video_file(inner_dir)
         print_and_set(params, "vid_dir_flag", False)
-        
+
     # 3: extension
     ################################
     if first_video_file.suffix == ".mp4":
-        print_and_set('extension', '.mp4')
-    elif first_video_file.suffix == '.avi':
-        print_and_set('extension', '.avi')
+        print_and_set("extension", ".mp4")
+    elif first_video_file.suffix == ".avi":
+        print_and_set("extension", ".avi")
     else:
         raise Exception("Invalid file extension: {fist_video_file}")
-    
+
     # 4: chunks
     ################################
     # Use the camnames to find the chunks for each video
@@ -117,7 +117,6 @@ try:
 
     print_and_set(params, "chunks", chunks)
 
-
     # 5,6,7: n_channels_in, raw_im_h, raw_im_w
     ###########################################
     # read first frame of video to get metadata
@@ -128,13 +127,13 @@ try:
     print_and_set(params, "raw_im_h", im.shape[0])
     print_and_set(params, "raw_im_w", im.shape[1])
 
-# Check dannce_type and "net" validity
+    # Check dannce_type and "net" validity
     ######################################
     if dannce_net and params["net"] is None:
         # Here we assume that if the network and expval are specified by the user
         # then there is no reason to infer anything. net + expval compatibility
         # are subsequently verified during check_config()
-        
+
         # If both the net and expval are unspecified, then we use the simpler
         # 'net_type' + 'train_mode' to select the correct network and set expval.
         # During prediction, the train_mode might be missing, and in any case only the
@@ -154,7 +153,7 @@ try:
             max_h = -1
             max_w = -1
             for camname in params["camnames"]:
-viddir = Path(params["viddir", camname])
+                viddir = Path(params["viddir", camname])
                 if not params["vid_dir_flag"]:
                     # set viddir to inner folder
                     viddir = next(viddir.glob("*/"))
@@ -176,42 +175,41 @@ viddir = Path(params["viddir", camname])
 
         # 10: maxbatch
         ###########################################
-            if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
+        if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
             print_and_set(params, "maxbatch", "max")
-elif isinstance(params["max_num_samples"], (int, np.integer)):
+        elif isinstance(params["max_num_samples"], (int, np.integer)):
             maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
-            print_and_set(params,"maxbatch",maxbatch)
+            print_and_set(params, "maxbatch", maxbatch)
         else:
-raise TypeError("max_num_samples must be an int or 'max'")
+            raise TypeError("max_num_samples must be an int or 'max'")
 
         # 11: start_batch
         ###########################################
         if params["start_sample"] is None:
             print_and_set(params, "start_batch", 0)
-elif isinstance(params["start_sample"], (int, np.integer)):
+        elif isinstance(params["start_sample"], (int, np.integer)):
             start_batch = int(params["start_sample"] // params["batch_size"])
-            print_and_set(params,"start_batch",start_batch)
+            print_and_set(params, "start_batch", start_batch)
         else:
             raise TypeError("start_sample must be an int.")
 
-# 12,13: vmin,vmax
+        # 12,13: vmin,vmax
         ###########################################
         if params["vol_size"] is not None:
             print_and_set(params, "vmin", -1 * params["vol_size"] / 2)
             print_and_set(params, "vmax", params["vol_size"] / 2)
 
-# verify heatmap regeulariziation
+        # verify heatmap regeulariziation
         ###########################################
         if params["heatmap_reg"] and not params["expval"]:
             raise Exception(
                 "Heatmap regularization enabled only for AVG networks -- you are using MAX"
             )
 
-# 14: n_rand_views
+        # 14: n_rand_views
         ###########################################
         if params["n_rand_views"] == "None":
             print_and_set(params, "n_rand_views", None)
-
 
     ##################################
     # There will be strange behavior if using a mirror acquisition system and are cropping images
@@ -227,7 +225,7 @@ elif isinstance(params["start_sample"], (int, np.integer)):
 
 
 def print_and_set(params: dict, varname: str, value: any):
-"""Updates params dict and logs the value"""
+    """Updates params dict and logs the value"""
     # Should add new values to params in place, no need to return
     params[varname] = value
     logger.warning(f"Setting {varname} to {params[varname]}.")
@@ -252,9 +250,7 @@ def check_vmin_vmax(params):
     for v in ["vmin", "vmax", "nvox"]:
         if params[v] is None:
             raise Exception(
-                "{} not in parameters. Please add it, or use vol_size instead of vmin and vmax".format(
-                    v
-                )
+                f"{v} not in parameters. Please add it, or use vol_size instead of vmin and vmax"
             )
 
 
@@ -287,7 +283,7 @@ def check_camnames(camp):
 #     shutil.copyfile(io_config, dconfig)
 
 
-def inherit_config(child, parent, keys):
+def inherit_config(child: dict, parent: dict, keys: list):
     """
     If a key in keys does not exist in child, assigns the key-value in parent to
         child.
@@ -302,7 +298,9 @@ def inherit_config(child, parent, keys):
     return child
 
 
-def write_config(results_dir, configdict, message, filename="modelconfig.cfg"):
+def write_config(
+    results_dir: str, configdict: dict, message: str, filename="modelconfig.cfg"
+):
     """Write a dictionary of k-v pairs to file.
 
     A much more customizable configuration writer. Accepts a dictionary of
@@ -315,7 +313,7 @@ def write_config(results_dir, configdict, message, filename="modelconfig.cfg"):
     f.write("message:" + message)
 
 
-def read_config(filename):
+def read_config(filename: str):
     """Read configuration file.
 
     :param filename: Path to configuration file.
@@ -326,7 +324,7 @@ def read_config(filename):
     return params
 
 
-def make_paths_safe(params):
+def make_paths_safe(params: dict):
     """Given a parameter dictionary, loops through the keys and replaces any \\ or / with os.sep
     to promote OS agnosticism
     """
@@ -338,7 +336,7 @@ def make_paths_safe(params):
     return params
 
 
-def make_none_safe(pdict):
+def make_none_safe(pdict: dict):
     if isinstance(pdict, dict):
         for key in pdict:
             pdict[key] = make_none_safe(pdict[key])
@@ -354,7 +352,7 @@ def make_none_safe(pdict):
     return pdict
 
 
-def check_unrecognized_params(params: Dict):
+def check_unrecognized_params(params: dict):
     """Check for invalid keys in the params dict against param defaults.
 
     Args:
@@ -379,7 +377,7 @@ def check_unrecognized_params(params: Dict):
         raise ValueError(msg)
 
 
-def build_params(base_config: Text, dannce_net: bool):
+def build_params(base_config: str, dannce_net: bool):
     """Build parameters dictionary from base config and io.yaml
 
     Args:
@@ -398,15 +396,15 @@ def build_params(base_config: Text, dannce_net: bool):
     return params
 
 
-def adjust_loss_params(params):
+def adjust_loss_params(params: dict):
     """
     Adjust parameters dictionary according to specific losses.
 
     Args:
-        params (Dict): Parameters dictionary.
+        params (dict): Parameters dictionary.
 
     Returns:
-        Dict: Parameters dictionary.
+        dict: Parameters dictionary.
     """
 
     # turn on flags for losses that require changes in inputs
@@ -463,7 +461,7 @@ def adjust_loss_params(params):
     return params
 
 
-def setup_train(params):
+def setup_train(params: dict):
     # turn off currently unavailable features
     params["multi_mode"] = False
     params["depth"] = False
@@ -585,7 +583,7 @@ def setup_train(params):
     return params, base_params, shared_args, shared_args_train, shared_args_valid
 
 
-def setup_predict(params):
+def setup_predict(params: dict):
     # Depth disabled until next release.
     params["depth"] = False
     # Make the prediction directory if it does not exist.
@@ -595,7 +593,7 @@ def setup_predict(params):
 
     params["downsample"] = 1
 
-    if not "n_instances" in params:
+    if "n_instances" not in params:
         params["n_instances"] = 1
     params["is_social_dataset"] = params["n_instances"] > 1
 
@@ -609,7 +607,7 @@ def setup_predict(params):
         params["base_exp_folder"] = os.path.dirname(params["label3d_file"])
     params["multi_mode"] = False
 
-    logger.info("Using camnames: {}".format(params["camnames"]))
+    logger.info(f"Using camnames: {params["camnames"]}")
     # Also add parent params under the 'experiment' key for compatibility
     # with DANNCE's video loading function
     if (params["use_silhouette_in_volume"]) or (
@@ -686,7 +684,7 @@ def setup_predict(params):
     return params, valid_params
 
 
-def setup_com_train(params):
+def setup_com_train(params: dict):
     # os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
 
     # MULTI_MODE is where the full set of markers is trained on, rather than
@@ -723,8 +721,8 @@ def setup_com_train(params):
     return params, train_params, valid_params
 
 
-def setup_com_predict(params):
-    params["multi_mode"] = MULTI_MODE = (params["n_channels_out"] > 1) & (
+def setup_com_predict(params: dict):
+    params["multi_mode"] = MULTI_MODE = (params["n_channels_out"] > 1) and (
         params["n_instances"] == 1
     )
     params["n_channels_out"] = params["n_channels_out"] + int(MULTI_MODE)
@@ -732,7 +730,7 @@ def setup_com_predict(params):
     # Grab the input file for prediction
     params["label3d_file"] = grab_predict_label3d_file(index=params["label3d_index"])
 
-    logger.info("Using camnames: {}".format(params["camnames"]))
+    logger.info(f"Using camnames: {params["camnames"]}")
 
     params["experiment"] = {}
     params["experiment"][0] = params
@@ -777,7 +775,8 @@ def setup_com_predict(params):
 
     return params, predict_params
 
-def get_first_video_file(p: Path)-> Union[Path, None]:
+
+def get_first_video_file(p: Path) -> Union[Path, None]:
     """
     Given a folder, return a Path object of the first video file (avi or mp4) within.
     If muliple files, return the first video file sorted alphabetically.
