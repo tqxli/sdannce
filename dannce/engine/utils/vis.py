@@ -11,6 +11,7 @@ import skimage.transform
 import tqdm
 from matplotlib.animation import FFMpegWriter
 
+from dannce.engine.data.io import load_sync
 from dannce.engine.skeletons.utils import load_body_profile
 from dannce.engine.utils.projection import (distortPoints, load_cameras,
                                             project_to_2d)
@@ -46,10 +47,17 @@ def visualize_pose_predictions(
 ):
     LABEL3D_FILE = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
     CAMERAS = ["Camera{}".format(int(i)) for i in cameras.split(",")]
+    camera_idx = [int(i)-1 for i in cameras.split(",")]
     CONNECTIVITY = load_body_profile(animal)["limbs"]
 
     vid_path = os.path.join(exproot, "videos")
+    pred_path = os.path.join(exproot, expfolder)
+    datafile_path = os.path.join(pred_path, datafile)
     save_path = os.path.join(exproot, expfolder, "vis")
+    
+    assert os.path.exists(vid_path), f"Video directory {vid_path} does not exist"
+    assert os.path.exists(pred_path), f"Prediction directory {pred_path} does not exist"
+    assert os.path.exists(datafile_path), f"Prediction file {datafile_path} does not exist"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
@@ -60,9 +68,13 @@ def visualize_pose_predictions(
     cameras = load_cameras(os.path.join(exproot, LABEL3D_FILE))
 
     # prediction file might not start at frame 0
-    pred_path = os.path.join(exproot, expfolder)
-    pose_3d = sio.loadmat(os.path.join(pred_path, datafile))["pred"][
-        start_frame : start_frame + n_frames
+    pose_3d = sio.loadmat(datafile_path)["pred"]
+    try:
+        datafile_start = int(datafile.split(".mat")[0].split("AVG")[-1])
+    except ValueError:
+        datafile_start = 0
+    pose_3d = pose_3d[
+        start_frame - datafile_start : start_frame + n_frames - datafile_start
     ]
 
     # pose_3d: [N, n_instances, n_landmarks, 3]
@@ -138,13 +150,21 @@ def visualize_pose_predictions(
         axes = [axes]
 
     frames_to_plot = np.arange(start_frame, start_frame + n_frames)
+    label3d_file = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
+    sync = load_sync(os.path.join(exproot, label3d_file))
+    frames = [item['data_frame'][0] for item in sync]
+    frames = [frames[cam] for cam in camera_idx]
+    
     marker_color = MARKER_COLOR[n_animals]
     line_color = LINE_COLOR[n_animals]
 
     with writer.saving(fig, os.path.join(save_path, fname), dpi=300):
         for idx, curr_frame in enumerate(tqdm.tqdm(frames_to_plot)):
             # grab images
-            imgs = [vid.get_data(curr_frame) for vid in vids]
+            imgs = [
+                vid.get_data(_frames[curr_frame])
+                for vid, _frames in zip(vids, frames)
+            ]
 
             for i, cam in enumerate(CAMERAS):
                 axes[i].imshow(imgs[i])
