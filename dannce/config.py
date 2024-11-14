@@ -1,7 +1,9 @@
 import os
 import warnings
 from copy import deepcopy
-from typing import Dict, Text
+from pathlib import Path
+from typing import Union
+import itertools
 
 import imageio
 import numpy as np
@@ -15,6 +17,7 @@ from dannce import (
 )
 from dannce.engine.data import io
 
+# imported from other files
 _DEFAULT_VIDDIR = "videos"
 _DEFAULT_VIDDIR_SIL = "videos_sil"
 _DEFAULT_COMSTRING = "COM"
@@ -22,92 +25,129 @@ _DEFAULT_COMFILENAME = "com3d.mat"
 _DEFAULT_SEG_MODEL = "../weights/maskrcnn.pth"
 
 
-def grab_predict_label3d_file(defaultdir="", index=0):
+def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
     """
     Finds the paths to the training experiment yaml files.
+
+    Returns a string filename.
     """
-    def_ep = os.path.join(".", defaultdir)
-    label3d_files = os.listdir(def_ep)
-    label3d_files = [
-        os.path.join(def_ep, f) for f in label3d_files if "dannce.mat" in f
-    ]
+    default_exp_path = Path(".", default_dir)
+    label3d_files = list(default_exp_path.glob("*dannce.mat"))
     label3d_files = sorted(label3d_files)
 
-    if len(label3d_files) == 0:
-        raise Exception("Did not find any *dannce.mat file in {}".format(def_ep))
-    logger.info(
-        "Using the following *dannce.mat files: {}".format(label3d_files[index])
-    )
-    return label3d_files[index]
+    if not label3d_files:
+        raise Exception(f"Did not find any *dannce.mat file in {default_exp_path}")
+    logger.info(f"Using the following *dannce.mat files: {label3d_files[index]}")
+    return str(label3d_files[index])
 
 
-def infer_params(params, dannce_net, prediction):
+def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     """
-    Some parameters that were previously specified in configs can just be inferred
-        from others, thus relieving config bloat
+    Infer parameters not explicitly specified in the configs from other parameters + context.
+
+    Args:
+        dannce_net (bool): True if DANNCE else COM.
+        prediction: True if running prediction/inference; False if training model
+
+    Infer the following parameters (might be skipped in some cases)
+    1. camnames
+    2. vid_dir_flag
+    3. extension
+    4. chunks
+    5. n_channels_in
+    6. raw_im_h
+    7. raw_im_w
+    8. crop_height
+    9. crop_width
+    10. maxbatch
+    11. start_batch
+    12. vmin
+    13. vmax
+    14. n_rand_views
     """
+
+    # 1. camnames
+    ################################
     # Grab the camnames from *dannce.mat if not in config
     if params["camnames"] is None:
-        f = grab_predict_label3d_file()
-        params["camnames"] = io.load_camnames(f)
-        if params["camnames"] is None:
+        label3d_filename = grab_predict_label3d_file()
+        _camnames = io.load_camnames(label3d_filename)
+        if _camnames is None:
             raise Exception("No camnames in config or in *dannce.mat")
+        print_and_set(params, "camnames", _camnames)
 
-    # Infer vid_dir_flag and extension and n_channels_in and chunks
-    # from the videos and video folder organization.
-    # Look into the video directory / camnames[0]. Is there a video file?
-    # If so, vid_dir_flag = True
-    viddir = os.path.join(params["viddir"], params["camnames"][0])
-    video_files = os.listdir(viddir)
+    # base directory containing videos
+    # picked from either: current directory; "exp" list; or "com_exp" list
+    #   depending on COM/DANNCE and Train/Predict mode.
+    example_base_dir = get_base_dir(params, dannce_net, prediction)
+    logger.info(f"Using recording folder to infer video parameters: {example_base_dir}")
 
-    if any([".mp4" in file for file in video_files]) or any(
-        [".avi" in file for file in video_files]
-    ):
-
+    # 2: vid_dir_flag
+    ################################
+    # check if the first camera folder contains a valid video file (mp4 or avi)
+    # then set vid_dir_flag True (meaning viddir directly contains video files)
+    cam1_dir = Path(example_base_dir, params["viddir"], params["camnames"][0])
+    first_video_file = get_first_video_file(cam1_dir)
+    if first_video_file is not None:
         print_and_set(params, "vid_dir_flag", True)
     else:
+        try:
+            # look for a subfolder containing video files
+            inner_dir = next(cam1_dir.glob("*/"))
+        except StopIteration:
+            raise Exception(
+                f"No .mp4 or .avi file found in viddir and viddir does not contain an inner directory. Checked dir: {cam1_dir}"
+            )
+        first_video_file = get_first_video_file(inner_dir)
         print_and_set(params, "vid_dir_flag", False)
-        viddir = os.path.join(viddir, video_files[0])
-        video_files = os.listdir(viddir)
 
-    extension = ".mp4" if any([".mp4" in file for file in video_files]) else ".avi"
-    print_and_set(params, "extension", extension)
-    video_files = [file for file in video_files if extension in file]
+    # 3: extension
+    ################################
+    if first_video_file.suffix == ".mp4":
+        print_and_set(params, "extension", ".mp4")
+    elif first_video_file.suffix == ".avi":
+        print_and_set(params, "extension", ".avi")
+    else:
+        raise Exception(f"Invalid file extension: {first_video_file}")
 
+    # 4: chunks
+    ################################
     # Use the camnames to find the chunks for each video
     chunks = {}
-    for name in params["camnames"]:
-        if params["vid_dir_flag"]:
-            camdir = os.path.join(params["viddir"], name)
-        else:
-            camdir = os.path.join(params["viddir"], name)
-            intermediate_folder = os.listdir(camdir)
-            camdir = os.path.join(camdir, intermediate_folder[0])
-        video_files = os.listdir(camdir)
-        video_files = [f for f in video_files if extension in f]
-        video_files = sorted(video_files, key=lambda x: int(x.split(".")[0]))
-        chunks[name] = np.sort([int(x.split(".")[0]) for x in video_files])
+    for camname in params["camnames"]:
+        camdir = Path(example_base_dir, params["viddir"], camname)
+        if not params["vid_dir_flag"]:
+            # first folder in camera folder
+            camdir = next(camdir.glob("*/"))
+        video_files = list(camdir.glob("*" + params["extension"]))
+        video_files = sorted(video_files, key=lambda vf: int(vf.stem))
+        chunks[camname] = np.sort([int(vf.stem) for vf in video_files])
 
     print_and_set(params, "chunks", chunks)
 
-    firstvid = str(chunks[params["camnames"][0]][0]) + params["extension"]
-    camf = os.path.join(viddir, firstvid)
+    # 5,6,7: n_channels_in, raw_im_h, raw_im_w
+    ###########################################
+    # read first frame of video to get metadata
+    # only infer if these values are unset
+    if (
+        params["n_channels_in"] is None
+        or params["raw_im_h"] is None
+        or params["raw_im_w"] is None
+    ):
+        v = imageio.get_reader(first_video_file)
+        im = v.get_data(0)
+        v.close()
+        print_and_set(params, "n_channels_in", im.shape[-1])
+        print_and_set(params, "raw_im_h", im.shape[0])
+        print_and_set(params, "raw_im_w", im.shape[1])
 
-    # Infer n_channels_in from the video info
-    v = imageio.get_reader(camf)
-    im = v.get_data(0)
-    v.close()
-    print_and_set(params, "n_channels_in", im.shape[-1])
-
-    # set the raw im height and width
-    print_and_set(params, "raw_im_h", im.shape[0])
-    print_and_set(params, "raw_im_w", im.shape[1])
-
+    # Check dannce_type and "net" validity
+    ######################################
     if dannce_net and params["net"] is None:
         # Here we assume that if the network and expval are specified by the user
         # then there is no reason to infer anything. net + expval compatibility
         # are subsequently verified during check_config()
-        #
+
         # If both the net and expval are unspecified, then we use the simpler
         # 'net_type' + 'train_mode' to select the correct network and set expval.
         # During prediction, the train_mode might be missing, and in any case only the
@@ -118,71 +158,74 @@ def infer_params(params, dannce_net, prediction):
         if not prediction and params["train_mode"] is None:
             raise Exception("Need to specific train_mode for DANNCE training")
 
-    # print_and_set(params, "expval", True)
+    # ignore for COMs
     if dannce_net:
-        # infer crop_height and crop_width if None. Just use max dims of video, as
-        # DANNCE does not need to crop.
+        # 8,9: crop_height, crop_width
+        ###########################################
+        # DANNCE does not need to crop like COM net, so we can use the full video dimension
         if params["crop_height"] is None or params["crop_width"] is None:
-            im_h = []
-            im_w = []
-            for i in range(len(params["camnames"])):
-                viddir = os.path.join(params["viddir"], params["camnames"][i])
+            max_h = -1
+            max_w = -1
+            for camname in params["camnames"]:
+                viddir = Path(example_base_dir, params["viddir", camname])
                 if not params["vid_dir_flag"]:
-                    # add intermediate directory to path
-                    viddir = os.path.join(
-                        params["viddir"], params["camnames"][i], os.listdir(viddir)[0]
-                    )
+                    # set viddir to inner folder
+                    viddir = next(viddir.glob("*/"))
+
                 video_files = sorted(os.listdir(viddir))
-                camf = os.path.join(viddir, video_files[0])
+                camf = video_files[0]
                 v = imageio.get_reader(camf)
                 im = v.get_data(0)
                 v.close()
-                im_h.append(im.shape[0])
-                im_w.append(im.shape[1])
+                this_h = im.shape[0]
+                this_w = im.shape[1]
+                max_h = max(this_h, max_h)
+                max_w = max(this_w, max_w)
 
             if params["crop_height"] is None:
-                print_and_set(params, "crop_height", [0, np.max(im_h)])
+                print_and_set(params, "crop_height", [0, max_h])
             if params["crop_width"] is None:
-                print_and_set(params, "crop_width", [0, np.max(im_w)])
+                print_and_set(params, "crop_width", [0, max_w])
 
-        if params["max_num_samples"] is not None:
-            if params["max_num_samples"] == "max":
-                print_and_set(params, "maxbatch", "max")
-            elif isinstance(params["max_num_samples"], (int, np.integer)):
-                print_and_set(
-                    params,
-                    "maxbatch",
-                    int(np.ceil(params["max_num_samples"] / params["batch_size"])),
-                )
-            else:
-                raise TypeError("max_num_samples must be an int or 'max'")
-        else:
+        # 10: maxbatch
+        ###########################################
+        if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
             print_and_set(params, "maxbatch", "max")
-
-        if params["start_sample"] is not None:
-            if isinstance(params["start_sample"], (int, np.integer)):
-                print_and_set(
-                    params,
-                    "start_batch",
-                    int(params["start_sample"] // params["batch_size"]),
-                )
-            else:
-                raise TypeError("start_sample must be an int.")
+        elif isinstance(params["max_num_samples"], (int, np.integer)):
+            maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
+            print_and_set(params, "maxbatch", maxbatch)
         else:
-            print_and_set(params, "start_batch", 0)
+            raise TypeError("max_num_samples must be an int or 'max'")
 
+        # 11: start_batch
+        ###########################################
+        if params["start_sample"] is None:
+            print_and_set(params, "start_batch", 0)
+        elif isinstance(params["start_sample"], (int, np.integer)):
+            start_batch = int(params["start_sample"] // params["batch_size"])
+            print_and_set(params, "start_batch", start_batch)
+        else:
+            raise TypeError("start_sample must be an int.")
+
+        # 12,13: vmin,vmax
+        ###########################################
         if params["vol_size"] is not None:
             print_and_set(params, "vmin", -1 * params["vol_size"] / 2)
             print_and_set(params, "vmax", params["vol_size"] / 2)
 
+        # verify heatmap regeulariziation
+        ###########################################
         if params["heatmap_reg"] and not params["expval"]:
             raise Exception(
                 "Heatmap regularization enabled only for AVG networks -- you are using MAX"
             )
 
+        # 14: n_rand_views
+        ###########################################
         if params["n_rand_views"] == "None":
             print_and_set(params, "n_rand_views", None)
 
+    ##################################
     # There will be strange behavior if using a mirror acquisition system and are cropping images
     if params["mirror"] and params["crop_height"][-1] != params["raw_im_h"]:
         msg = "Note: You are using a mirror acquisition system with image cropping."
@@ -195,13 +238,14 @@ def infer_params(params, dannce_net, prediction):
     return params
 
 
-def print_and_set(params, varname, value):
+def print_and_set(params: dict, varname: str, value: any):
+    """Updates params dict and logs the value"""
     # Should add new values to params in place, no need to return
     params[varname] = value
-    logger.warning("Setting {} to {}.".format(varname, params[varname]))
+    logger.warning(f"Setting {varname} to {params[varname]}.")
 
 
-def check_config(params, dannce_net, prediction):
+def check_config(params: dict, dannce_net: bool, prediction: bool):
     """
     Add parameter checks and restrictions here.
     """
@@ -220,9 +264,7 @@ def check_vmin_vmax(params):
     for v in ["vmin", "vmax", "nvox"]:
         if params[v] is None:
             raise Exception(
-                "{} not in parameters. Please add it, or use vol_size instead of vmin and vmax".format(
-                    v
-                )
+                f"{v} not in parameters. Please add it, or use vol_size instead of vmin and vmax"
             )
 
 
@@ -255,7 +297,7 @@ def check_camnames(camp):
 #     shutil.copyfile(io_config, dconfig)
 
 
-def inherit_config(child, parent, keys):
+def inherit_config(child: dict, parent: dict, keys: list):
     """
     If a key in keys does not exist in child, assigns the key-value in parent to
         child.
@@ -270,7 +312,9 @@ def inherit_config(child, parent, keys):
     return child
 
 
-def write_config(results_dir, configdict, message, filename="modelconfig.cfg"):
+def write_config(
+    results_dir: str, configdict: dict, message: str, filename="modelconfig.cfg"
+):
     """Write a dictionary of k-v pairs to file.
 
     A much more customizable configuration writer. Accepts a dictionary of
@@ -283,7 +327,7 @@ def write_config(results_dir, configdict, message, filename="modelconfig.cfg"):
     f.write("message:" + message)
 
 
-def read_config(filename):
+def read_config(filename: str):
     """Read configuration file.
 
     :param filename: Path to configuration file.
@@ -294,7 +338,7 @@ def read_config(filename):
     return params
 
 
-def make_paths_safe(params):
+def make_paths_safe(params: dict):
     """Given a parameter dictionary, loops through the keys and replaces any \\ or / with os.sep
     to promote OS agnosticism
     """
@@ -306,7 +350,7 @@ def make_paths_safe(params):
     return params
 
 
-def make_none_safe(pdict):
+def make_none_safe(pdict: dict):
     if isinstance(pdict, dict):
         for key in pdict:
             pdict[key] = make_none_safe(pdict[key])
@@ -322,7 +366,7 @@ def make_none_safe(pdict):
     return pdict
 
 
-def check_unrecognized_params(params: Dict):
+def check_unrecognized_params(params: dict):
     """Check for invalid keys in the params dict against param defaults.
 
     Args:
@@ -347,7 +391,7 @@ def check_unrecognized_params(params: Dict):
         raise ValueError(msg)
 
 
-def build_params(base_config: Text, dannce_net: bool):
+def build_params(base_config: str, dannce_net: bool):
     """Build parameters dictionary from base config and io.yaml
 
     Args:
@@ -366,15 +410,15 @@ def build_params(base_config: Text, dannce_net: bool):
     return params
 
 
-def adjust_loss_params(params):
+def adjust_loss_params(params: dict):
     """
     Adjust parameters dictionary according to specific losses.
 
     Args:
-        params (Dict): Parameters dictionary.
+        params (dict): Parameters dictionary.
 
     Returns:
-        Dict: Parameters dictionary.
+        dict: Parameters dictionary.
     """
 
     # turn on flags for losses that require changes in inputs
@@ -431,7 +475,7 @@ def adjust_loss_params(params):
     return params
 
 
-def setup_train(params):
+def setup_train(params: dict):
     # turn off currently unavailable features
     params["multi_mode"] = False
     params["depth"] = False
@@ -553,7 +597,7 @@ def setup_train(params):
     return params, base_params, shared_args, shared_args_train, shared_args_valid
 
 
-def setup_predict(params):
+def setup_predict(params: dict):
     # Depth disabled until next release.
     params["depth"] = False
     # Make the prediction directory if it does not exist.
@@ -563,7 +607,7 @@ def setup_predict(params):
 
     params["downsample"] = 1
 
-    if not "n_instances" in params:
+    if "n_instances" not in params:
         params["n_instances"] = 1
     params["is_social_dataset"] = params["n_instances"] > 1
 
@@ -577,7 +621,7 @@ def setup_predict(params):
         params["base_exp_folder"] = os.path.dirname(params["label3d_file"])
     params["multi_mode"] = False
 
-    logger.info("Using camnames: {}".format(params["camnames"]))
+    logger.info(f"Using camnames: {params['camnames']}")
     # Also add parent params under the 'experiment' key for compatibility
     # with DANNCE's video loading function
     if (params["use_silhouette_in_volume"]) or (
@@ -654,7 +698,7 @@ def setup_predict(params):
     return params, valid_params
 
 
-def setup_com_train(params):
+def setup_com_train(params: dict):
     # os.environ["CUDA_VISIBLE_DEVICES"] = params["gpu_id"]
 
     # MULTI_MODE is where the full set of markers is trained on, rather than
@@ -691,8 +735,8 @@ def setup_com_train(params):
     return params, train_params, valid_params
 
 
-def setup_com_predict(params):
-    params["multi_mode"] = MULTI_MODE = (params["n_channels_out"] > 1) & (
+def setup_com_predict(params: dict):
+    params["multi_mode"] = MULTI_MODE = (params["n_channels_out"] > 1) and (
         params["n_instances"] == 1
     )
     params["n_channels_out"] = params["n_channels_out"] + int(MULTI_MODE)
@@ -700,7 +744,7 @@ def setup_com_predict(params):
     # Grab the input file for prediction
     params["label3d_file"] = grab_predict_label3d_file(index=params["label3d_index"])
 
-    logger.info("Using camnames: {}".format(params["camnames"]))
+    logger.info(f"Using camnames: {params['camnames']}")
 
     params["experiment"] = {}
     params["experiment"][0] = params
@@ -744,3 +788,39 @@ def setup_com_predict(params):
     }
 
     return params, predict_params
+
+
+def get_first_video_file(p: Path) -> Union[Path, None]:
+    """
+    Given a folder, return a Path object of the first video file (avi or mp4) within.
+    If muliple files, return the first video file sorted alphabetically.
+
+    Otherwise return None.
+    """
+    video_files = list(itertools.chain(p.glob("*.mp4"), p.glob("*.avi")))
+    video_files = sorted(video_files)
+    if not video_files:
+        return None
+    return video_files[0]
+
+
+def get_base_dir(params: dict, dannce_net: bool, prediction: bool) -> Path:
+    """Get a base folder given the current settings
+
+    For prediction:
+        -> current directory -> videos 
+    For (S)DANNCE training:
+        -> exp[0].label3d_file > videos
+    For COM training:
+        -> com_exp[0].label3d_file > videos
+
+    """
+    if prediction:
+        base_dir = Path.cwd()
+    else:  # training network
+        if dannce_net:  # (S)DANNCE network
+            base_dir = Path(params["exp"][0]["label3d_file"]).parent
+        else:  # COM network
+            base_dir = Path(params["com_exp"][0]["label3d_file"]).parent
+
+    return base_dir
