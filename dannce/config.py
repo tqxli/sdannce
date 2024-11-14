@@ -46,6 +46,9 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     Some parameters that were previously specified in configs can just be inferred
         from other params + context, thus relieving config bloat.
 
+    dannce_net: True if DANNCE; False if COM
+    prediction: True if running prediction/inference; False if training model
+
     Infer the following parameters (might be skipped in some cases)
     1. camnames
     2. vid_dir_flag
@@ -63,7 +66,7 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     14. n_rand_views
     """
 
-    # 1. cmanames
+    # 1. camnames
     ################################
     # Grab the camnames from *dannce.mat if not in config
     if params["camnames"] is None:
@@ -73,11 +76,17 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
             raise Exception("No camnames in config or in *dannce.mat")
         print_and_set(params, "camnames", _camnames)
 
+    # base directory containing videos
+    # picked from either: current directory; "exp" list; or "com_exp" list
+    #   depending on COM/DANNCE and Train/Predict mode.
+    example_base_dir = get_base_dir(params, dannce_net, prediction)
+    logger.info(f"Using recording folder to infer video parameters: {example_base_dir}")
+
     # 2: vid_dir_flag
     ################################
     # check if the first camera folder contains a valid video file (mp4 or avi)
     # then set vid_dir_flag True (meaning viddir directly contains video files)
-    cam1_dir = Path(params["viddir"], params["camnames"][0])
+    cam1_dir = Path(example_base_dir, params["viddir"], params["camnames"][0])
     first_video_file = get_first_video_file(cam1_dir)
     if first_video_file is not None:
         print_and_set(params, "vid_dir_flag", True)
@@ -99,18 +108,17 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     elif first_video_file.suffix == ".avi":
         print_and_set(params, "extension", ".avi")
     else:
-        raise Exception("Invalid file extension: {fist_video_file}")
+        raise Exception(f"Invalid file extension: {first_video_file}")
 
     # 4: chunks
     ################################
     # Use the camnames to find the chunks for each video
     chunks = {}
     for camname in params["camnames"]:
-        if params["vid_dir_flag"]:
-            camdir = Path(params["viddir"], camname)
-        else:
+        camdir = Path(example_base_dir, params["viddir"], camname)
+        if not params["vid_dir_flag"]:
             # first folder in camera folder
-            camdir = next(Path(params["viddir"], camname).glob("*/"))
+            camdir = next(camdir.glob("*/"))
         video_files = list(camdir.glob("*" + params["extension"]))
         video_files = sorted(video_files, key=lambda vf: int(vf.stem))
         chunks[camname] = np.sort([int(vf.stem) for vf in video_files])
@@ -120,12 +128,14 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     # 5,6,7: n_channels_in, raw_im_h, raw_im_w
     ###########################################
     # read first frame of video to get metadata
-    v = imageio.get_reader(first_video_file)
-    im = v.get_data(0)
-    v.close()
-    print_and_set(params, "n_channels_in", im.shape[-1])
-    print_and_set(params, "raw_im_h", im.shape[0])
-    print_and_set(params, "raw_im_w", im.shape[1])
+    # only infer if these values are unset
+    if params['n_channels_in'] is None or params['raw_im_h'] is None or params['raw_im_w'] is None:
+        v = imageio.get_reader(first_video_file)
+        im = v.get_data(0)
+        v.close()
+        print_and_set(params, "n_channels_in", im.shape[-1])
+        print_and_set(params, "raw_im_h", im.shape[0])
+        print_and_set(params, "raw_im_w", im.shape[1])
 
     # Check dannce_type and "net" validity
     ######################################
@@ -153,7 +163,7 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
             max_h = -1
             max_w = -1
             for camname in params["camnames"]:
-                viddir = Path(params["viddir", camname])
+                viddir = Path(example_base_dir, params["viddir", camname])
                 if not params["vid_dir_flag"]:
                     # set viddir to inner folder
                     viddir = next(viddir.glob("*/"))
@@ -788,3 +798,25 @@ def get_first_video_file(p: Path) -> Union[Path, None]:
     if not video_files:
         return None
     return video_files[0]
+
+def get_base_dir(params:dict, dannce_net:bool, prediction:bool) -> Path:
+    """Get a base folder given the current settings
+
+    For prediction:
+        -> current directory -> videos 
+    For (S)DANNCE training:
+        -> exp[0].label3d_file > videos
+    For COM training:
+        -> com_exp[0].label3d_file > videos
+
+    """
+    if prediction:
+        base_dir = Path.cwd()
+    else: # training network
+        if dannce_net: # (S)DANNCE network
+            base_dir = Path(params['exp'][0]['label3d_file']).parent
+        else: # COM network
+            base_dir = Path(params['com_exp'][0]['label3d_file']).parent
+    
+    return base_dir
+    
