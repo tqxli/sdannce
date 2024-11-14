@@ -275,7 +275,7 @@ class LoadVideoFrame:
             )
         # This deals with a strange indexing error in the pup data.
         except IndexError:
-            logger.warning("Indexing error, using previous frame")
+            logger.warning(f"Indexing error when extracting frame {frame_num}, using previous frame")
             im = (
                 vid.get_data(frame_num - 1).astype("uint8")
                 if self.predict_flag
