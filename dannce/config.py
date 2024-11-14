@@ -167,14 +167,14 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
             max_h = -1
             max_w = -1
             for camname in params["camnames"]:
-                viddir = Path(example_base_dir, params["viddir", camname])
+                viddir = Path(example_base_dir, params["viddir"], camname)
                 if not params["vid_dir_flag"]:
                     # set viddir to inner folder
                     viddir = next(viddir.glob("*/"))
 
                 video_files = sorted(os.listdir(viddir))
                 camf = video_files[0]
-                v = imageio.get_reader(camf)
+                v = imageio.get_reader(viddir / camf)
                 im = v.get_data(0)
                 v.close()
                 this_h = im.shape[0]
