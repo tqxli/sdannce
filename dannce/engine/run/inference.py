@@ -211,7 +211,7 @@ def infer_dannce_inference_range(
 
     start_ind = int(params["start_batch"])
     end_ind = int(params["maxbatch"])
-    return start_ind, end_ind, bs
+    return start_ind, end_ind, bs, n_frames
 
 
 def infer_dannce(
@@ -235,7 +235,7 @@ def infer_dannce(
         device (Text): Gpu device name
         n_chn (int): Number of output channels
     """
-    start_ind, end_ind, bs = infer_dannce_inference_range(params, generator)
+    start_ind, end_ind, bs, _ = infer_dannce_inference_range(params, generator)
     save_data = {}
 
     if save_heatmaps:
@@ -374,24 +374,10 @@ def infer_sdannce(
     partition: Dict,
     device: Text,
 ):
-    n_frames = len(generator)
-    bs = params["batch_size"]
-    generator_maxbatch = int(np.ceil(n_frames / bs))
-
-    if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
-        print(
-            "Maxbatch was set to a larger number of matches than exist in the video. Truncating."
-        )
-        print_and_set(params, "maxbatch", generator_maxbatch)
-
-    if params["maxbatch"] == "max":
-        print_and_set(params, "maxbatch", generator_maxbatch)
-
     save_data, save_data_init = {}, {}
-    start_ind = params["start_batch"]
-    end_ind = params["maxbatch"]
+    start_ind, end_ind, bs, n_frames = infer_dannce_inference_range(params, generator)
     max_num_sample = (
-        params["max_num_samples"] if params["maxbatch"] != "max" else n_frames
+        params["max_num_samples"] if params["max_num_samples"] != "max" else n_frames
     )
 
     pbar = tqdm(range(start_ind, end_ind))

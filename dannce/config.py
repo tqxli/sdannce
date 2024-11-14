@@ -191,7 +191,8 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
         ###########################################
         if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
             print_and_set(params, "maxbatch", "max")
-        elif isinstance(params["max_num_samples"], (int, np.integer)):
+        elif params["max_num_samples"].isdigit():
+            print_and_set(params, "max_num_samples", int(params["max_num_samples"]))
             maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
             print_and_set(params, "maxbatch", maxbatch)
         else:
