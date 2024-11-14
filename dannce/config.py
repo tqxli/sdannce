@@ -187,27 +187,6 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
             if params["crop_width"] is None:
                 print_and_set(params, "crop_width", [0, max_w])
 
-        # 10: maxbatch
-        ###########################################
-        if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
-            print_and_set(params, "maxbatch", "max")
-        elif params["max_num_samples"].isdigit():
-            print_and_set(params, "max_num_samples", int(params["max_num_samples"]))
-            maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
-            print_and_set(params, "maxbatch", maxbatch)
-        else:
-            raise TypeError("max_num_samples must be an int or 'max'")
-
-        # 11: start_batch
-        ###########################################
-        if params["start_sample"] is None:
-            print_and_set(params, "start_batch", 0)
-        elif isinstance(params["start_sample"], (int, np.integer)):
-            start_batch = int(params["start_sample"] // params["batch_size"])
-            print_and_set(params, "start_batch", start_batch)
-        else:
-            raise TypeError("start_sample must be an int.")
-
         # 12,13: vmin,vmax
         ###########################################
         if params["vol_size"] is not None:
@@ -225,6 +204,27 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
         ###########################################
         if params["n_rand_views"] == "None":
             print_and_set(params, "n_rand_views", None)
+
+    # maxbatch
+    ###########################################
+    if params["max_num_samples"] == "max" or params["max_num_samples"] is None:
+        print_and_set(params, "maxbatch", "max")
+    elif params["max_num_samples"].isdigit():
+        print_and_set(params, "max_num_samples", int(params["max_num_samples"]))
+        maxbatch = int(np.ceil(params["max_num_samples"] / params["batch_size"]))
+        print_and_set(params, "maxbatch", maxbatch)
+    else:
+        raise TypeError("max_num_samples must be an int or 'max'")
+
+    # start_batch
+    ###########################################
+    if params["start_sample"] is None:
+        print_and_set(params, "start_batch", 0)
+    elif isinstance(params["start_sample"], (int, np.integer)):
+        start_batch = int(params["start_sample"] // params["batch_size"])
+        print_and_set(params, "start_batch", start_batch)
+    else:
+        raise TypeError("start_sample must be an int.")
 
     ##################################
     # There will be strange behavior if using a mirror acquisition system and are cropping images
