@@ -23,6 +23,24 @@ from dannce import (
     _param_defaults_com,
 )
 
+from typing import List
+
+SINGLE_QUOTE="'"
+
+def int_or_literal(literals: List[str], argname="arg"):
+    """Helper function for argparse which will take either a int parsed as a string or a string which matches one of a set of literals"""
+
+    def inner(arg):
+        try:
+            return int(arg)
+        except ValueError:
+            pass
+        if arg in literals:
+            return arg
+        raise argparse.ArgumentTypeError(f"{argname} must be an int or {','.join(map(lambda x : SINGLE_QUOTE + x +SINGLE_QUOTE, literals))}")
+
+    return inner
+
 
 def load_params(param_path: Text) -> Dict:
     """Load a params file
@@ -267,7 +285,7 @@ def add_shared_predict_args(
     parser.add_argument(
         "--max-num-samples",
         dest="max_num_samples",
-        type=int,
+        type=int_or_literal(['max'], '--max-num-samples'),
         help="Maximum number of samples to predict during COM or DANNCE prediction.",
     )
     parser.add_argument(
