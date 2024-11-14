@@ -43,11 +43,11 @@ def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
 
 def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     """
-    Some parameters that were previously specified in configs can just be inferred
-        from other params + context, thus relieving config bloat.
+    Infer parameters not explicitly specified in the configs from other parameters + context.
 
-    dannce_net: True if DANNCE; False if COM
-    prediction: True if running prediction/inference; False if training model
+    Args:
+        dannce_net (bool): True if DANNCE else COM.
+        prediction: True if running prediction/inference; False if training model
 
     Infer the following parameters (might be skipped in some cases)
     1. camnames
@@ -129,7 +129,11 @@ def infer_params(params: dict, dannce_net: bool, prediction: bool) -> dict:
     ###########################################
     # read first frame of video to get metadata
     # only infer if these values are unset
-    if params['n_channels_in'] is None or params['raw_im_h'] is None or params['raw_im_w'] is None:
+    if (
+        params["n_channels_in"] is None
+        or params["raw_im_h"] is None
+        or params["raw_im_w"] is None
+    ):
         v = imageio.get_reader(first_video_file)
         im = v.get_data(0)
         v.close()
@@ -799,7 +803,8 @@ def get_first_video_file(p: Path) -> Union[Path, None]:
         return None
     return video_files[0]
 
-def get_base_dir(params:dict, dannce_net:bool, prediction:bool) -> Path:
+
+def get_base_dir(params: dict, dannce_net: bool, prediction: bool) -> Path:
     """Get a base folder given the current settings
 
     For prediction:
@@ -812,11 +817,10 @@ def get_base_dir(params:dict, dannce_net:bool, prediction:bool) -> Path:
     """
     if prediction:
         base_dir = Path.cwd()
-    else: # training network
-        if dannce_net: # (S)DANNCE network
-            base_dir = Path(params['exp'][0]['label3d_file']).parent
-        else: # COM network
-            base_dir = Path(params['com_exp'][0]['label3d_file']).parent
-    
+    else:  # training network
+        if dannce_net:  # (S)DANNCE network
+            base_dir = Path(params["exp"][0]["label3d_file"]).parent
+        else:  # COM network
+            base_dir = Path(params["com_exp"][0]["label3d_file"]).parent
+
     return base_dir
-    
