@@ -340,7 +340,7 @@ def _initialize_sdannce(
     pose_generator = _initialize_dannce_backbone(params, n_cams)
 
     # add additional layers for pose refinement
-    model = PoseGCN(params, sdannce_model_params, pose_generator,)
+    model = PoseGCN(params, sdannce_model_params, pose_generator)
     return model
 
 

@@ -1,0 +1,83 @@
+### basic ###
+io_config: io.yaml
+camnames: ['Camera1', 'Camera2', 'Camera3', 'Camera4', 'Camera5', 'Camera6']
+random_seed: 1024
+
+### data ###
+crop_height: [0, 1200]
+crop_width: [0, 1920]
+
+# volumetric representation
+vmin: -120
+vmax: 120
+nvox: 80
+interp: nearest
+
+unlabeled_sampling: equal
+COM_augmentation: True
+
+### train ###
+batch_size: 4
+epochs: 40
+lr: 0.0001
+train_mode: new
+
+num_validation_per_exp: 4
+save_period: 5
+data_split_seed: 1024
+
+lr_scheduler:
+  type: MultiStepLR
+  args: 
+    milestones: [20, 35]
+    gamma: 0.5
+
+### architecture ###
+expval: True
+net_type: "compressed_dannce"
+n_channels_in: 3
+n_channels_out: 23
+new_n_channels_out: 23
+n_views: 6
+
+graph_cfg:
+    model: PoseGCN
+    n_instances: 1
+    hidden_dim: 128
+    n_layers: 3
+    dropout: 0.2
+    use_residual: False
+    predict_diff: True
+    use_features: True
+    fuse_dim: 128
+
+### loss ###
+metric: ['euclidean_distance_3D']
+loss:
+    L1Loss: 
+      loss_weight: 1.0
+    BoneLengthLoss:
+      loss_weight: 0.5
+      priors: ../priors/rat23_limb_length_priors.npy
+      body_profile: rat23
+      mask: [2]
+      relative_scale: True
+      ref_loss_weight: 0.0
+    ConsistencyLoss:
+      copies_per_sample: 4
+      loss_weight: 0.1
+
+### data augmentation ###      
+medfilt_window: 30
+rand_view_replace: True
+n_rand_views: 6
+mirror_augmentation: False
+left_keypoints: [1, 7, 8, 9, 10, 15, 16, 17, 18]
+right_keypoints: [2, 11, 12, 13, 14, 19, 20, 21, 22]
+
+augment_hue: False
+augment_brightness: False
+augment_bright_val: 0.01
+
+### predictions ###
+max_num_samples: max
