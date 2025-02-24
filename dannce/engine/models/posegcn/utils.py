@@ -13,9 +13,10 @@ TEMPORAL_FLOW = np.arange(
 
 # using to build edge using GCN
 def build_adj_mx_from_edges(
-    num_joints=NUM_JOINTS, edge=EDGE, social=False, t_dim=1, t_flow=TEMPORAL_FLOW
+    num_joints=NUM_JOINTS, edge=EDGE, social=False, t_dim=1, t_flow=None,
 ):
-    t_flow = np.arange(num_joints)
+    if t_flow is None:
+        t_flow = np.arange(num_joints)
 
     if social:
         inter = np.stack(

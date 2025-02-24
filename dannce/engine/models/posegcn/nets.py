@@ -8,11 +8,6 @@ from dannce.engine.models.posegcn.utils import *
 from dannce.engine.skeletons.utils import load_body_profile
 from dannce.engine.utils.image import max_coord_3d
 
-NODES_GROUP = [[i] for i in range(23)]
-TEMPORAL_FLOW = np.array(
-    [0, 4, 9, 13, 17, 21]
-)  # restrict the flows along temporal dimension
-
 
 class PoseGCN(nn.Module):
     def __init__(
@@ -46,7 +41,7 @@ class PoseGCN(nn.Module):
             "n_channels_out"
         ]  # num of nodes = n_instance * n_joints
         self.t_dim = t_dim = params.get("temporal_chunk_size", 1)
-        self.t_flow = t_flow = model_params.get("t_flow", TEMPORAL_FLOW)
+        self.t_flow = t_flow = model_params.get("t_flow", None)
         inter_social = model_params.get("inter_social", False)
         self.social = (n_instances > 1) and inter_social
 
