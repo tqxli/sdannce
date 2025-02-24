@@ -148,8 +148,11 @@ def load_expdict(params: Dict, e: int, expdict: Dict, viddir=_DEFAULT_VIDDIR):
         exp["viddir"] = expdict["viddir"]
 
     l3d_camnames = io.load_camnames(expdict["label3d_file"])
+
     if "camnames" in expdict:
         exp["camnames"] = expdict["camnames"]
+    elif "camnames" in params:
+        exp["camnames"] = params["camnames"]
     elif l3d_camnames is not None:
         exp["camnames"] = l3d_camnames
 
@@ -353,11 +356,10 @@ def do_COM_load(exp: Dict, expdict: Dict, e, params: Dict, training=True):
             if (
                 training
                 and (params["unlabeled_sampling"] is not None)
-                and ("instance" in exp["com_file"].split("/")[-1])
-                and params.get("n_instances", 1) == 2
             ):
                 samples_, datadict_, datadict_3d_ = add_unlabeled_to_train(
-                    params, exp, e, samples_, datadict_, datadict_3d_, c3dfile
+                    params, exp, e, samples_, datadict_, datadict_3d_, c3dfile,
+                    n_instances=params.get("n_instances", 1),
                 )
 
         elif ".pickle" in exp["com_file"]:
@@ -784,6 +786,7 @@ def add_unlabeled_to_train(
     datadict_: Dict,
     datadict_3d_: Dict,
     c3dfile: Dict,
+    n_instances: int = 2,
     distance_threshold: int = 120,
 ):
     """Automatically add unlabeled samples to the training set."""
@@ -805,35 +808,49 @@ def add_unlabeled_to_train(
     if params.get("valid_exp") is not None and e in params["valid_exp"]:
         return samples_, datadict_, datadict_3d_
 
-    # read com file (`instancexcom3d.mat`) for the other animal
-    # to determine the inter-animal distance in dyads
-    # and sample from the close interactions
-    if "instance0" in exp["com_file"]:
-        pair_com_file = exp["com_file"].replace("instance0", "instance1")
-    else:
-        pair_com_file = exp["com_file"].replace("instance1", "instance0")
-
     selected_samples = []
-    if os.path.exists(pair_com_file):
-        comfile = sio.loadmat(pair_com_file)
+    if n_instances == 1 or "instance" not in exp["com_file"]:
+        comfile = sio.loadmat(exp["com_file"])
         c3d = comfile["com"]
         sampleIDs = np.squeeze(comfile["sampleID"])
-        com_dist = np.sum((c3d - c3dfile["com"]) ** 2, axis=1)
-        com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
-
-        # sample from frames with close interactions
-        indices_below_thres = np.where(com_dist < distance_threshold)[0]
-        indices_existing = [
-            i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_
-        ]
-        indices_below_thres = list(
-            set(indices_below_thres) - set(indices_existing)
-        )
-        sampling_num = min(sampling_num, len(indices_below_thres))
+        indices = [i for i in range(len(sampleIDs)) if sampleIDs[i] not in samples_]
+        sampling_num = min(sampling_num, len(indices))
         selected_indices = np.random.choice(
-            indices_below_thres, size=sampling_num, replace=False
+            indices, size=sampling_num, replace=False
         )
         selected_samples = sampleIDs[selected_indices]
+    elif n_instances == 2:
+        # if instance number equals 2 and we can find the other animal's com file,
+        # read com file (`instancexcom3d.mat`) for the other animal
+        # to determine the inter-animal distance in dyads
+        # and sample from the close interactions
+        if "instance0" in exp["com_file"]:
+            pair_com_file = exp["com_file"].replace("instance0", "instance1")
+        else:
+            pair_com_file = exp["com_file"].replace("instance1", "instance0")
+
+        if os.path.exists(pair_com_file):
+            comfile = sio.loadmat(pair_com_file)
+            c3d = comfile["com"]
+            sampleIDs = np.squeeze(comfile["sampleID"])
+            com_dist = np.sum((c3d - c3dfile["com"]) ** 2, axis=1)
+            com_dist = np.squeeze(np.sqrt(com_dist))  # [N]
+
+            # sample from frames with close interactions specified by distance threshold
+            indices_below_thres = np.where(com_dist < distance_threshold)[0]
+            indices_existing = [
+                i for i in range(len(sampleIDs)) if sampleIDs[i] in samples_
+            ]
+            indices_below_thres = list(
+                set(indices_below_thres) - set(indices_existing)
+            )
+            sampling_num = min(sampling_num, len(indices_below_thres))
+            selected_indices = np.random.choice(
+                indices_below_thres, size=sampling_num, replace=False
+            )
+            selected_samples = sampleIDs[selected_indices]
+    else:
+        return samples_, datadict_, datadict_3d_
 
     logger.info(
         "Unlabeled sampling: EXP {} added {} unlabeled (labeled = {})".format(
