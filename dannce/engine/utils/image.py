@@ -260,7 +260,7 @@ def plot_markers_2d(im, markers, newfig=True):
         ind = np.unravel_index(
             np.argmax(markers[:, :, mark], axis=None), markers[:, :, mark].shape
         )
-        plt.plot(ind[1], ind[0], ".r")
+        plt.plot(ind[1], ind[0], ".")
 
 
 def preprocess_3d(im_stack):
