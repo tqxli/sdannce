@@ -152,13 +152,14 @@ def visualize_pose_predictions(
     frames_to_plot = np.arange(start_frame, start_frame + n_frames)
     label3d_file = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
     sync = load_sync(os.path.join(exproot, label3d_file))
-    frames = [item['data_frame'][0] for item in sync]
+    frames = [np.squeeze(item['data_frame']) for item in sync]
     frames = [frames[cam] for cam in camera_idx]
     
     marker_color = MARKER_COLOR[n_animals]
     line_color = LINE_COLOR[n_animals]
 
-    with writer.saving(fig, os.path.join(save_path, fname), dpi=300):
+    savepath = os.path.join(save_path, fname)
+    with writer.saving(fig, savepath, dpi=300):
         for idx, curr_frame in enumerate(tqdm.tqdm(frames_to_plot)):
             # grab images
             imgs = [
@@ -219,7 +220,8 @@ def visualize_pose_predictions(
     # close videos
     for vid in vids:
         vid.close()
-
+    return savepath
+    
 
 def draw_voxels(voxels, ax, shape=(8, 8, 8), norm=True, alpha=0.1):
     # resize for visualization
@@ -302,7 +304,7 @@ if __name__ == "__main__":
     parser.add_argument("--zoom_window_size", type=int, default=400)
 
     args = parser.parse_args()
-    visualize_pose_predictions(
+    savepath = visualize_pose_predictions(
         exproot=args.root,
         expfolder=args.pred,
         datafile=args.datafile,
