@@ -8,6 +8,8 @@
         /2021_07_05_M4_M7
         /2021_07_06_M3_M6
         /2021_07_07_M5_M1
+        /SCN2A_WK1_2022_09_16_M1
+        /SCN2A_SOC1_2022_09_23_M1_M6
         /visualization
         /weights
         predict_com.sh
@@ -21,6 +23,8 @@
     ```
 
 ## Quickest demo of s-DANNCE
+Please refer to `notebooks/*` or check out the following scripts under `demo/*.sh` 
+
 ### Prediction with s-DANNCE
 Here, using a pretrained s-DANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`), we predict social animal 3D poses for the first 500 frames of an experiment `2021_07_05_M4_M7` by running the script
 ```
@@ -48,7 +52,6 @@ Try update the ffmpeg version by `conda update ffmpeg`.
 
 
 ## General use of s-DANNCE
-The users are highly encouraged to refer to the provided `demo/*.sh` scripts and explore the functionality.
 
 ### Train & Predict Animal Centroids
 DANNCE/s-DANNCE performs 3D pose estimation in a **top-down** manner, i.e.
