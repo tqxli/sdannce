@@ -139,7 +139,8 @@ class WeightedL1Loss(BaseLoss):
 class BoneLengthLoss(BaseLoss):
     def __init__(
         self,
-        priors,
+        priors=None,
+        compute_priors_from_data=False,
         body_profile="rat23",
         mask=None,
         std_multiplier=1,
@@ -164,6 +165,8 @@ class BoneLengthLoss(BaseLoss):
             absolute length of the reference bone
         """
         super().__init__(**kwargs)
+
+        self.compute_priors_from_data = compute_priors_from_data
 
         self.limbs = torch.LongTensor(
             load_body_profile(body_profile)["limbs"]
