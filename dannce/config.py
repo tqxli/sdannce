@@ -820,13 +820,13 @@ def get_base_dir(params: dict, dannce_net: bool, prediction: bool) -> Path:
         if dannce_net:  # (S)DANNCE network
             first_exp = params["exp"][0]
             if "viddir" in first_exp:
-                base_dir = Path(first_exp["viddir"])
+                base_dir = Path(first_exp["viddir"]).parent
             else:
                 base_dir = Path(first_exp["label3d_file"]).parent
         else:  # COM network
             first_exp = params["com_exp"][0]
             if "viddir" in params["com_exp"][0]:
-                base_dir = Path(first_exp["viddir"])
+                base_dir = Path(first_exp["viddir"]).parent
             else:
                 base_dir = Path(first_exp["label3d_file"]).parent
 
