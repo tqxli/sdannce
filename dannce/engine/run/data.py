@@ -1197,6 +1197,8 @@ def make_data_com(params, train_params, valid_params):
         chan_num=params["chan_num"],
     )
 
+    logger.info(f'***TRAIN:VALIDATION = {ims_train.shape[0]}:{ims_valid.shape[0]}***')
+
     def collate_fn(batch):
         X = torch.cat([item[0] for item in batch], dim=0)
         y = torch.cat([item[1] for item in batch], dim=0)
