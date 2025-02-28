@@ -1631,7 +1631,7 @@ def make_pair(
     return train_dataloader, valid_dataloader, len(camnames[0])
 
 
-def compute_segment_length_priors(params, pose3d):
+def compute_segment_length_priors(params, pose3d, ref_segment_idx=3):
     notnan = ~np.isnan(pose3d.sum(-1).sum(-1))
     pose3d = pose3d[notnan]
     
@@ -1640,7 +1640,11 @@ def compute_segment_length_priors(params, pose3d):
     
     kpts_from = pose3d[:, limbs[:, 0]]
     kpts_to = pose3d[:, limbs[:, 1]]
-    segment_lengths = np.linalg.norm(kpts_from - kpts_to, axis=-1)
+    segment_lengths = np.linalg.norm(kpts_from - kpts_to, axis=-1) #[n_samples, n_segments]
+    
+    # compute relative ratios between segments to account for differences in body size
+    # default idx = 3, earL-earR
+    segment_lengths = segment_lengths / segment_lengths[:, ref_segment_idx][:, np.newaxis] # [n_samples, n_segments]
     segment_means = np.mean(segment_lengths, axis=0)
     segment_stds = np.std(segment_lengths, axis=0)
     
@@ -1652,4 +1656,5 @@ def compute_segment_length_priors(params, pose3d):
     )
     np.save(prior_savepath, priors)
     params['loss']['BoneLengthLoss']["priors"] = prior_savepath
+    params['loss']['BoneLengthLoss']["relative_scale"] = True
     return prior_savepath
