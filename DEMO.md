@@ -1,8 +1,8 @@
 # Running Demo
-## Download Data
+## :arrow_down: Download Data
 1. Follow [this Box link](https://duke.box.com/s/2aw5r4hb3u57p1abt99n15f6hkl36x5k) and download the demo data (~5 GB) to the directory `demo` as `demo_data.zip`.
 
-2. In the command line, change the current directory to `demo` by `cd demo` and run the script `sh prepare_demo.sh` to unzip and prepare the demo data. The final directory should appear as:
+2. From the command line, change the current directory to `demo` by `cd demo` and run the script `sh prepare_demo.sh` to unzip and prepare the demo data. The final directory should appear as:
     ```
     demo
         /2021_07_05_M4_M7
@@ -22,23 +22,23 @@
 
     ```
 
-## Quickest demo of s-DANNCE
-Please refer to `notebooks/*` or check out the following scripts under `demo/*.sh` 
+## :zap: Quickest Demo of s-DANNCE Functionality
+
+Here, we demonstrate quick inference using a pretrained s-DANNCE model and visualization of the tracking results. Please checkout the notebook [`./notebooks/2.inference_using_pretrained_model.ipynb`](notebooks/2.inference_using_pretrained_model.ipynb) or run the following bash scripts under `demo/*.sh`:
 
 ### Prediction with s-DANNCE
-Here, using a pretrained s-DANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`), we predict social animal 3D poses for the first 500 frames of an experiment `2021_07_05_M4_M7` by running the script
+Using a pretrained s-DANNCE model (`demo/weights/SDANNCE_gcn_bsl_FM_ep100.pth`) to predict the social animal 3D poses for the first 500 frames of an experiment `2021_07_05_M4_M7` by running the script
 ```
 sh predict_sdannce.sh
 ```
-
 The prediction results should be saved into `demo/2021_07_05_M4_M7/SDANNCE/predict02`. 
 
-### Visualize predictions
+### Prediction visualization
 We then visualize the predictions just obtained from last step, from running
 ```
 sh vis_sdannce.sh
 ```
-You should find the resulted 10-second video overlay with keypoint projections in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis/*.mp4`.
+You should find a 10-second video overlay with keypoint projections in `demo/2021_07_05_M4_M7/SDANNCE/predict02/vis/*.mp4`.
 
 
 <details>
@@ -51,36 +51,42 @@ Try update the ffmpeg version by `conda update ffmpeg`.
 </details>
 
 
-## General use of s-DANNCE
+## :bulb: Unpack s-DANNCE Command Line Usage
+The basic usage of the s-DANNCE CLI is as follows:
 
-### Train & Predict Animal Centroids
-DANNCE/s-DANNCE performs 3D pose estimation in a **top-down** manner, i.e.
-- first localizes the animal's approximate position in space
-- creates a 3D cube enclosing the animal and resolves the associated 3D posture within.
-
-For the first step, we start by training a center-of-mass (COM) prediction network that simultaneously detects both animal. In the provided videos, the paired animals were painted respectively with blue and red colors to avoid ID switches.
-
-To train such a model, one can modify and run
 ```
-sh train_com.sh
+dannce <command> [<mode>]
 ```
-For labeling COMs on your custom data, please refer to [Label3D](https://github.com/diegoaldarondo/Label3D). 
 
-We can predict COMs using a trained COM model, by running `demo/predict_com.sh`. In the previous demo, we directly used a set of presaved COM predictions (`demo/2021_07_05_M4_M7/COM/predict01/com3d.mat`).
+where the available commands are:
 
-### Train Pose Estimation Models
-With the 3D COMs predicted from the last step, we can start training a DANNCE/s-DANNCE model for extracting animal 3D poses. 
+- `train`: Train the network model.
+- `predict`: Predict using the network model.
+- `predict-multi-gpu`: Predict using the network model on multiple GPUs.
+- `merge`: Merge network prediction results.
 
-As a quick demonstration, we can directly run `demo/train_sdannce.sh` to start training a s-DANNCE pose estimation model in `demo/2021_07_06_M3_M6/SDANNCE/train02`.
+Run `dannce <command> --help` to see the available options for each command.
 
-To avoid confusion, the ground truth labels used for training are stored in `*Label3D*.mat` files under each directory, e.g., `demo/2021_07_06_M3_M6/ANNOT_Label3D_B_dannce.mat`, obtained from Label3D. The set of experiments used for training is specified like in `demo/2021_07_06_M3_M6/io.yaml`, as
+For launch training & prediction jobs, respectively run
 ```
-exp:
-    - label3d_file: '../2021_07_06_M3_M6/ANNOT_Label3D_B_dannce.mat'
-      com_file: '../2021_07_06_M3_M6/COM/predict01/instance0com3d.mat'
-    - label3d_file: '../2021_07_06_M3_M6/ANNOT_Label3D_R_dannce.mat'
-      com_file: '../2021_07_06_M3_M6/COM/predict01/instance1com3d.mat'
+dannce train <mode> [<args>]
+dannce predict <mode> [<args>]
 ```
-which are then retrieved along with the video frames and combined for training.
 
+The available modes are:
+
+- `com`: Train a center-of-mass (COM) network.
+- `dannce`: Train a DANNCE network.
+- `sdannce`: Train the social DANNCE network.
+
+For more details of the CLI setups, check out [cli.md](dannce/cli.md).
+
+For specific examples on using these CLI commands, check out different bash scripts `demo/train*.sh` and `demo/predict*.sh`. 
+
+
+### :question: Why COM
+DANNCE/s-DANNCE performs 3D pose estimation in a **top-down** manner, i.e. it first localizes the animal's approximate position in space and creates a 3D cube enclosing the animal to resolve the 3D posture. Thus, the estimation of animals' centroids, or centers of mass (COMs) must be done prior to any DANNCE/s-DANNCE training.
+
+## :unlock: What's Next
+Check out [`GUIDE.md`](GUIDE.md) for how to set up for custom data collection and experiments. 
 
