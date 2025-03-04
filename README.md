@@ -4,7 +4,7 @@
   <img src="./assets/graphical_abstract.png" width="960"/>
 </p>
 
-Social interaction is integral to animal behavior. However, we lack tools to describe it with quantitative rigor, limiting our understanding of its principles and neuropsychiatric disorders, like autism, that perturb it. Here, we present a technique for high-resolution 3D tracking of postural dynamics and social touch in freely interacting animals. Published in *Cell* (2025). 
+Social interaction is integral to animal behavior. However, we lack tools to describe it with quantitative rigor, limiting our understanding of its principles and neuropsychiatric disorders, like autism, that perturb it. Here, we present a technique for high-resolution 3D tracking of postural dynamics and social touch in freely interacting animals. Published in [*Cell* (2025)](https://www.cell.com/cell/fulltext/S0092-8674(25)00154-0). 
 
 <p align="center">
   <img src="./assets/demo_combo.gif" width="500"/>
