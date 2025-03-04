@@ -4,21 +4,21 @@
   <img src="./assets/graphical_abstract.png" width="960"/>
 </p>
 
-Social interaction is integral to animal behavior. However, we lack tools to describe it with quantitative rigor, limiting our understanding of its principles and neuropsychiatric disorders, like autism, that perturb it. Here, we present a technique for high-resolution 3D tracking of postural dynamics and social touch in freely interacting animals.
+Social interaction is integral to animal behavior. However, we lack tools to describe it with quantitative rigor, limiting our understanding of its principles and neuropsychiatric disorders, like autism, that perturb it. Here, we present a technique for high-resolution 3D tracking of postural dynamics and social touch in freely interacting animals. Published in *Cell* (2025). 
 
 <p align="center">
   <img src="./assets/demo_combo.gif" width="500"/>
 </p>
 
 ## :rocket: Getting Started
-### :star2: Local Installation
-Clone the repository on a Linux machine
+### :wrench: Local Installation
+Clone the repository
 ```
 git clone https://github.com/tqxli/sdannce.git
 cd sdannce
 ```
 
-Then follow [INSTALL.md](./INSTALL.md) for finishing the environment setup.
+Then follow [INSTALL.md](./INSTALL.md) for finishing the environment setup. Note that s-DANNCE has only been tested on Linux.
 
 ### :star2: Quickstart Demo
 Please refer to [DEMO.md](./DEMO.md) for a quick navigation through this codebase.
@@ -33,11 +33,15 @@ Together with this codebase, we have released a large-scale [**social behavioral
 
 This database includes >140 million 3D keypoint poses annotated by s-DANNCE, individual and social behavior classes acquired from [**SocialMapper**](https://github.com/uklibaite/SocialMapper), the multi-scale behavioral mapping method described in the paper, and recording metadata. The SocialMapper codebase is linked to the current repository as a submodule.
 
-## License
+## :name_badge: License
 This project is licensed under [MIT LICENSE](./LICENSE). 
 
 ## :books: Citation
-If you use s-DANNCE, SocialMapper, and/or the social behavioral database, please consider citing
+If you use s-DANNCE, SocialMapper, and/or the social behavioral database, please cite:
+
+> **Klibaite, U.**\*, **Li, T.**\*, Aldarondo, D., Akoad, J.F., Ölveczky, B.P. and Dunn, T.W., 2025. Mapping the landscape of social behavior. *Cell*. 
+
+**BibTex**
 ```bibtex
 @article{klibaite2025mapping,
   title={Mapping the landscape of social behavior},
