@@ -34,7 +34,7 @@ Together with this codebase, we have released a large-scale [**social behavioral
 This database includes >140 million 3D keypoint poses annotated by s-DANNCE, individual and social behavior classes acquired from [**SocialMapper**](https://github.com/uklibaite/SocialMapper), the multi-scale behavioral mapping method described in the paper, and recording metadata. The SocialMapper codebase is linked to the current repository as a submodule.
 
 ## :name_badge: License
-This project is licensed under [MIT LICENSE](./LICENSE). 
+This project is licensed under [CC-BY-4.0 Attribution](./LICENSE). 
 
 ## :books: Citation
 If you use s-DANNCE, SocialMapper, and/or the social behavioral database, please cite:
