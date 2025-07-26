@@ -198,7 +198,7 @@ def infer_dannce_inference_range(
 ):
     n_frames = len(generator)
     bs = params["batch_size"]
-    generator_maxbatch = np.ceil(n_frames / bs)
+    generator_maxbatch = n_frames
 
     if params["maxbatch"] != "max" and params["maxbatch"] > generator_maxbatch:
         print(
