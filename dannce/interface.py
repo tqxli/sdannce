@@ -138,7 +138,14 @@ def dannce_predict(params: Dict):
     logger, device, params, _, partition, predict_generator, model = _predict_prep(
         params, "dannce"
     )
-
+        # Check if this is an s-DANNCE model or regular DANNCE model  
+    if hasattr(model, 'pose_generator') or (hasattr(model, 'module') and hasattr(model.module, 'pose_generator')):  
+        # This is an s-DANNCE model  
+        inference.infer_sdannce(predict_generator, params, {}, model, partition, device)  
+    else:  
+        # This is a regular DANNCE model  
+        inference.infer_dannce(predict_generator, params, model, partition, device, params["n_channels_out"])  
+      
     inference.infer_sdannce(predict_generator, params, {}, model, partition, device)
     predict_generator.close_all_readers()
 
