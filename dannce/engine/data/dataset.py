@@ -587,6 +587,11 @@ class PoseDatasetNPY(PoseDatasetFromMem):
         super(PoseDatasetNPY, self).__init__(
             list_IDs=list_IDs, data=None, labels=None, **kwargs
         )
+        print("HERE!")
+        print(list_IDs)
+        print(npydir)
+        print(len(labels_3d))
+        # quit()
         self.labels_3d = labels_3d
         self.npydir = npydir
         self.griddir = griddir
@@ -618,7 +623,14 @@ class PoseDatasetNPY(PoseDatasetFromMem):
         else:
             list_IDs_temp = [self.list_IDs[index]]
         # Generate data
-        X, X_grid, y_3d, aux = self.__data_generation(list_IDs_temp)
+        try:
+            X, X_grid, y_3d, aux = self.__data_generation(list_IDs_temp)
+        except Exception as e:
+            print("index", index)
+            print(e)
+            print(list_IDs_temp)
+            print("WHOOOPS")
+            quit()
         return X, X_grid, y_3d, aux
 
     def _downscale_occluded_views(self, X, occlusion_scores):

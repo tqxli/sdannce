@@ -17,6 +17,8 @@ from dannce.engine.utils.projection import (distortPoints, load_cameras,
                                             project_to_2d)
 
 matplotlib.use("Agg")
+matplotlib.rcParams['animation.codec'] = 'mpeg4'
+matplotlib.rcParams['animation.ffmpeg_path'] = '/usr/local/bin/ffmpeg'
 
 
 MARKER_COLOR = {
@@ -45,7 +47,10 @@ def visualize_pose_predictions(
     zoom_in: bool = False,
     zoom_window_size: int = 400,
 ):
-    LABEL3D_FILE = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
+    try:
+        LABEL3D_FILE = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
+    except IndexError:
+        LABEL3D_FILE = [f for f in os.listdir(exproot) if f.endswith("annotations.npz")][0]
     CAMERAS = ["Camera{}".format(int(i)) for i in cameras.split(",")]
     camera_idx = [int(i)-1 for i in cameras.split(",")]
     CONNECTIVITY = load_body_profile(animal)["limbs"]
@@ -53,6 +58,8 @@ def visualize_pose_predictions(
     vid_path = os.path.join(exproot, "videos")
     pred_path = os.path.join(exproot, expfolder)
     datafile_path = os.path.join(pred_path, datafile)
+    print("datafile_path:", datafile_path)
+    # quit()
     save_path = os.path.join(exproot, expfolder, "vis")
     
     assert os.path.exists(vid_path), f"Video directory {vid_path} does not exist"
@@ -135,7 +142,7 @@ def visualize_pose_predictions(
 
     # set up video writer
     metadata = dict(title="SDANNCE", artist="Matplotlib")
-    writer = FFMpegWriter(fps=50, metadata=metadata)
+    writer = FFMpegWriter(fps=15, codec='mpeg4', bitrate=8000, extra_args=['-pix_fmt', 'yuv420p'], metadata=metadata)
 
     ###############################################################################################################
     # setup figure
@@ -150,7 +157,10 @@ def visualize_pose_predictions(
         axes = [axes]
 
     frames_to_plot = np.arange(start_frame, start_frame + n_frames)
-    label3d_file = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
+    try:
+        label3d_file = [f for f in os.listdir(exproot) if f.endswith("dannce.mat")][0]
+    except IndexError:
+        label3d_file = [f for f in os.listdir(exproot) if f.endswith("annotations.npz")][0]
     sync = load_sync(os.path.join(exproot, label3d_file))
     frames = [np.squeeze(item['data_frame']) for item in sync]
     frames = [frames[cam] for cam in camera_idx]

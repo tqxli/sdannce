@@ -81,6 +81,8 @@ def distortPoints(points, intrinsicMatrix, radialDistortion, tangentialDistortio
 
 
 def load_cameras(path):
+    if path.endswith('.npz'):
+        return load_cameras_npz(path)
     mat73_flag = False
     try:
         d = sio.loadmat(path)
@@ -102,4 +104,20 @@ def load_cameras(path):
                 cameras[camname][fn] = cam_params[i][0][0][0][j]
         if len(cameras[camname]["t"].shape) == 1:
             cameras[camname]["t"] = cameras[camname]["t"][np.newaxis, ...]
+    return cameras
+
+
+def load_cameras_npz(path):
+    d = np.load(path)
+    camnames = d['camnames']
+    cameras = {}
+    for i, camname in enumerate(camnames):
+        cameras[camname] = dict(
+            r=d['r'][i].T,
+            R=d['r'][i].T, # Note case mismatch
+            t=d['t'][i].reshape(1,3),
+            K=d['K'][i].T,
+            RDistort=d['RDistort'][i].reshape(1,-1),
+            TDistort=d['TDistort'][i].reshape(1,-1),
+        )
     return cameras

@@ -118,6 +118,16 @@ _BODY_CONNECTIVITY = {
         [4, 12],
         [12, 13],
     ],
+    "mouse9": [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [1, 5],
+        [1, 6],
+        [2, 7],
+        [2, 8],
+    ]
 }
 
 _JOINT_NAMES = {
@@ -226,6 +236,17 @@ _JOINT_NAMES = {
         "HindShdR",
         "HindpawR",
     ],
+    "mouse9": [
+        "nose",
+        "head",
+        "spine",
+        "tailbase",
+        "tailtip",
+        "leftforepaw",
+        "rightforepaw",
+        "lefthindpaw",
+        "righthindpaw",
+    ]
 }
 
 SYMMETRY = {

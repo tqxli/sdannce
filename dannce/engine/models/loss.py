@@ -23,9 +23,7 @@ def compute_mask_nan_loss(loss_fcn, kpts_gt, kpts_pred):
     notnan = notnan_gt.sum()
     # when ground truth is all NaN for certain reasons, do not compute loss since it results in NaN
     if notnan == 0:
-        # print("Found all NaN ground truth")
         return kpts_pred.new_zeros((), requires_grad=True)
-
     return loss_fcn(kpts_gt[notnan_gt], kpts_pred[notnan_gt]) / notnan
 
 

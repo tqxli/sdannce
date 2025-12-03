@@ -16,6 +16,8 @@ def load_label3d_data(path: Text, key: Text):
     Returns:
         TYPE: Data from field
     """
+    if path.endswith(".npz"):
+        raise NotImplementedError(path)
     try:
         d = sio.loadmat(path)[key]
         dataset = [f[0] for f in d]
@@ -46,6 +48,16 @@ def load_camera_params(path: Text) -> List[Dict]:
     Returns:
         List[Dict]: List of camera parameter dictionaries.
     """
+    if path.endswith('.npz'):
+        d = np.load(path)
+        return [dict(
+            r=d['r'][i].T,
+            R=d['r'][i].T, # Note case mismatch
+            t=d['t'][i].reshape(1,3),
+            K=d['K'][i].T,
+            RDistort=d['RDistort'][i].reshape(1,-1),
+            TDistort=d['TDistort'][i].reshape(1,-1),
+        ) for i in range(len(d['r']))]
     params = load_label3d_data(path, "params")
     for p in params:
         if "r" in p:
@@ -64,6 +76,23 @@ def load_sync(path: Text) -> List[Dict]:
     Returns:
         List[Dict]: List of synchronization dictionaries.
     """
+    if path.endswith('.npz'):
+        C = len(load_camnames(path))
+        # d = dict(np.load(path))
+
+        # data_frame = d['data_frame'].astype(int)
+        # data_sampleID = d['data_sampleID'].astype(int)
+
+        data_frame = np.arange(30000, dtype=int) # TEMP!
+        data_sampleID = data_frame # TMEP!
+       
+        out = []
+        for i in range(C):
+            out.append(dict(
+                data_frame=data_frame,
+                data_sampleID=data_sampleID,
+            ))
+        return out
     dataset = load_label3d_data(path, "sync")
     for d in dataset:
         d["data_frame"] = d["data_frame"].astype(int)
@@ -80,6 +109,25 @@ def load_labels(path: Text) -> List[Dict]:
     Returns:
         List[Dict]: List of labelData dictionaries.
     """
+    if path.endswith('.npz'):
+        C = len(load_camnames(path))
+        d = dict(np.load(path))
+
+        data_frame = d['data_frame'].astype(int)
+        data_sampleID = d['data_sampleID'].astype(int)
+
+        data_2d = d['data_2d'] # (T,K,C,2)
+        data_3d = d['data_3d'] # (T,K,3)
+
+        out = []
+        for i in range(C):
+            out.append(dict(
+                data_frame=data_frame,
+                data_sampleID=data_sampleID,
+                data_2d=np.transpose(data_2d[:,:,i], (0,2,1)),
+                data_3d=np.transpose(data_3d, (0,2,1)),
+            ))
+        return out
     dataset = load_label3d_data(path, "labelData")
     for d in dataset:
         d["data_frame"] = d["data_frame"].astype(int)
@@ -96,6 +144,8 @@ def load_com(path: Text) -> Dict:
     Returns:
         Dict: Dictionary with com data
     """
+    if path.endswith(".npz"):
+        raise NotImplementedError(path)
     try:
         d = sio.loadmat(path)["com"]
         data = {}
@@ -116,6 +166,8 @@ def load_camnames(path: Text) -> Union[List, None]:
     Returns:
         Union[List, None]: List of cameranames
     """
+    if path.endswith(".npz"):
+        return np.load(path)["camnames"]
     try:
         label_3d_file = sio.loadmat(path)
         if "camnames" in label_3d_file:

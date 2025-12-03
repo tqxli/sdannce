@@ -1717,7 +1717,8 @@ class DataGenerator_COM(torch.utils.data.Dataset):
                 else:
                     y[cnt] = this_y.T
                 # plt.imshow(np.squeeze(y[0,:,:,:]))
-                # plt.show()
+                # plt.savefig('temp.pdf')
+                # quit()
                 # import pdb
                 # pdb.set_trace()
                 cnt = cnt + 1

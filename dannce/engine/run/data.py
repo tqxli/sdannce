@@ -615,6 +615,7 @@ def _make_data_npy(
         genfunc = generator.DataGenerator_3Dconv_social
 
     valid_params = {**base_params, **spec_params}
+    valid_params["n_channels_out"] = params["n_channels_out"]
 
     if len(missing_samples) != 0:
         npy_generator = genfunc(

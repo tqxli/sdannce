@@ -8,7 +8,7 @@ setup(
     install_requires=[
         "six",
         "pyyaml",
-        "imageio==2.8.0",
+        "imageio",
         "imageio-ffmpeg",
         "numpy",
         "scikit-image",

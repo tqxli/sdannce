@@ -394,8 +394,17 @@ def infer_sdannce(
 
         # retrieve batched inputs
         indices = np.arange(i * bs, min((i + 1) * bs, max_num_sample, n_frames))
+        # print("generator", type(generator))
+        # print("indices:", indices, indices.shape)
         ims = generator.get_batched(indices)
+        # print("ims", len(ims))
         vols = torch.from_numpy(ims[0]).permute(0, 4, 1, 2, 3)
+        # print("vols", vols.shape, vols.mean())
+        temp = ims[1]
+        # print("grid_center:", temp.shape)
+
+        # if idx == 2:
+        #     quit()
 
         # replace occluded view
         if params["downscale_occluded_view"]:

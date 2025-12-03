@@ -36,7 +36,11 @@ def grab_predict_label3d_file(default_dir: str = "", index: int = 0) -> str:
     label3d_files = sorted(label3d_files)
 
     if not label3d_files:
-        raise Exception(f"Did not find any *dannce.mat file in {default_exp_path}")
+
+        label3d_files = list(default_exp_path.glob("*annotations.npz"))
+        label3d_files = sorted(label3d_files)
+        if not label3d_files:
+            raise Exception(f"Did not find any *dannce.mat file in {default_exp_path}")
     logger.info(f"Using the following *dannce.mat files: {label3d_files[index]}")
     return str(label3d_files[index])
 

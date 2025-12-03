@@ -87,7 +87,7 @@ def _predict_prep(params: Dict, model_type: str = "dannce"):
     logger, device = experiment_setup(params, "dannce_predict")
     params, valid_params = config.setup_predict(params)
 
-    checkpoint_params = torch.load(params["dannce_predict_model"])["params"]
+    checkpoint_params = torch.load(params["dannce_predict_model"], weights_only=False)["params"]
     if "graph_cfg" in checkpoint_params:
         sdannce_model_params = checkpoint_params["graph_cfg"]
     elif "custom_model" in checkpoint_params:
@@ -243,7 +243,7 @@ def com_predict(params: Dict):
 
     logger.info("Initializing Network...")
     model = initialize_com_train(params, device)[0]
-    model.load_state_dict(torch.load(params["com_predict_weights"])["state_dict"])
+    model.load_state_dict(torch.load(params["com_predict_weights"], weights_only=False)["state_dict"])
     model.eval()
 
     # perform inference

@@ -817,7 +817,7 @@ def add_unlabeled_to_train(
         sampling_num = min(sampling_num, len(indices))
         selected_indices = np.random.choice(
             indices, size=sampling_num, replace=False
-        )
+        ).astype(int)
         selected_samples = sampleIDs[selected_indices]
     elif n_instances == 2:
         # if instance number equals 2 and we can find the other animal's com file,

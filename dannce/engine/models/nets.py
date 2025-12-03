@@ -397,7 +397,7 @@ def load_pretrained_weights(
         checkpoint_path
     ), f"Checkpoint not found: {checkpoint_path}"
     logger.info(f"Loading pretrained weights from {checkpoint_path}")
-    state_dict = torch.load(checkpoint_path)["state_dict"]
+    state_dict = torch.load(checkpoint_path, weights_only=False)["state_dict"]
 
     if skip_io_check:
         model.load_state_dict(state_dict, strict=False)
@@ -489,7 +489,7 @@ def initialize_train(
         logger.info(
             "*** Resume training from {} ***".format(params["dannce_finetune_weights"])
         )
-        checkpoints = torch.load(params["dannce_finetune_weights"])
+        checkpoints = torch.load(params["dannce_finetune_weights"], weights_only=False)
         optimizer = torch.optim.Adam(model_params)
         optimizer.load_state_dict(checkpoints["optimizer"])
         params["start_epoch"] = checkpoints["epoch"]
@@ -534,7 +534,7 @@ def load_pretrained_com_weights(
         checkpoint_path
     ), f"Checkpoint not found: {checkpoint_path}"
     logger.info(f"Loading pretrained weights from {checkpoint_path}")
-    state_dict = torch.load(checkpoint_path)["state_dict"]
+    state_dict = torch.load(checkpoint_path, weights_only=False)["state_dict"]
 
     if skip_io_check:
         model.load_state_dict(state_dict, strict=False)
